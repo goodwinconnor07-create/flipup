@@ -4,6 +4,9 @@ import { CHARTS, inChart } from './charts';
 import { analyse, combosOf, comboKey, expandHand, expandRange, optionsFor, replay, spotOf, streetOfBoard, type OptionId, type Scenario } from './model';
 import { SCENARIOS } from './scenarios';
 
+/** Words that would name an author, a site or a source. */
+const NAMES_A_SOURCE = /\b(the article|the video|the expert|the author|Marc|Goone|Hungry Horse|LearnWPT|Upswing|PokerNews|CardPlayer|Card Player|Torelli|Jonathan Little|Finstein|Meulders|GTO Wizard|YouTube)\b/i;
+
 describe('hands', () => {
   it('reads pairs, suited, offsuit, exact combos and one-suit hands', () => {
     expect(expandHand('QQ')).toHaveLength(6);
@@ -129,10 +132,10 @@ describe('every scenario', () => {
         expect(streetOfBoard(s.board)).not.toBe('flop');
       });
 
-      it('comes from a published breakdown, with a link', () => {
-        expect(s.source.by.length, s.id).toBeGreaterThan(2);
-        expect(s.source.title.length, s.id).toBeGreaterThan(5);
-        expect(s.source.url, s.id).toMatch(/^https:\/\/[^ ]+$/);
+      it('never says where the hand came from', () => {
+        // The owner's call (17 Nov 2026): no author, site or "the article" in anything a player reads.
+        const shown = [s.title, s.concept, s.why, ...s.clues.map((c) => c.text)].join(' | ');
+        expect(shown, s.id).not.toMatch(NAMES_A_SOURCE);
       });
 
       it('never talks about cards to come once the river is out', () => {
@@ -197,7 +200,6 @@ describe('facing an all-in', () => {
       best: 'call',
       clues: [],
       why: '',
-      source: { by: '', title: '', url: '' },
     };
     const r = replay(s);
     expect(r.stacks.BTN).toBe(0);

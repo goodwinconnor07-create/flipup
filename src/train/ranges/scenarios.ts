@@ -1,31 +1,14 @@
-// The range training hands. Every one is a hand from a published breakdown (`source`): the same seats, action, board
-// and cards, the expert's answer, and the opponent's range as the expert reads it. Where the article leaves out bet
-// sizes or stacks, standard ones are used and `source.note` says so. Never add a hand that isn't from a published
-// breakdown, and never change the answer the expert gave.
+// The range training hands: a table, the whole action, one decision and the answer. The opponent's `range` is their
+// hands at the decision, grouped by what they do there; the tests deal every combo out and check the answer is the
+// play with the best EV by a clear margin, and that every hand fits that player's preflop chart (charts.ts).
 //
-// Each opponent's `range` is their hands at the decision, grouped by what they do there; the tests deal every combo
-// out and check the answer is the play with the best EV by a clear margin, and that every hand fits that player's
-// preflop chart (charts.ts).
+// A hand carries no record of where it came from, and nothing here may name an author, a site or "the article" (the
+// owner's call, 17 Nov 2026). `docs/RANGE_SOURCES.md` is the record, kept outside the code.
 //
 // Clues: on each street, what their range is now and what that means for you, in a sentence or two. No headings.
 // On the river nothing is left to come: never talk about protection, charging draws or outs there.
 
 import type { Scenario } from './model';
-
-const SIZES = 'Bet sizes aren’t given in the article; standard sizes are used.';
-const STACKS = 'Stacks aren’t given in the article; standard stacks are used.';
-
-// Hungry Horse Poker (Marc Goone) teaching hands, from his YouTube videos.
-const HHP_BY = 'Marc Goone (Hungry Horse Poker)';
-const HERO_CALL = 'How I Know When to Hero Call (Everyone Is Bluffing in 2026)';
-const NINETY = '90% of Hands Aren’t the Nuts or Air (How the Best Players Play Them)';
-const UNDER = '5 UNDER BLUFFED Spots in Poker (Just FOLD!)';
-const BUST = 'BLUFF BUSTING: Catch Bluffs Like a Poker Pro (5 Step Guide)';
-const HUGE = 'Top 5 Spots To Go HUGE With Value';
-const WHERE = 'Where Poker Players BLUFF Too Much… And Where They NEVER Bluff';
-const JACKS = 'Why Pocket Jacks Are Actually Hard to Play';
-const BLUFF5 = 'Top 5 Spots to BLUFF in Live Poker';
-const MADE_UP = 'A teaching hand Marc built for the video ($2/$5, $1,000 stacks).';
 
 export const SCENARIOS: Scenario[] = [
   {
@@ -81,12 +64,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'You lose to flushes and higher sets, but you beat every two pair and every missed spade and wheel draw, and that’s most of what shoves here. You need about 38% and you’re good about 60% of the time. Never fold this set.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Call or Fold? Facing River Bet With a Set of Deuces',
-      url: 'https://www.pokernews.com/strategy/call-or-fold-facing-river-bet-with-a-set-of-deuces-32971.htm',
-      note: 'Bet sizes, seats and stacks aren’t given in the article (only that stacks are deep); standard ones are used.',
-    },
   },
   {
     id: 'jacks-paired-river',
@@ -133,12 +110,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Jacks beat only bluffs, and queens alone outnumber the missed draws several times over. At 3-to-1 you need 25%, and you’re good about one time in six. Fold. Raising as a bluff doesn’t work either: after checking the turn, you don’t look like a queen.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Pocket Jacks on the River With a Queen-High Board: Fold, Call or Raise?',
-      url: 'https://www.pokernews.com/strategy/pocket-jacks-river-queen-high-board-fold-call-raise-learnwpt-29688.htm',
-      note: 'Bet sizes and stacks aren’t given; the river bet is sized to the 3-to-1 price the article uses.',
-    },
   },
   {
     id: 'kings-double-paired',
@@ -179,12 +150,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The Q♣ double-pairs the board. You check and they bet ¾ pot. Every queen and jack now has trips or a full house; their only bluffs are missed straight draws.' },
     ],
     why: 'About 50 combos of queens and jacks beat you. The bluffs are T-9 suited and the two K-T suited combos your kings don’t block: six combos. You need 30% and you’re good about one time in ten. Fold.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Pocket Kings vs. a River Bet on a Double-Paired Board',
-      url: 'https://www.pokernews.com/strategy/pocket-kings-vs-a-river-bet-on-a-double-paired-board-33317.htm',
-      note: 'Only the river sizes are given (a 75% pot bet); earlier sizes and stacks are standard ones.',
-    },
   },
   {
     id: 'trip-aces-shove',
@@ -231,12 +196,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The Q♠ and UTG, who checked twice, shoves. A passive line that suddenly bets this big is almost never a bluff: it’s A-K, A-Q, full houses, or A-J and A-T that chop.' },
     ],
     why: 'Nothing they shove is worse than you: you chop with A-J and A-T and lose to the rest. You need about 25% and you have about 17%. Early-position ranges hold the good aces, and you only have one ace yourself. Fold the trips.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Call a River Shove or Fold Your Trip Aces?',
-      url: 'https://www.pokernews.com/strategy/call-a-river-shove-or-fold-your-trip-aces-learnwpt-29016.htm',
-      note: 'Bet sizes and stacks aren’t given; they’re set to the “over 3-to-1” price the article uses.',
-    },
   },
   {
     id: 'queens-best-bluff-catcher',
@@ -281,11 +240,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The A♥ and they shove for more than the pot. The straights and sets are still value. Every missed draw (K-9, 9-8, 7-6, 6-5) is now a pure bluff.' },
     ],
     why: 'Queens beat every missed draw and block half the Q-9 straights, the hand you fear most. You need about 36% and you’re good over 40% of the time. Call. Aces would be a worse catcher here: they block neither Q-9 nor 9-7.',
-    source: {
-      by: 'PokerNews strategy',
-      title: 'Deciding What Hand Is the Best Bluff Catcher',
-      url: 'https://www.pokernews.com/strategy/deciding-what-hand-is-the-best-bluff-catcher-31722.htm',
-    },
   },
   {
     id: 'aq-blank-river',
@@ -326,11 +280,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 3♦ pairs the board and changes nothing. They shove: overpairs, sets, A-J, A-4 and A-5 for value, and A-K as the main bluff.' },
     ],
     why: 'You don’t even beat the bluffs: A-K, their main one, has you outkicked, and A-5 has a pair. The only bet you beat is a rare K-Q. An unimproved bluff catcher folds on a blank river; when you don’t beat bluffs, the decision is easy.',
-    source: {
-      by: 'PokerNews strategy',
-      title: 'After Bluff Catching the Turn, Fold to River Bets If Unimproved',
-      url: 'https://www.pokernews.com/strategy/after-bluff-catching-turn-fold-to-river-bets-if-unimproved-32794.htm',
-    },
   },
   {
     id: 'flush-or-bluff',
@@ -378,12 +327,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 8♠ is a blank. You bet and they check-raise all in. That’s a flush, a set or 5-4, or a bluff with a hand that can’t call: a small pair like 4-4 or a missed 6-5.' },
     ],
     why: 'Against “flush or bluff”, top pair and a straight do the same job. What matters is the price: call 81 to win 322, so you need to be right one time in four. Your A♦ means they can’t have the nut flush they’re representing. Call.',
-    source: {
-      by: 'PokerNews strategy',
-      title: 'To Catch a Bluff: Looking Back at a Hand of 100NL',
-      url: 'https://www.pokernews.com/strategy/to-catch-a-bluff-looking-back-at-a-hand-of-100nl-29375.htm',
-      note: 'Your stack isn’t given (only “deep”); 200bb is used.',
-    },
   },
   {
     id: 'wheel-vs-overbet',
@@ -431,11 +374,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 3♣ makes your wheel. Out of nowhere they overbet: A-A, A-K and K-K for value, or a bluff from a hand that gave up on the turn.' },
     ],
     why: 'Your straight beats aces, A-K and every bluff; only kings full beats you. So call. Don’t raise all in: every worse hand folds to a raise, and the hands that call it beat you or chop. You don’t know exactly what the overbet means, but you know what it doesn’t: a hand that will pay you more.',
-    source: {
-      by: 'PokerNews strategy',
-      title: 'How to Respond to the Big Out-of-Nowhere River Overbet',
-      url: 'https://www.pokernews.com/strategy/how-to-respond-to-the-big-out-of-nowhere-river-overbet-32039.htm',
-    },
   },
   {
     id: 'queens-four-bet-pot',
@@ -476,11 +414,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 9♦ is a blank and they shove. Value: the few flushes, 5-4 and aces. Bluffs: missed suited connectors. A-K and K-K don’t shove here; they’d check or give up.' },
     ],
     why: 'A flush needs a suited hand that 4-bet from under the gun, and there are few of those. Your set beats every bluff, and you need about 32%. Calling makes complete sense. Their bluff’s problem: it doesn’t block your calls, and it holds the cards you’d fold anyway.',
-    source: {
-      by: 'PokerNews strategy',
-      title: 'Hand Analysis: The Worst Imaginable Bluff',
-      url: 'https://www.pokernews.com/strategy/hand-analysis-the-worst-imaginable-bluff-31194.htm',
-    },
   },
   {
     id: 'rivered-set-tens',
@@ -522,12 +455,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The T♥ gives you a set. They bet ⅔ pot. Value: A-K, A-9 and 9-8 straights, Q-Q and J-J. Bluffs: aces with no pair, like A-3, that can’t win a showdown.' },
     ],
     why: 'Straights and bigger sets beat you, but you beat every bluff, every two pair, every smaller set and every thin one-pair bet. You need about 28% and you’re well above that. Call: your line already looks strong, so their bluffs are aimed at exactly this hand.',
-    source: {
-      by: 'PokerNews strategy',
-      title: 'Hand Analysis: A Good and Ridiculous Bluff',
-      url: 'https://www.pokernews.com/strategy/hand-analysis-a-good-and-ridiculous-bluff-30566.htm',
-      note: STACKS,
-    },
   },
   {
     id: 'raise-then-fold-eights',
@@ -568,12 +495,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 8♥ gives you a full house. They bet small, you raise, and they shove. A range with no bluffs that re-raises all in has something specific.' },
     ],
     why: 'Raising was right: kings, A-x and worse full houses can pay you. But the shove is almost always aces full, sometimes quads, and you beat neither. When something that seldom happens happens, they have something specific. Raise, then fold.',
-    source: {
-      by: 'PokerNews strategy',
-      title: 'Raise-Folding for Value? Sometimes You Can',
-      url: 'https://www.pokernews.com/strategy/raise-folding-for-value-sometimes-you-can-29879.htm',
-      note: 'Stacks and the shove size aren’t given; 100bb is used. Your suits aren’t given either.',
-    },
   },
   {
     id: 'aces-full-river-shove',
@@ -629,12 +550,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 2♦ and they shove. Shoving a flush into a big flop raise would be insane, so it’s full houses: A-Q, Q-Q and 8-8, plus the odd quads.' },
     ],
     why: 'You beat A-Q (six combos) and lose to Q-Q and 8-8 (three each). That’s close to half, and you need about 32%. Even if they shove A-Q only half the time, you’re near break-even. Unless you have an epic read, you can’t fold here.',
-    source: {
-      by: 'Alec Torelli on PokerNews',
-      title: 'Hand of the Day: Could You Fold a Full House?',
-      url: 'https://www.pokernews.com/strategy/alec-torelli-hand-of-the-day-could-you-fold-a-full-house-23603.htm',
-      note: 'Which limper called isn’t given; the dollar amounts are turned into big blinds.',
-    },
   },
   {
     id: 'nut-flush-paired-river',
@@ -675,12 +590,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The A♦ pairs the board and you’re first. Their range is mostly full houses (A-Q, A-8, sets) plus three small flushes. They have no bluffs.' },
     ],
     why: 'A bet only gets called by full houses, which beat you; the small flushes fold, and they’d never bluff with one. Full houses outnumber the flushes about four to one. Check, and if a good player shoves, make the disciplined fold. Only against someone who makes crying calls does calling look better.',
-    source: {
-      by: 'Alec Torelli on PokerNews',
-      title: 'Hand of the Day: Hero Fold With an Ace-High Flush',
-      url: 'https://www.pokernews.com/strategy/alec-torelli-hand-of-the-day-hero-fold-with-ace-high-flush-23725.htm',
-      note: 'Which seats called isn’t given; the dollar amounts are turned into big blinds.',
-    },
   },
   {
     id: 'trip-aces-shove-for-value',
@@ -731,12 +640,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The A♦ gives you trips and they check. Their aces are mostly small kickers (A-8 down to A-2), since the big ones raise preflop. The draws missed and fold to any bet.' },
     ],
     why: 'Any ace they have calls whatever you bet, and more of their aces lose to you than beat you. So bet the most you can: all in. A smaller bet leaves money behind that those aces would have paid.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Value Betting With Trip Aces on the River',
-      url: 'https://www.pokernews.com/strategy/value-betting-with-trip-aces-on-the-river-34543.htm',
-      note: 'Sizes and stacks aren’t given; with 120bb stacks, the overbet is all in.',
-    },
   },
   {
     id: 'top-two-four-straight',
@@ -777,12 +680,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The K♠ puts four to a straight out: any jack has broadway. Their weaker two pairs (A-T, Q-T, K-T) won’t call a bet; jacks, A-K and sets will.' },
     ],
     why: 'A bet only gets called by better hands, and the worse ones you want to pay you fold. Nothing better folds either, so there’s no bluff. Check. If they shove, most players have it here: fold, unless they’re the kind who pays off with any two pair.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Two Pair, Possible Straight on the River: Bet or Check?',
-      url: 'https://www.pokernews.com/strategy/two-pair-possible-straight-river-bet-or-check-learnwpt-33872.htm',
-      note: SIZES,
-    },
   },
   {
     id: 'second-nuts-capped-range',
@@ -827,12 +724,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 9♦ gives you the second-nut straight and they check. A player who led twice and checks the river is capped: mostly one pair or two pair, rarely a straight.' },
     ],
     why: 'Bet for value, but don’t overdo it: their range is capped at two pair, so a huge bet only folds the hands that would have paid. A bet a bit over half pot gets called by two pair and some top pairs.',
-    source: {
-      by: 'Upswing Poker',
-      title: 'Going for Value in Two High Stakes Tournament Hands (hand 1)',
-      url: 'https://upswingpoker.com/high-stakes-tournament-hands-analysis/',
-      note: 'The expert bets about 56% pot; the closest sizes here are ⅓ and ¾.',
-    },
   },
   {
     id: 'top-pair-river-shove',
@@ -888,12 +779,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 4♥ changes nothing. The cutoff has tens and eights with a diamond, pairs, and the odd flush that slow-played. There are few bluffs to catch if you check.' },
     ],
     why: 'Checking would usually win the pot, but betting gets called by worse: tens, eights and pairs with a diamond. Your stack is about the size of the pot, so put it all in and let them make the call.',
-    source: {
-      by: 'Upswing Poker',
-      title: 'Going for Value in Two High Stakes Tournament Hands (hand 2)',
-      url: 'https://upswingpoker.com/high-stakes-tournament-hands-analysis/',
-      note: 'The expert shoves 21.2bb; the overbet here is 20.5bb.',
-    },
   },
   {
     id: 'trips-sizing-river',
@@ -945,12 +830,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The K♥ gives you trips and they check. The small blind has a busted draw, which folds to any bet, or a pocket pair or other one-pair hand that can call a medium bet.' },
     ],
     why: 'Betting is certainly best. Size it for the hands that pay: pocket pairs call a medium bet but fold to a big one, and the busted draws fold to anything. When their range is mostly trash and marginal hands, don’t bet big.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Hand Quiz: Playing a Premium on the River',
-      url: 'https://www.cardplayer.com/poker-news/1640841-poker-hand-quiz-playing-a-premium-on-the-river',
-      note: 'The table here is nine-handed (the quiz’s was eight); opponents’ stacks aren’t given.',
-    },
   },
   {
     id: 'trips-check-fold',
@@ -998,12 +877,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The A♥ completes broadway for K-J and fills up A-Q. The hands below you (A-K, A-J, kings) won’t put more in, and nothing better will fold.' },
     ],
     why: 'A bet gets called by every hand that beats you and folded by the pairs you beat. They also won’t bluff into trips, because you never fold them. So check, and fold to a real bet.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Tough River Situation',
-      url: 'https://www.cardplayer.com/poker-news/18458-poker-strategy-with-jonathan-little-tough-river-situation',
-      note: 'Your stack isn’t given; the button’s 83bb is used for both.',
-    },
   },
   {
     id: 'nines-full-check-raise',
@@ -1049,12 +922,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The K♥ makes your full house. You bet and they check-raise all in. A river check-raise all in is a king or a bigger full house almost every time.' },
     ],
     why: 'Most of their range beats you: every king has quads, and A-A, Q-Q, J-J and T-T have bigger full houses. You only beat 2-2 and the rare bluff. Even with a strong hand, make the disciplined fold.',
-    source: {
-      by: 'Jonathan Little on PokerNews',
-      title: 'Call or Fold? River Check-Raise With a Full House',
-      url: 'https://www.pokernews.com/strategy/call-or-fold-jonathan-little-river-check-raise-full-house-26361.htm',
-      note: 'The verdict is stated as a principle in the text: most of their range beats you, so fold.',
-    },
   },
   {
     id: 'ak-hearts-river-raise',
@@ -1102,11 +969,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The J♠ pairs the board and your small bet gets raised big. Value: full houses, quads and K-Q’s straight. The cutoff has few natural bluffs here, so it has to use missed heart draws.' },
     ],
     why: 'Your two hearts are exactly the cards their bluffs need, so you block the bluffs and none of the value. You’re good too rarely to call 27.5 into 57: fold. The same A-K without hearts is a call, because those bluffs are still out there.',
-    source: {
-      by: 'GTO Wizard review on PokerNews',
-      title: 'This Is How the Pros Play Multiway Pots',
-      url: 'https://www.pokernews.com/strategy/this-is-how-the-pro-s-play-multiway-pots-51467.htm',
-    },
   },
   {
     id: 'aq-overbet-shove',
@@ -1148,11 +1010,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 5♥ pairs the board and misses every draw. They shove for more than the pot. Value: Q-9 and the full houses. Bluffs: every missed diamond, and J-T, K-J, K-T.' },
     ],
     why: 'Against a balanced shove this size you have to call with about 45% of your range, and A-Q is near the top of it. Your queen blocks their Q-9; you block none of the missed diamonds or straight draws. Call.',
-    source: {
-      by: 'Upswing Poker (Fried Meulders)',
-      title: 'Game Theory Expert Analyzes 5 Tricky River Hands (hand 1)',
-      url: 'https://upswingpoker.com/game-theory-expert-river-hands/',
-    },
   },
   {
     id: 'ak-four-straight-call',
@@ -1193,11 +1050,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The K♥ puts four to a straight out and they bet ¾ pot. Any ten has a straight, and sets beat you too. Below you: A-Q, K-Q, A-J, and pairs turned into bluffs.' },
     ],
     why: 'They hold the straights, but you’re too high in your range to fold: your 3-bet range has very few tens either. With that edge they’d be expected to overbet; a normal-sized bet gives you the price to call.',
-    source: {
-      by: 'Upswing Poker',
-      title: '3 Small Stakes Cash Game Hands Analyzed (hand 1)',
-      url: 'https://upswingpoker.com/small-stakes-cash-hands/',
-    },
   },
   {
     id: 'aces-multiway-shove',
@@ -1248,11 +1100,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The Q♥: you check and they shove 70 into 245. Every draw missed except J-T, which made a straight. Value: sets, two pair, J-T, Q-Q. Bluffs: missed flush and straight draws.' },
     ],
     why: 'You need only 18%: call 70 to win 385. Their range still has plenty of missed draws and weaker made hands that you beat. Call.',
-    source: {
-      by: 'Upswing Poker (Mike Finstein)',
-      title: 'Live Hand Review with Mike Finstein (hand 1)',
-      url: 'https://upswingpoker.com/live-hand-review-finstein/',
-    },
   },
   {
     id: 'two-pair-vs-maniac',
@@ -1303,11 +1150,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The J♥ and he bets half pot. K-Q, Q-8, 8-7 and A-J now beat you, but most of his value is A-9, T-9, A-6 and one-pair aces, and he bluffs a lot.' },
     ],
     why: 'You beat almost everything he bets for value and all of his air; only a few straights, A-J and sets beat you. You need about 26%. Calling is clearly right.',
-    source: {
-      by: 'Upswing Poker (Mike Finstein)',
-      title: 'Live Hand Review with Mike Finstein (hand 2)',
-      url: 'https://upswingpoker.com/live-hand-review-finstein/',
-    },
   },
   {
     id: 'middle-pair-thin-value',
@@ -1349,12 +1191,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The T♥ pairs the board and they check again. They’d bet every ten and most nines here, so their check is a 6, a 4, a small pair or overcards. You beat almost all of it.' },
     ],
     why: 'Your pair of sixes is ahead of nearly everything that checks here. A small bet gets called by sixes, fours and small pairs, and not much better is left. Thin value like this adds up.',
-    source: {
-      by: 'Upswing Poker',
-      title: '3 Small Stakes Cash Game Hands Analyzed (hand 3)',
-      url: 'https://upswingpoker.com/small-stakes-cash-hands/',
-      note: 'The article doesn’t name a size; the small bet is what the numbers here favour.',
-    },
   },
   {
     id: 'two-pair-turn-shove',
@@ -1402,12 +1238,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 3♦ pairs the board. You bet small and they shove: K-J and sets for value, but also worse kings and club and straight draws.' },
     ],
     why: 'Your hand is near the top of your range, so folding here is very exploitable. They shove some hands that beat you, but also worse kings and draws, and you need only 23%. Call. Betting small and then folding to a shove is the mistake here.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Two Pair Versus a Turn Raise-Shove: What Do You Do?',
-      url: 'https://www.pokernews.com/strategy/two-pair-versus-a-turn-raise-shove-what-do-you-do-learnwpt-34748.htm',
-      note: 'Sizes aren’t given, only a flop stack-to-pot ratio of about 3; sizes are set to match it.',
-    },
   },
   {
     id: 'big-draw-multiway-turn',
@@ -1482,12 +1312,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 3♥ gives you a flush draw to go with your open-ender: about 15 outs. The button bets small and two players call before you.' },
     ],
     why: 'You’re getting about 8.5-to-1 with a likely 15-outer, and four of your outs (the black tens and fives) are well disguised. A raise is far less likely to win the pot with three players still in. Call and keep everyone in.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Call or Raise the Turn Multi-Way With a Big Draw?',
-      url: 'https://www.pokernews.com/strategy/call-or-raise-the-turn-multi-way-with-a-big-draw-34236.htm',
-      note: 'Sizes aren’t given; the turn bet is set to the 8.5-to-1 price in the article.',
-    },
   },
   {
     id: 'top-pair-ace-river',
@@ -1529,12 +1353,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The A♠ is the worst card for you: it pairs their overcards and the heart draws that held an ace. Few missed draws are left, and they bet again.' },
     ],
     why: 'Top pair is a bluff catcher, and the ace hit the hands they were barrelling with. You lose to all their aces, overpairs and K-Q, and many of their draws now have a pair. Make the snug fold.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching Hand Quiz: Drowning on the River',
-      url: 'https://www.cardplayer.com/poker-news/26590-poker-coaching-hand-quiz-drowning-on-the-river',
-      note: 'The table here is six-handed (the quiz’s was seven).',
-    },
   },
   {
     id: 'passive-overbet-limped',
@@ -1585,12 +1403,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The A♠ completes spades and gives you top pair. Then the passive player, who never raised, bets 1½ times the pot. That’s trips, a flush or a full house.' },
     ],
     why: 'Ace-seven only beats a bluff, and a passive player who suddenly overbets has few, if any. Even the aces that bet mostly have a better kicker. With almost no bluffs in their range, a bluff catcher must fold. Watch the slow-play: queens check the flop and just call the turn.',
-    source: {
-      by: 'Jonathan Little',
-      title: 'Getting There on the River',
-      url: 'https://jonathanlittlepoker.com/gettingthereontheriver/',
-      note: 'The seats aren’t fully given in the article; the bet sizes are its own.',
-    },
   },
   {
     id: 'missed-flush-draw-river',
@@ -1643,12 +1455,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The A♣ misses you and puts three clubs out. They fire a third time. A player who bets every street into several opponents rarely holds a weak hand: two pair, sets, or a backdoor flush.' },
     ],
     why: 'Jack high beats only a bluff, and three bets into a crowd leave almost none. The ace and the third club hit their value hands too. Calling the flop and turn was right with your draw at that price, but draws miss: fold and move on. Don’t try to bluff either: you weren’t the one betting.',
-    source: {
-      by: 'PokerNews strategy',
-      title: 'Facing a River Bet After Missing Your Flush Draw',
-      url: 'https://www.pokernews.com/strategy/facing-a-river-bet-after-missing-your-flush-draw-28688.htm',
-      note: SIZES + ' The two early limpers sit in the first two seats here.',
-    },
   },
   {
     id: 'top-pair-all-in-and-call',
@@ -1710,12 +1516,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 5♣ makes a straight for any 3 and adds two pairs and sets. You check, UTG shoves nearly three times the pot, and the button calls. That much money in is face-up: sets, straights, two pair.' },
     ],
     why: 'When a shove gets called with you still to act, both hands are strong. The shover has sets, straights and two pair; the caller is mostly a straight, with all the A-3, 5-3, 4-3 and 3-2 a loose limper holds. You’re drawing nearly dead most of the time. Fold top pair without a second thought.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Call or Fold With Top Pair Versus an All-In and a Call?',
-      url: 'https://www.pokernews.com/strategy/call-or-fold-top-pair-versus-an-all-in-and-a-call-learnwpt-33941.htm',
-      note: 'Sizes, stacks and which limpers stayed aren’t given; the shove is sized to the article’s “nearly three times the pot”.',
-    },
   },
   {
     id: 'kings-turn-overbet-shove',
@@ -1758,12 +1558,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 3♥ changes little, and the big blind shoves for nearly twice the pot. With 60bb that’s a range of one-pair hands like T-T to Q-Q and eights, plus the flush and straight draws.' },
     ],
     why: 'An overbet needs you to be good more often, but at this stack depth the shove is weaker than it looks: worse pairs, eights and draws. Kings beat all of those and win often enough to call. Only sets and 8-7 have you, and some of those raised the flop.',
-    source: {
-      by: 'PokerNews strategy',
-      title: 'Call or Fold? Facing Turn Shove on Eight-High Board With Pocket Kings',
-      url: 'https://www.pokernews.com/strategy/call-or-fold-facing-turn-shove-on-eight-high-board-with-pock-30535.htm',
-      note: 'Preflop and flop sizes aren’t given; the shove is the article’s “nearly twice the pot” with the big blind’s 60bb.',
-    },
   },
   {
     id: 'turned-nuts-river-check-raise',
@@ -1814,12 +1608,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The A♥ pairs the board. You bet, and he check-raises all in for more than four times the pot. He’s representing exactly a straight, and he should rarely if ever have a full house after this line.' },
     ],
     why: 'Full houses beat you, but his line almost never has one: he’d have played them differently on the turn. Everything else that shoves, smaller straights and missed draws, loses to you or chops. You need about 36%. Despite the size, call: folding would be a mistake.',
-    source: {
-      by: 'Upswing Poker',
-      title: 'The Craziest Poker Hand Of 2024 (Analysis)',
-      url: 'https://upswingpoker.com/texas-mike-vs-hook/',
-      note: 'The straddle sits in the big blind seat and the sizes are in straddles; the dead blinds are counted with the ante. The article’s summary says the fold can’t be faulted, but its analysis says to call.',
-    },
   },
   {
     id: 'ace-seven-river-give-up',
@@ -1860,12 +1648,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 6♠ and you’re first. Every hand they hold beats ace-seven: pairs make a full house and big aces outkick you. And this player doesn’t fold.' },
     ],
     why: 'A bluff only works if they fold, and this opponent with this range won’t. An overbet shove here only makes sense with exactly aces, and against a player who expects you to try it, it’s awful. Check and give up the pot.',
-    source: {
-      by: 'Upswing Poker (Garrett Adelstein)',
-      title: 'Garrett Adelstein Analyzes a Massive Bluff Gone Wrong',
-      url: 'https://upswingpoker.com/garrett-adelstein-vs-daniel-negreanu-hand-analysis/',
-      note: 'The expert played the hand and shoved; this is his own verdict afterwards. The big blind ante is counted.',
-    },
   },
   {
     id: 'nut-flush-river-size-wsop',
@@ -1912,12 +1694,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The Q♦ gives you the nut flush. K-J, A-K and small pairs would check behind; K-Q and Q-Q will call a bet but rarely raise. They see you as a loose 3-bettor.' },
     ],
     why: 'You have to bet: checking hopes for a bluff that rarely comes. Pick a size that looks like it could be a bluff, around two-thirds of the pot. K-Q and Q-Q call it, and so does a suspicious A-K. A smaller bet is fine too; an overbet only gets called by the hands that would call anyway.',
-    source: {
-      by: 'Alec Torelli on PokerNews',
-      title: 'Alec Torelli Rivered the Nuts on Day 2 of WSOP But Needed to Decide What to Bet',
-      url: 'https://www.pokernews.com/strategy/alec-torelli-2023-wsop-main-event-run-part-2-44660.htm',
-      note: 'The expert bet 26,000; the article’s pot figures don’t quite add up, so the closest size here is ¾ pot.',
-    },
   },
   {
     id: 'two-pair-river-size-wsop',
@@ -1970,11 +1746,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 3♥ misses every draw and they check. Their draws fold to any bet. Their kings think “all the draws missed” and will call, just not any amount.' },
     ],
     why: 'Keep it simple: what’s the most a king will surely call? About two-thirds of the pot gets called by every king. A pot-sized bet might fold some of them, and locking up the call is worth more than a slightly bigger bet that gets folded.',
-    source: {
-      by: 'Alec Torelli on PokerNews',
-      title: 'Alec Torelli’s WSOP Main Event Run Day 1C: Actionable Ways to Maximize Value',
-      url: 'https://www.pokernews.com/strategy/alec-torelli-2023-wsop-main-event-run-part-1-44499.htm',
-    },
   },
   {
     id: 'ak-high-turn-call-vs-lag',
@@ -2015,12 +1786,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 3♦ pairs the board and they bet again. This player bluffs too often: their range has lots of big cards and heart draws next to the pairs and trips.' },
     ],
     why: 'Ace-king beats every bluff, and you still have outs to aces, kings and the 4. Against a player who over-bluffs, call more often with bluff catchers like this. Raise only with hands like pairs and flush draws; ace high just wants to see the river cheaply.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Playing Out Of Position With A-K',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66566-mike-moncek-38-9/articles/25374-pokercoaching-com-quiz-playing-out-of-position-with-a-k',
-      note: 'The quiz says theory mixes calling and folding here and calling is the better choice against this opponent. No ante is given.',
-    },
   },
   {
     id: 'bottom-set-four-bet-pot-river',
@@ -2069,12 +1834,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 7♠ and you check. They bet again: A-A and A-K for value, plus the odd bluff.' },
     ],
     why: 'Your set beats aces and A-K, the hands that bet here, and you need about 28%: calling is the only good play. A raise would get A-A and A-K to fold and only K-K would call. In a tournament the chips you’d risk are worth more than the ones you’d win.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: A High-Stakes Tournament Quiz',
-      url: 'https://www.cardplayer.com/poker-news/24323-poker-strategy-with-jonathan-little-a-high-stakes-tournament-quiz',
-      note: 'The article’s pot figures run 7,000 above its own bets; the bets are used. The 25 ante per player is counted as one ante.',
-    },
   },
   {
     id: 'set-of-sixes-tiny-river-bet',
@@ -2126,12 +1885,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 8♥ and the cutoff bets a quarter of the pot. That’s a flush a lot of the time, but also two pair, smaller sets and one-pair hands betting small.' },
     ],
     why: 'Facing a tiny bet you need only about 17%. Folding is right only if you’re certain this player bets nothing but a flush, and you can’t be. Call: folding the best hand costs far more than paying off a flush now and then.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching Hand Quiz: Flopping A Set In A Multi-Way Pot',
-      url: 'https://www.cardplayer.com/poker-news/26906-poker-coaching-hand-quiz-flopping-a-set-in-a-multi-way-pot',
-      note: 'No ante is given; the table here is nine-handed (the quiz’s was eight).',
-    },
   },
   {
     id: 'set-of-queens-river-size',
@@ -2176,12 +1929,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The Q♥ gives you a set and they check. Their range is full of jacks, tens and overpairs that can call a decent bet, plus sets you now beat.' },
     ],
     why: 'Bet for value, sized for the hands that pay: a bet around two-thirds of the pot gets called by jacks, overpairs and sets. A third of the pot gets more calls but less money; an overbet folds the marginal hands you want to pay you.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching Hand Quiz: Playing An Overpair In A Three-Bet Pot',
-      url: 'https://www.cardplayer.com/poker-news/26751-poker-coaching-hand-quiz-playing-an-overpair-in-a-three-bet-pot',
-      note: 'Your suits aren’t given; the expert bets 16,000, which is about ¾ pot here.',
-    },
   },
   {
     id: 'top-pair-river-check-behind',
@@ -2222,12 +1969,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 2♣ misses your flush and they check. If you bet, two pair or better calls almost any size, and most one-pair hands fold.' },
     ],
     why: 'You’re often best, but betting only gets called by the hands that beat you; the worse pairs fold. With no read that they call down light, check behind and take the showdown.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching Hand Quiz: Facing A Tricky Turn Lead With Top Pair',
-      url: 'https://www.cardplayer.com/poker-news/26889-poker-coaching-hand-quiz-facing-a-tricky-turn-lead-with-top-pair',
-      note: 'No ante is given.',
-    },
   },
   {
     id: 'ace-king-bad-turn-fold',
@@ -2265,12 +2006,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 7♥ completes hearts and fills in straights, and the big blind leads out. Their range is full of the low cards this card helps.' },
     ],
     why: 'You’d call a turn bet with ace-king on almost any card, but not this one: the 7♥ makes flushes, straights and two pair for the big blind. When a really bad card hits and you face aggression, make the disciplined fold. Small mistakes like calling here grow into big ones.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching Hand Quiz: A Tough Turn For Big Slick',
-      url: 'https://www.cardplayer.com/poker-news/26513-poker-coaching-hand-quiz-a-tough-turn-for-big-slick',
-      note: 'No ante is given; the big blind’s stack is assumed to cover yours.',
-    },
   },
   {
     id: 'nut-flush-river-size-multiway',
@@ -2341,12 +2076,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 2♣ and both check to you. Checking twice caps them: overpairs, top pair and Q-J. Neither has a flush; they’d have bet it.' },
     ],
     why: 'Both players are capped, so a big bet or a shove rarely gets called. Bet small enough that an overpair, Q-J or a stubborn top pair still calls: that’s where the money is.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching Quiz: Turning The Nuts',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66530-pokerstars-napt-36-26/articles/24979-pokercoaching-quiz-turning-the-nuts',
-      note: 'The expert bets $100, between the ⅓ and ¾ pot sizes here; the table is nine-handed (the quiz’s was eight).',
-    },
   },
   {
     id: 'eights-full-river-raise',
@@ -2390,12 +2119,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The J♥ and they bet the pot. Overpairs Q-Q to A-A are 18 combos; J-J, T-T and quads are 7.' },
     ],
     why: 'Calling needs only about a third, but raising needs to beat more than half of the hands that would call, and it does: the 18 combos of Q-Q, K-K and A-A dwarf the 7 that beat you. Only their air folds to a raise. Just calling here is a clear river mistake: get the rest in.',
-    source: {
-      by: 'PokerNews strategy (Gareth Chantler)',
-      title: 'Hand Analysis: A Single-Raised Pot Gets Weird',
-      url: 'https://www.pokernews.com/strategy/hand-analysis-a-single-raised-pot-gets-weird-30939.htm',
-      note: 'Bets are the article’s (rake left out); you have 22bb left behind, as in the article.',
-    },
   },
   {
     id: 'jacks-incoherent-story',
@@ -2438,12 +2161,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 2♣ pairs the board and they bet the pot. The second deuce cuts their value combos further. Either they turned quads, or it’s a bluff.' },
     ],
     why: 'Their story doesn’t add up: a min-raise, a check, then a pot-sized bet. Nearly all of their value is gone, so this is a hand that gave up on the turn and is bluffing. You need a third; jacks beat every bluff. Call.',
-    source: {
-      by: 'PokerNews strategy (Gareth Chantler)',
-      title: 'Tell Me a Story: One Way Not to Bluff Online',
-      url: 'https://www.pokernews.com/strategy/tell-me-a-story-one-way-not-to-bluff-online-28664.htm',
-      note: 'The opening raise isn’t given (2.5bb is used). The article praises the call; the bettor showed J♠9♠.',
-    },
   },
   {
     id: 'fours-full-check-behind',
@@ -2489,12 +2206,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 4♣ puts trips on board. Every king or queen they hold now has a bigger full house than your sixes full. Pocket sixes play like a bluff here, and a poor one.' },
     ],
     why: 'Your full house loses to every hand that called the turn, and none of them fold to a shove. Bluff, if at all, with hands that block their calls, like A-J or A-5; sixes block nothing. Check and give up: shoving just loses another stack and a half.',
-    source: {
-      by: 'PokerNews strategy (Gareth Chantler)',
-      title: 'Knowing the Bottom of Your Range When Deciding Whether or Not to Bluff',
-      url: 'https://www.pokernews.com/strategy/know-bottom-of-your-range-when-deciding-to-bluff-31260.htm',
-      note: 'The small blind’s stack isn’t given (only “big”); 400bb is used.',
-    },
   },
   {
     id: 'set-of-tens-blocks-bluffs',
@@ -2541,11 +2252,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 5♦ completes diamonds and they shove. Their bluffs here are hands with a nine or a ten that can’t win a showdown, and you hold two of the tens.' },
     ],
     why: 'The worst bluff catchers are hands that block the bluffs, and your tens are exactly that. Jacks, flushes and bigger sets make up most of the shove, and you’re good less often than the 27% you need. Fold, and keep the 56bb.',
-    source: {
-      by: 'PokerNews strategy (Gareth Chantler)',
-      title: 'Call or Fold? On the Relationship Between Blockers and Bluff Catchers',
-      url: 'https://www.pokernews.com/strategy/call-or-fold-relationship-between-blockers-bluff-catchers-34414.htm',
-    },
   },
   {
     id: 'trips-vs-river-shove-fedor',
@@ -2587,12 +2293,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The Q♦ gives you trips and they shove for more than the pot. Value: A-A, K-K, A-Q, K-Q. Bluffs: every missed draw, which have to shove to balance the strong hands that checked.' },
     ],
     why: 'Your turn check made your range look weak, and the river shove targets that. But trips beat aces, kings and every missed draw; only A-Q and K-Q have you. You need about 35%. With a queen rolling off, the call is easy.',
-    source: {
-      by: 'Upswing Poker (Fried Meulders)',
-      title: 'How I Won €151 From Fedor Holz (Hand Analysis)',
-      url: 'https://upswingpoker.com/hand-vs-fedor-holz/',
-      note: 'The 3-bettor’s seat isn’t given; he’s in the small blind here, out of position as in the hand. The bettor showed T♥8♥.',
-    },
   },
   {
     id: 'king-high-overbet-bluff',
@@ -2637,12 +2337,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The A♥ and they check. Their best hands are a suited A♦x or K-T; everything else is a ten, a small pair or a missed draw.' },
     ],
     why: 'Checking only wins when they have nothing at all. A big overbet wins almost every time: their range is capped, and it tells them the worst you can have is a better ace. Play their range, not your cards. Bet big.',
-    source: {
-      by: 'Red Chip Poker',
-      title: 'Hand Analysis With Fox',
-      url: 'https://redchippoker.com/hand-analysis-with-fox/',
-      note: 'Flop suits are given only as “two diamonds”; the raise is sized from the article’s pot. Stacks aren’t given.',
-    },
   },
   {
     id: 'middle-set-river-raise',
@@ -2685,12 +2379,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 3♥ completes hearts and the wheel, and they bet two-thirds of the pot. That range is flushes and straights, but also overpairs, top pairs and smaller sets betting for value.' },
     ],
     why: 'Sets raise here even though flushes are possible: overpairs alone are a huge share of the hands that call a raise. You beat overpairs, top pairs and smaller sets, which together outnumber the flushes and wheels. Raise all in for value.',
-    source: {
-      by: 'GTO Wizard',
-      title: 'Are You Leaving Value on the River?',
-      url: 'https://blog.gtowizard.com/are_you_leaving_value_on_the_river/',
-      note: 'A solver example (the article names the middle set as the hand). No ante is given.',
-    },
   },
   {
     id: 'nines-full-small-river-bet',
@@ -2735,12 +2423,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 9♣ gives you nines full and they check. A king never folds, and it beats you now. Underpairs always fold. What’s left is ace high, Q-J and Q-T.' },
     ],
     why: 'A big bet only gets called by kings, which beat you. The hands you beat are weak, ace high and Q-J types, and they only call something small. Bet small, around a quarter to a third of the pot, and take value from them.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: A Rivered Full House',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66555-global-poker-37-25/articles/25245-pokercoaching-com-quiz-a-rivered-full-house',
-      note: 'The ante is left out (the article’s pot doesn’t include it); the table is nine-handed (the quiz’s was seven).',
-    },
   },
   {
     id: 'aces-crying-call-vs-min-raise',
@@ -2784,12 +2466,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The T♥ and they check. A ten or a nine checks here, so bet big for value. They min-raise: full houses and trips, or a bluff from paired tens and nines that block the full houses.' },
     ],
     why: 'The min-raise gives you a great price: you need to be good only about one time in five. A loose-aggressive player bluffs more than that, so make the crying call. Only fold if they see you as a calling station and never bluff you.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Getting Check-Raised On The River',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66534-cppt-venetian-37-4/articles/25016-pokercoaching-com-quiz-getting-check-raised-on-the-river',
-      note: 'No ante is given; the big blind’s stack is assumed to match yours. The raiser showed 8♠8♥.',
-    },
   },
   {
     id: 'two-pair-river-call-not-raise',
@@ -2836,12 +2512,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The K♦ gives you two pair and the small blind leads two-thirds of the pot. That line is mostly a king or a queen, with some better two pair.' },
     ],
     why: 'You beat the kings and queens that make up most of this bet, so folding is out. But a king or queen won’t call a raise, and the better two pairs would. Call: it wins against the hands you beat and loses the least when you’re beaten.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching Quiz: Rivering Two Pair',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66541-aram-zobian-37-11/articles/25087-pokercoaching-quiz-rivering-two-pair',
-      note: 'No ante is given. The bettor showed K♠J♣.',
-    },
   },
   {
     id: 'ten-high-overbet-jam',
@@ -2887,12 +2557,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The J♠ misses you. The cutoff checked the flop and just called the turn: an extremely capped, marginal range of pairs and weak kings.' },
     ],
     why: 'Their range is capped, and you could have flushes and straights here. Overbet all in: it puts their whole stack on a marginal hand and folds the pairs and weak kings that make up most of it. A small bet just gets called by them.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Bluffing Off In Multi-Way Pot',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66545-chris-moneymaker-37-15/articles/25126-pokercoaching-com-quiz-bluffing-off-in-multi-way-pot',
-      note: 'The table is nine-handed (the quiz’s was seven). The expert shoves (about 24.7bb); the biggest bet here is a 17.5bb overbet. The caller showed Q-Q and folded.',
-    },
   },
   {
     id: 'set-of-sevens-river-jam',
@@ -2948,12 +2612,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 3♣ misses the spades and they check. Busted draws fold to any size; tens, kings and even underpairs like 6-6 can call a big bet.' },
     ],
     why: 'Size doesn’t matter to the busted draws, so size for the hands that call: a calling station’s tens, kings and pairs. All in is only a slight overbet and gets the most from them.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Flopping A Set In A Multi-Way Pot',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66551-seth-davies-37-21/articles/25204-pokercoaching-com-quiz-flopping-a-set-in-a-multi-way-pot',
-      note: 'The table is nine-handed (the event’s was ten); the small blind is 0.5bb here, not 0.6.',
-    },
   },
   {
     id: 'top-set-turn-check-raise-all-in',
@@ -3012,12 +2670,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The Q♦ and they bet again. Their overpairs are still there, and the queen gives A-Q and K-Q top pair. A tight, passive player often checks the river, so the money has to go in now.' },
     ],
     why: 'Their range is overpairs, A-Q and K-Q, and you beat all of it but queens. They won’t bet three streets for you, so get the money in now: check-raise all in.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Playing a Set of Tens vs. a Tight Opponent',
-      url: 'https://www.pokernews.com/strategy/playing-a-set-of-tens-against-a-tight-opponent-33550.htm',
-      note: SIZES + ' Your $130 stack is 65bb; the raiser’s seat (the article’s MP2) is the lojack here.',
-    },
   },
   {
     id: 'kings-vs-aggressive-turn-shove',
@@ -3056,12 +2708,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 7♠ and they shove. Value: lots of pairs below kings, plus sets. Bluffs: 5-5, A-5 and A-3.' },
     ],
     why: 'They shove sets, but also every pair from eights to queens and draws like 5-5, A-5 and A-3. You beat almost all of that. You need about 35% and you have about 70%, so call.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Call or Fold? Facing a Turn Shove With Overpair of Pocket Kings',
-      url: 'https://www.pokernews.com/strategy/call-or-fold-turn-shove-overpair-pocket-kings-learnwpt-31283.htm',
-      note: SIZES + ' The seats and stacks aren’t given either; you’re on the button with 100bb.',
-    },
   },
   {
     id: 'top-pair-fold-turn-check-raise',
@@ -3100,12 +2746,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 4♣ changes nothing, you bet again and they check-raise. A raise on a blank, after calling the flop, is strong: sets and two pair. A few straight draws do it, but not many.' },
     ],
     why: 'Most players only check-raise this blank turn with two pair or better. One pair isn’t good enough after two rounds of aggression. You need about 26% and you have about 19%, so fold.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Call or Fold With Top Pair Versus Turn Check-Raise?',
-      url: 'https://www.pokernews.com/strategy/call-or-fold-with-top-pair-versus-turn-check-raise-30189.htm',
-      note: SIZES + ' Stacks aren’t given either; 100bb is used.',
-    },
   },
   {
     id: 'top-two-fold-to-flush-raise',
@@ -3160,12 +2800,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 6♠ completes spades. The big blind bets, you call, the button raises and the big blind calls again. The button’s raise is nearly always a flush, and the big blind calling a raise is strong too.' },
     ],
     why: 'The button’s raise is almost always a flush, and the big blind calling it makes strong hands even likelier. You’re drawing to four outs for a full house. You need about 18% and you have about 9%, so fold.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Top Two Pair vs. Turn Flush Card: Call or Fold?',
-      url: 'https://www.pokernews.com/strategy/top-two-pair-vs-turn-flush-card-call-or-fold-29825.htm',
-      note: SIZES + ' Stacks aren’t given either; 40bb is used.',
-    },
   },
   {
     id: 'kings-full-shove-short-stack',
@@ -3207,12 +2841,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 3♦ and they bet more than half the pot, leaving under 5bb. They do that with every ace. Only A-K, the last ace pair, A-5 and A-3 beat you.' },
     ],
     why: 'They bet every ace here, and you beat nearly all of them; only A-K, A-A, A-5 and A-3 have you. They have so little left that any ace will call. Raise all in.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching Hand Quiz: Getting Max Value From A Full House',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66482-high-stakes-poker-35-4/articles/24457-poker-coaching-hand-quiz-getting-max-value-from-a',
-      note: 'The table is nine-handed (the quiz’s was eight). The opener showed A-J.',
-    },
   },
   {
     id: 'kings-call-multiway-lead-shove',
@@ -3259,12 +2887,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 5♦ brings a second flush draw and the limper leads all in. A set might lead to protect itself, but there are far more flush draws than sets.' },
     ],
     why: 'A set could lead to protect itself, but there are only nine of them, and far more combos of the two flush draws. You need about 30% and you have about 47%, so call happily.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com: Pocket Kings In A Multi-Way Pot',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66547-bestbet-37-17/articles/25148-pokercoaching-com-pocket-kings-in-a-multi-way-pot',
-      note: 'The table is nine-handed (the quiz’s was ten), so you’re in the third seat. The limper showed J♦T♦.',
-    },
   },
   {
     id: 'aces-up-raise-small-river-bet',
@@ -3311,12 +2933,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The A♣ gives you aces up and they bet about a third of the pot. That’s an ace, a pocket pair, or a bluff. Only a full house beats you.' },
     ],
     why: 'You beat almost everything they bet: every weaker ace, every pocket pair, every bluff. A big raise still gets paid by their aces, which find it hard to fold to a raise. Raise.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Going For Full Value',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66543-global-poker-37-13/articles/25109-pokercoaching-com-quiz-going-for-full-value',
-      note: 'The suit of one deuce isn’t shown in the article; the 2♥ is used, which changes nothing. The expert raises to 55bb; the table is nine-handed (the quiz’s was eight).',
-    },
   },
   {
     id: 'trips-weak-kicker-river-call',
@@ -3366,12 +2982,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The K♣ gives you trips and they bet two thirds of the pot. A better king or a full house beats you. But they also bet a pair of jacks for value and busted straight draws, and your king makes their kings rarer.' },
     ],
     why: 'Better kings and full houses beat you, but you hold a king, so they have fewer of them. They also bet every pair of jacks and some busted straight draws. You need about 28% and you’re good about 70% of the time. You might be beaten, but you can’t fold.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Flopping Top Pair',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66539-chris-brewer-37-9/articles/25069-pokercoaching-com-quiz-flopping-top-pair',
-      note: 'The table is nine-handed (the quiz’s was eight). The opponent mucked.',
-    },
   },
   {
     id: 'two-pair-fold-river-lead',
@@ -3419,12 +3029,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 8♣ and they lead out for more than half the pot. From a straightforward player that’s jacks, straights like T-9 and 6-5, and paired eights. Real bluffs are rare.' },
     ],
     why: 'A straightforward player leads here with a jack, a straight or a paired eight, and all of those beat your sevens. They rarely bluff. A solver might call, but against this player and range, fold.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com: Facing A River Lead',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66524-jason-koon-and-phil-ivey-36-20/articles/24913-pokercoaching-com-facing-a-river-lead',
-      note: 'The small blind’s exact stack isn’t given (only that it covers you); 60bb is used. The opponent said they had T-9.',
-    },
   },
   {
     id: 'underpair-turn-call-vs-three-bettor',
@@ -3469,12 +3073,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 2♥ and they bet about 40% of the pot. Overpairs and top pair bet, but so do lots of unpaired high cards like K-J and A-K that missed. Your sevens beat all of those.' },
     ],
     why: 'They bet top pair and overpairs, but plenty of unpaired high cards bluff here too, and your sevens beat them. The price is excellent, so call. There’s no point raising: worse hands fold and better ones don’t.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com: Tough Spot With An Underpair',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66520-bestbet-36-16/articles/24872-pokercoaching-com-tough-spot-with-an-underpair',
-      note: 'The opponent’s stack isn’t given; it’s set to yours. They showed A♠6♠, a missed flush draw.',
-    },
   },
   {
     id: 'low-straight-just-call-river',
@@ -3530,12 +3128,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 9♠ and they bet about 60% of the pot. They bet 8-7 and 7-3, but also two pair for value and missed sevens as a bluff.' },
     ],
     why: 'Their bet is two pair or a missed seven as often as it’s 8-7 or 7-3. You need about 28% and you’re good about 68% of the time, so call. Don’t raise: the hands that call a raise are the ones that beat you.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Turning A Straight',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66537-global-poker-37-7/articles/25048-pokercoaching-com-quiz-turning-a-straight',
-      note: 'The flop and later folds aren’t all spelled out; everyone checks the flop and the others fold the turn. No ante is given; a 1bb big blind ante matches the pot sizes the article’s percentages imply. The big blind’s stack is set to yours. They showed 8♥7♦.',
-    },
   },
   {
     id: 'weak-flush-river-call',
@@ -3591,12 +3183,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'They only bet the 9♠ or better here, and most of the time they don’t have a spade at all, so a lot of this is bluffs. You need about 30% and you’re good about 45% of the time. Folding would be a blunder.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching Quiz: Small Pair With A Weak Flush Draw',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66527-isaac-haxton-36-23/articles/24945-pokercoaching-quiz-small-pair-with-a-weak-flush-draw',
-      note: 'The table is nine-handed (the quiz’s was eight). No ante is given; a 1bb big blind ante matches the pot sizes the article’s percentages imply. They showed Q♥T♦.',
-    },
   },
   {
     id: 'trips-call-river-shove-3bet-pot',
@@ -3640,12 +3226,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The J♦ gives you trips and they shove. Value: straights, full houses, better trips and some overpairs. Bluffs: missed spade draws, gutshots and combo draws, though they give up on about half of them.' },
     ],
     why: 'They shove straights and full houses, but also some overpairs and plenty of missed spade and straight draws. You need about 29% and you’re good about half the time. Call.',
-    source: {
-      by: 'Dan B. on Upswing Poker',
-      title: 'Brutal River In High Stakes Poker Game ($80,000 Pot Analysis)',
-      url: 'https://upswingpoker.com/addamo-vs-lemonhouse/',
-      note: 'They had T♥9♥ for a straight.',
-    },
   },
   {
     id: 'straight-never-fold-to-river-shove',
@@ -3691,12 +3271,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 6♦ pairs the board and they shove about the size of the pot. Queens and sets just made full houses, but A-Q and the overpairs shove here too.' },
     ],
     why: 'They shove full houses, but also A-Q and their overpairs, and there are far more of those. You need about 35% and you’re good about 70% of the time. A solver never folds a straight here; folding costs about 49bb.',
-    source: {
-      by: 'GTO Wizard on PokerNews',
-      title: 'Would You Fold This Hand? GTO Wizard Has Some Thoughts',
-      url: 'https://www.pokernews.com/strategy/would-you-fold-this-hand-gto-wizard-has-some-thoughts-47542.htm',
-      note: 'The blinds aren’t given; £5/£10 fits the sizes (the article says folding loses 49.4bb, or £494). Your stack is set to cover theirs. Zeb had Q♠Q♦, and Evan folded.',
-    },
   },
   {
     id: 'aces-full-call-quads-shove',
@@ -3742,12 +3316,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 6♠ and they shove. Every hand they have is a full house now, and you beat them all; only the 6♥ makes quads.' },
     ],
     why: 'You have the second nuts. Their kings full and sixes full all lose to you, and only two hands, the ones holding the 6♥, beat you. You need about 30% and you win nearly 80% of the time. The easiest call there is.',
-    source: {
-      by: 'Dan B. on Upswing Poker',
-      title: 'Quads vs Full House in High Stakes Poker Game',
-      url: 'https://upswingpoker.com/running-quads-vs-full-house/',
-      note: 'Stacks were $10,000, but the shove ($6,620) only fits a bit deeper; 110bb is used. Kevin had 7♥6♥ for quads.',
-    },
   },
   {
     id: 'second-pair-river-call-four-handed',
@@ -3795,12 +3363,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 3♥ misses every draw and they bet two thirds of the pot. They expect your check-call to be a weak hand that folds, so missed club draws and gutshots bluff here a lot.' },
     ],
     why: 'Lots of draws missed, and they’ll bluff them, expecting you to fold a weak made hand. You lose to top pairs, two pair and straights, but you beat every bluff. You need about 29% and you’re good about 33% of the time, so call.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Turning Middle Pair',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66559-tours-battle-for-december-38-2/articles/25293-pokercoaching-com-quiz-turning-middle-pair',
-      note: 'The table is four-handed, so the first two seats are empty. They showed K♦8♥.',
-    },
   },
   {
     id: 'queens-full-bet-big-not-overbet',
@@ -3846,12 +3408,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The Q♥ gives you queens full. A five calls a normal bet but rarely an overbet. A queen chops with you. Marginal pairs won’t call anything, and missed draws fold.' },
     ],
     why: 'Their trips will call a big bet about as often as a smaller one, so make it big. An overbet only gets called by calling stations: their fives fold to it. Bet about three quarters of the pot.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching: A Weird Spot With Top Pair',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66522-daniel-weinman-36-18/articles/24894-poker-coaching-a-weird-spot-with-top-pair',
-      note: 'The expert bets 115,000 into 146,000 (about 79%). The ante isn’t given and the article’s pot leaves it out; the button’s stack is set to yours. They folded.',
-    },
   },
   {
     id: 'top-pair-small-river-value-bet',
@@ -3894,12 +3450,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The T♠ and they check a third time. Weaker aces and a few two pairs are in there, but so are lots of nines and middle pairs that only call something small.' },
     ],
     why: 'Their range is weak and you beat most of it. A big bet folds the nines and middle pairs you beat; a small one gets called by hands like Q-9. Bet small. If they check-raise, you can usually fold.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching: Getting Full Value Against A Weak Range',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66521-global-poker-36-17/articles/24883-poker-coaching-getting-full-value-against-a-weak-range',
-      note: 'The expert bets $25 into $67 at $1/$2.',
-    },
   },
   {
     id: 'overpair-check-river-vs-tens',
@@ -3945,12 +3495,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 8♥ and they check again. They likely have a ten, which beats you and never folds. Otherwise it’s a weak pair or a busted draw, and those fold to any bet.' },
     ],
     why: 'A bet only gets called by a ten or a flush, which beat you. Everything you beat folds to any bet. So betting can only lose more. Check, unless they’re an extreme calling station.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching: Tough Spot For An Overpair',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66532-erik-seidel-37-2/articles/24996-poker-coaching-tough-spot-for-an-overpair',
-      note: 'The table is nine-handed (the quiz’s was eight). They had K♥T♥.',
-    },
   },
   {
     id: 'ace-high-river-bluff-vs-tight-3bet',
@@ -4003,12 +3547,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The T♠. Their range is worse than top pair: A-K, 8-8 and 7-7 beat your ace high but can’t stand a real bet. Only tens and K-Q got there.' },
     ],
     why: 'Their checks say they have less than top pair. A-K and the middle pairs beat you at showdown but fold to a decent bet, and a small bet lets them call. Bet about two thirds of the pot as a bluff.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: A-Q Against A Tight Three-Bet',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66550-scott-seiver-37-20/articles/25197-pokercoaching-com-quiz-a-q-against-a-tight-three-bet',
-      note: 'The expert bets 7,200 into about 10,700. They folded A-K face up.',
-    },
   },
   {
     id: 'aces-full-river-overbet-vs-tag',
@@ -4055,12 +3593,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 2♣ gives you aces full, the effective nuts. Their marginal hands fold to almost any bet. What calls is flushes, full houses, and the odd hero call with an ace and a spade.' },
     ],
     why: 'Their marginal hands fold to any bet, so don’t size for them. The hands that call (flushes, full houses, aces with a spade) call a big bet as readily as a small one. You don’t hold a spade, so they have all their flushes. Go for it all: bet as big as you can.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching: Going For Full Value',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66525-shaun-deeb-36-21/articles/24928-poker-coaching-going-for-full-value',
-      note: 'The expert shoves (about six and a half times the pot); the biggest bet here is a 125% overbet. The big blind’s stack is set to yours, and the table is nine-handed (the quiz’s was eight). They called with A♣J♠.',
-    },
   },
   {
     id: 'straight-flush-multiway-river-shove',
@@ -4124,12 +3656,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 5♥ gives you a straight flush. You have less than the pot behind. Both opponents call a shove with flushes, straights, sets and even two pair.' },
     ],
     why: 'You have less than the pot left, and with flushes, straights, sets and two pair around, someone will pay. Betting small to keep them in rarely makes sense here. Shove.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching: Turning All The Draws',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66523-phil-hellmuth-36-19/articles/24903-poker-coaching-turning-all-the-draws',
-      note: 'The opponents’ stacks are set to yours; the table is nine-handed (the quiz’s was seven). Both called.',
-    },
   },
   {
     id: 'trips-ace-kicker-river-overbet',
@@ -4172,12 +3698,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The K♠ gives you trips with the best kicker. Their range is a missed draw or a low pair. Missed draws fold to anything; the low pairs are bluff-catchers.' },
     ],
     why: 'Their turn check capped them at missed draws and low pairs, and you beat all of it. A big bet loses a few of the weakest pairs, but wins much more each time it’s called. Bet as big as you can.',
-    source: {
-      by: 'Dan B. on Upswing Poker',
-      title: 'LLinusLLove vs Kevin Paqué in a CGWC High-Stakes Showdown',
-      url: 'https://upswingpoker.com/llinusllove-vs-kevin-paque-cgwc/',
-      note: 'The expert shoves (about 1.9 times the pot); the biggest bet here is a 125% overbet. Linus called with 5♥5♦.',
-    },
   },
   {
     id: 'ace-five-fold-to-river-overbet',
@@ -4225,12 +3745,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their overbet is full houses and trip queens, or ace-high bluffs. You only beat the bluffs, and your ace removes some of them. You need about 38% and you’re good about 28% of the time. The solver folds A-5 here almost always; a five without an ace would be a better bluff catcher.',
-    source: {
-      by: 'GTO Wizard (Lukas Robinson) on PokerNews',
-      title: 'Is This Sick Hero Call by Alex Foxen in $250K Tournament Solver Approved?',
-      url: 'https://www.pokernews.com/strategy/is-this-sick-hero-call-by-alex-foxen-gto-wizard-approved-52108.htm',
-      note: 'The table size isn’t given; nine-handed is used. Foxen called and won, but the solver folds: Chidwick had A♣T♣.',
-    },
   },
   {
     id: 'top-pair-call-lag-river-barrel',
@@ -4280,12 +3794,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'J-T, 7-6 and two pair beat you, but this player arrives here with lots of missed draws and keeps firing them. You need about 30% and you’re good about 34% of the time. It’s a call with top pair, top kicker unless they never bluff.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching Hand Quiz: Top Pair Facing A Lot Of Aggression',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66481-ali-imsirovic-35-3/articles/24446-poker-coaching-hand-quiz-top-pair-facing-a-lot-of-aggression',
-      note: 'The table is nine-handed (the quiz’s was eight). They showed K♦6♦, a missed flush draw.',
-    },
   },
   {
     id: 'ace-king-call-splashy-river-lead',
@@ -4336,12 +3844,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their lead could be two pair or a set, but from a splashy player it’s often a worse ace making a blocker bet. You need about 25% and you’re good about 55% of the time. Call; fold only against a very weak, tight, straightforward player.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching Quiz: Top Pair Facing A River Lead',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66491-phil-galfond-35-13/articles/24552-pokercoaching-quiz-top-pair-facing-a-river-lead',
-      note: 'A $25/$50 game; the dollar amounts are turned into big blinds. The small blind’s stack is set to yours. They showed A♥7♠.',
-    },
   },
   {
     id: 'flush-river-all-in-vs-checked-turn',
@@ -4390,12 +3892,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'After they checked the turn, a bluff from them is unlikely, so you won’t win more by checking. Their jacks and aces call even a shove, and you beat both. Go all in.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching Quiz: Getting Paid On A Turned Flush',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66490-2022-wsop-live-on-pokergo-35-12/articles/24539-pokercoaching-quiz-getting-paid-on-a-turned-flush',
-      note: 'With 9.25bb behind, the ¾-pot bet and the overbet are both all in. The chip leader’s stack isn’t given; 60bb is used. They called with A♠5♠.',
-    },
   },
   {
     id: 'two-pair-river-value-vs-aces',
@@ -4449,12 +3945,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 9♣ and they check. Underpairs fold to any bet; the hands that pay you are worse aces.' },
     ],
     why: 'Your targets are worse aces, and they’ll call a solid bet but not a shove; underpairs fold whatever you do. Bet about ¾ of the pot; a smaller bet is fine too. Don’t shove: nothing worse calls.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching Quiz: Getting Value From Top Pair',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66489-global-poker-35-11/articles/24533-poker-coaching-quiz-getting-value-from-top-pair',
-      note: 'The expert bets 2,400,000 into 3,350,000 and calls 1,200,000 one of the best options too. They folded K-K face up.',
-    },
   },
   {
     id: 'aces-river-shove-one-to-one',
@@ -4505,12 +3995,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'The draws missed and will fold anyway, so size for the one-pair hands that call. With about a pot left behind, go all in: a queen won’t fold often enough for a smaller bet to be better.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Aces On A Draw Heavy Board',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66557-gambledore-crushes-triton-37-27/articles/25270-pokercoaching-com-quiz-aces-on-a-draw-heavy-board',
-      note: 'With 85bb behind, the overbet here is all in. UTG’s stack is set to yours. They folded, presumably a busted draw.',
-    },
   },
   {
     id: 'set-river-shove-vs-sticky-player',
@@ -4566,12 +4050,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 3♣ misses every draw and they check. A player like this calls with any pair; the busted draws fold whatever you bet.' },
     ],
     why: 'The draws missed and will fold to anything, but this player calls with any pair. So bet the most you can: all in, a bit more than the pot. A smaller bet just loses value against the pairs that would have called anyway.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Flopping A Set Against Four Opponents',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66561-jeremy-ausmus-38-4/articles/25316-pokercoaching-com-quiz-flopping-a-set-against-four-opponents',
-      note: 'With 70.6bb behind, the overbet here is all in. The blinds were 300/500 (a 0.6bb small blind); 0.5bb is used. The table is nine-handed (the quiz’s was ten). They folded 5♠4♠.',
-    },
   },
   {
     id: 'nut-flush-river-big-bet-paired-board',
@@ -4620,12 +4098,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'You have the effective nuts. Their second-best hands (two pair, straights, smaller flushes) call whatever you bet, so make it big. Only the one-pair hands care about size, and they’re not who you’re betting for.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Getting Value From A Flush',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66563-joey-weissman-38-6/articles/25340-pokercoaching-com-quiz-getting-value-from-a-flush',
-      note: 'The expert bets 31,000 into about 21,600; the closest size here is the 125% overbet. The big blind’s stack is set to yours. They mucked.',
-    },
   },
   {
     id: 'top-pair-value-monotone-river',
@@ -4674,12 +4146,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 6♣ and you’re first. They have lots of worse jacks, nines, eights and small pairs, and those call a normal bet. A huge one folds them.' },
     ],
     why: 'Their turn check takes most of the hands that beat you out of their range, and plenty of worse made hands are left. Bet for value at a size they’ll call: about half to ¾ of the pot. A huge bet folds the hands you beat, and checking only works against someone who bluffs a lot.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Top Pair On Monotone Board',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66553-tyler-ninja-blevins-37-23/articles/25227-pokercoaching-com-quiz-top-pair-on-monotone-board',
-      note: 'The expert calls 10,000 and 15,000 into 22,918 both strong; the closest sizes here are ⅓ and ¾. The table is nine-handed (the quiz’s was eight). The hijack showed A♦4♣.',
-    },
   },
   {
     id: 'set-call-river-lead-straight-board',
@@ -4728,12 +4194,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 8♥ puts a straight out and they lead more than half the pot. Plenty of straights are in their range, but so are sets and two pair betting thin.' },
     ],
     why: 'Any five and T-9 beat you, and a loose defender has lots of those. But they also lead sets and two pair for thin value, and your set beats all of them. You need about 26% and you’re good about 33% of the time. Fold only if you’re sure they only ever lead a straight here.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Pocket Queens On A Low Flop',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66560-adrian-mateos-38-3/articles/25304-pokercoaching-com-quiz-pocket-queens-on-a-low-flop',
-      note: 'The table is nine-handed (the quiz’s was seven). The big blind’s stack is set to yours. They had 5♣5♠ for a straight.',
-    },
   },
   {
     id: 'ace-high-check-river-vs-flop-raiser',
@@ -4778,12 +4238,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 6♦. Their overpairs, trips and straights never fold. Their missed draws would fold to a bet, and if you check they may bluff with them.' },
     ],
     why: 'A bet only gets called by overpairs and better, which beat you, and folds the missed draws you could beat. Your ace high has some showdown value, and checking lets their busted draws bluff. Check; never shove here.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Coaching Quiz – Facing A Flop Raise With Ace High',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66486-jeremy-ausmus-35-8/articles/24497-poker-coaching-quiz-facing-a-flop-raise-with-ace-high',
-      note: 'The table is nine-handed (the quiz’s was seven). The button’s stack is set to yours. They showed A♣2♣ and it was a chop.',
-    },
   },
   {
     id: 'king-high-fold-blocks-bluffs',
@@ -4840,12 +4294,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'King high only beats their bluffs, and there are very few of them. Your king blocks their most natural bluffs, the K-x hands. The price is good, but not good enough: you need about 20% and you’re good only about 8% of the time. King-ten should go in the muck.',
-    source: {
-      by: 'GTO Wizard on PokerNews',
-      title: 'Was This King-High Call GTO Genius or a Punt Gone Right? GTO Wizard Explains',
-      url: 'https://www.pokernews.com/strategy/gto-wizard-king-high-hero-call-triton-poker-49890.htm',
-      note: 'Shingae called and won against J♥T♥, but the solver folds K-T here. The first seat is empty (five-handed).',
-    },
   },
   {
     id: 'straight-raise-river-paired-board',
@@ -4896,12 +4344,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The Q♠ pairs the board. You check and they bet small. That’s a queen or a jack for value, plus a few full houses.' },
     ],
     why: 'The paired board makes full houses possible, but most of their small value bets are trip queens and jacks, which your straight beats. Those hands will call a raise. Check-raise for value.',
-    source: {
-      by: 'Jonathan Little on PokerNews',
-      title: 'Daniel Negreanu Lays a Trap on Way to $3.3 Million SHRB Victory',
-      url: 'https://www.pokernews.com/strategy/daniel-negreanu-lays-a-river-trap-45910.htm',
-      note: 'Three-handed, so the first three seats are empty. Stacks aren’t given; 60bb is used. Negreanu raised to 580,000 (the raise here is 3x) and Petrangelo called with K♠Q♥.',
-    },
   },
   {
     id: 'quads-river-overbet-vs-aces',
@@ -4954,12 +4396,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Every ace they have calls, whatever you bet; it’s near impossible to fold aces full or trip aces. So bet big: an overbet wins far more from those hands than a normal bet loses from the pairs that would only call small.',
-    source: {
-      by: 'Josh Jones on Upswing Poker',
-      title: 'The Filthiest Hand from the $10,000,000 Wynn Millions (Analysis)',
-      url: 'https://upswingpoker.com/bryn-kenney-vs-alex-foxen-wynn-millions/',
-      note: 'The opener’s seat and size aren’t given (the article assumes 2.2bb); the second seat is used. The blinds were 1,500/2,500; 0.5bb is used for the small blind. Foxen overbet 44.8bb; Kenney check-raised all in with A♦Q♣ and Foxen called.',
-    },
   },
   {
     id: 'aces-full-fold-river-raise',
@@ -5019,12 +4455,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Your small lead was a clever block bet, but a shove over it is only quads or a seven, and both beat aces full. Nothing worse shoves here. It hurts, but fold.',
-    source: {
-      by: 'David Lappin on Upswing Poker',
-      title: 'Should He Fold Pocket Aces to a Close Friend? (Analysis)',
-      url: 'https://upswingpoker.com/lappin-vs-dara/',
-      note: 'The analysis is by the player who shoved. The blinds were 200/300; 0.5bb is used for the small blind. Lappin had 5♦4♦.',
-    },
   },
   {
     id: 'trip-eights-pot-bet',
@@ -5077,12 +4507,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Most of what you beat here is missed flush draws, and there are a lot of them, so folding is out: you need about a third and you’re good more often than that. Don’t raise: the missed draws fold, and the hands that call (better trips, full houses, straights) mostly beat you. Just call.',
-    source: {
-      by: 'LearnWPT on PokerNews',
-      title: 'Trip Eights on the River vs. a Pot-Sized Bet',
-      url: 'https://www.pokernews.com/strategy/trip-eights-on-the-river-vs-a-pot-sized-bet-31694.htm',
-      note: 'Bet sizes, stacks and the table size aren’t given in the article (only that the river bet is pot-sized); standard ones are used, with no ante.',
-    },
   },
   {
     id: 'top-pair-four-flush-fold',
@@ -5138,12 +4562,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'On most boards top pair calls here, but not with four clubs out. The button has plenty of strong clubs, and they bet as if you can’t have one. You beat only a few bluffs, well under the quarter you need. Fold.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Top Pair On A Scary Board',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66528-global-poker-36-24/articles/24954-pokercoaching-com-quiz-top-pair-on-a-scary-board',
-      note: 'No ante is given; the table is nine-handed (the quiz’s was eight). The quiz’s blinds are 1,000-1,500, so the small blind is 0.5bb here, not ⅔; 80,000 is used as everyone’s stack.',
-    },
   },
   {
     id: 'marginal-top-pair-induced-raise',
@@ -5195,12 +4613,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'This raise is the action your small bet invited. You hold no hearts, so you don’t block any of the missed draws they’d bluff with, and a loose-aggressive player has plenty of them. You need about a third and you’re ahead more often than that. Call.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Dealing With Marginal Top Pair',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66549-women-in-poker-37-19/articles/25172-pokercoaching-com-quiz-dealing-with-marginal-top-pair',
-      note: 'The table here is six-handed (the quiz’s was eight); the article’s pot figures don’t add up with its own bets, so the bets are used. The raiser showed K♦Q♦.',
-    },
   },
   {
     id: 'top-pair-ace-river-chop',
@@ -5249,12 +4661,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'You’ve improved, but most hands that bet here are aces that split the pot with you; some beat you, and few kings are left after their turn check. Folding gives up a pot you often share, so call. Raising doesn’t work: the aces you chop with won’t fold to a small raise, and a big one only gets called by hands that beat you.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Rivering Top Pair',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66542-pokergo-wsop-37-12/articles/25095-pokercoaching-com-quiz-rivering-top-pair',
-      note: 'The opener’s stack isn’t given; yours (70,000) is used for both. The table is nine-handed (the event’s was eight). The bettor showed A♠K♣.',
-    },
   },
   {
     id: 'trip-nines-shoved-on',
@@ -5296,12 +4702,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'You put the most pressure you could on this board, and they moved all in anyway. Your five doesn’t play, so every better nine beats you and every full house does too. Trips here only catch bluffs, and a regular raising all in rarely has one. Fold.',
-    source: {
-      by: 'PokerNews strategy (Gareth Chantler)',
-      title: 'The Nuts That Weren’t; or, I’d Rather Be Good Than Lucky',
-      url: 'https://www.pokernews.com/strategy/the-nuts-that-werent-rather-be-good-than-lucky-31781.htm',
-      note: 'Stacks aren’t given; 127bb is used, so the shove is the article’s $90 more. The article gives no bluffs, only that they’re rare, so a few missed club draws stand in for them. The shover showed 4♥4♦.',
-    },
   },
   {
     id: 'eights-polarised-river-call',
@@ -5353,12 +4753,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Against a half-pot bet you need to be good only about a quarter of the time. They check-called the flop with a lot of single big spades, and those missed, so their range holds plenty of bluffs. Raising does nothing, since the bluffs fold and the value doesn’t. Call.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'PokerCoaching.com Quiz: Eights Are Great Sometimes',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66556-venetian-deepstack-37-26/articles/25254-pokercoaching-com-quiz-eights-are-great-sometimes',
-      note: 'The table is nine-handed (the quiz’s was eight); the opener’s stack isn’t given, so yours is used. The bettor showed A♠T♠.',
-    },
   },
   {
     id: 'queens-block-bluffs-fold',
@@ -5407,12 +4801,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Blockers can work against you. Your two queens take away many of the K-Q and Q-J hands they’d bluff with, and leave every ace and set. You need about 30% and you’re ahead less often than that. A hand that called the turn isn’t always good enough on a blank river: fold.',
-    source: {
-      by: 'PokerNews strategy (Gareth Chantler)',
-      title: 'Learn to Notice When Your Hand Blocks Bluffs, Too',
-      url: 'https://www.pokernews.com/strategy/learn-to-notice-when-your-hand-blocks-bluffs-too-32099.htm',
-      note: 'Stacks aren’t given; 100bb is used, which makes the $61 shove all in. The article’s middle-position opener is the hijack here. The player called and lost to A♥T♥.',
-    },
   },
   {
     id: 'kj-full-house-fold-river-shove',
@@ -5457,12 +4845,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A full house sounds too good to fold, but here yours only beats a bluff. Every pair they’d call a 4-bet with now makes a bigger full house, and they’d rarely turn a missed hand into a river shove. You need to be good about a quarter of the time, and you’re good only about one time in five. Fold.',
-    source: {
-      by: 'PokerNews strategy (Gareth Chantler)',
-      title: 'Hand Analysis: You Can Fold a Full House',
-      url: 'https://www.pokernews.com/strategy/hand-analysis-you-can-fold-a-full-house-29515.htm',
-      note: 'The article names the bluffs (A-Q, K-Q) as possible but rare, so they’re in at a low weight. The player called and lost to A♦A♥.',
-    },
   },
   {
     id: 'ace-ten-hero-call-paired-board',
@@ -5510,12 +4892,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'The weak pairs that beat you check here, so the bet is a jack, a bigger hand or a bluff, and an aggressive player has plenty of busted straight draws. You need about a quarter and you’re good more often than that. Call; raising only folds the bluffs and gets called by better.',
-    source: {
-      by: 'Jonathan Little on PokerNews',
-      title: 'Poker Coaching with Jonathan Little: Bluff Catching',
-      url: 'https://www.pokernews.com/strategy/poker-coaching-with-jonathan-little-bluff-catching-28836.htm',
-      note: 'The table is nine-handed (table size isn’t given; the 75 ante per player matches the article’s pot). The turn is printed as “Js”. The article’s range is in words only (“a jack, a better made hand, or a bluff”); the hands and weights here follow it. The bettor showed 5♥2♥.',
-    },
   },
 
   {
@@ -5556,7 +4932,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 6♥ misses their spade draws and their T-8, Q-T and K-T. A worse nine wouldn’t bet, so you beat none of their value, but their missed T-8, Q-T, K-T and spade draws have no other way to win.' },
     ],
     why: 'Their bet is only half the pot, and players at this level usually bet bigger when they beat you. With so many missed draws in their range after you checked back the turn, a call is a nice bluff catch.',
-    source: { by: HHP_BY, title: HERO_CALL, url: 'https://www.youtube.com/watch?v=ewfxSHN09CU&t=148s', note: MADE_UP },
   },
   {
     id: 'middle-pair-call-button-triple-barrel',
@@ -5598,7 +4973,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 3♣ pairs the board. Their value is tens and better, which beats you, but a button that bets this wide still has lots of 9-7, 6-5, J-9, Q-9 and missed hearts with nothing.' },
     ],
     why: 'You don’t beat their value, but you only need to be good about a quarter of the time against a half-pot bet, and a wide button range has plenty of hands that missed. Call.',
-    source: { by: HHP_BY, title: HERO_CALL, url: 'https://www.youtube.com/watch?v=ewfxSHN09CU&t=326s', note: MADE_UP },
   },
   {
     id: 'two-pair-call-polar-ace-river',
@@ -5639,7 +5013,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The A♦. Weak aces would check here and take a showdown, so this bet is polarised: strong aces, trips, straights and full houses, or missed draws.' },
     ],
     why: 'Against a polarised bet you’re a pure bluff catcher: you lose to all their value and beat all their bluffs. They have enough missed Q-J, K-J and J-8 to make a call pay. Just call; raising only folds out the bluffs you beat.',
-    source: { by: HHP_BY, title: HERO_CALL, url: 'https://www.youtube.com/watch?v=ewfxSHN09CU&t=2012s', note: MADE_UP },
   },
   {
     id: 'jacks-river-overbet-bluff-vs-reg',
@@ -5683,7 +5056,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 6♠ and they check. Your jacks beat almost nothing that called twice. Their weak aces and K-Q can’t call a huge bet.' },
     ],
     why: 'Checking gives up: your jacks beat almost nothing they’d call twice with. A huge bet makes a decent player fold A-9, A-8, A-7 and K-Q nearly every time, and your jacks make K-J, their one common strong hand, unlikely. Go big.',
-    source: { by: HHP_BY, title: JACKS, url: 'https://www.youtube.com/watch?v=HOq682jc1LA&t=2190s', note: 'A viewer’s $5/$10 hand reviewed in the video.' },
   },
   {
     id: 'ace-high-call-half-pot-river-lead',
@@ -5722,7 +5094,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 2♦ and they bet half the pot. After a checked turn, players with trips or top pair get greedy and bet bigger; small bets carry more missed draws.' },
     ],
     why: 'A bet of 60% of the pot or less after the turn checks through is weighted toward missed draws like T-8, Q-T, K-T and spades, all of which your ace beats. You only need to win about a quarter of the time. Call.',
-    source: { by: HHP_BY, title: NINETY, url: 'https://www.youtube.com/watch?v=7zlh-B0dSII&t=1079s', note: MADE_UP },
   },
   {
     id: 'ace-high-fold-pot-size-river-lead',
@@ -5761,7 +5132,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 2♦, and this time they bet the whole pot. Players are meant to bluff more with big bets, but most live players bluff less the bigger they go.' },
     ],
     why: 'Same hand, bigger bet. Above about 60% of the pot their range is weighted toward jacks, trips and full houses, and they under-bluff it. Against a range that under-bluffs, every bluff catcher does better as a fold. Fold.',
-    source: { by: HHP_BY, title: NINETY, url: 'https://www.youtube.com/watch?v=7zlh-B0dSII&t=1290s', note: `${MADE_UP} Marc reuses the hand above with a bigger river bet.` },
   },
   {
     id: 'bottom-pair-call-small-river-bet',
@@ -5800,7 +5170,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 2♠ and they bet half the pot. Their club draws, J-T, 7-6 and floated aces all missed and have no way to win but to bet.' },
     ],
     why: 'Wide against wide, they get to the river with lots of hands that have nothing, and a small bet after a checked turn is where those bluffs show up. Your threes beat all of them. Call.',
-    source: { by: HHP_BY, title: NINETY, url: 'https://www.youtube.com/watch?v=7zlh-B0dSII&t=1253s', note: MADE_UP },
   },
   {
     id: 'queens-fold-ace-flush-river-3bet-pot',
@@ -5841,7 +5210,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 2♣ and they bet over 60% of the pot. Their draws got there, their aces got there, and 9-9 or T-T wouldn’t bet.' },
     ],
     why: 'In a tight early-position 3-bet pot there are hardly any natural bluffs left: the flushes and aces got there, and small pairs don’t bet. Their range is nearly all value. An easy fold with queens.',
-    source: { by: HHP_BY, title: NINETY, url: 'https://www.youtube.com/watch?v=7zlh-B0dSII&t=1384s', note: MADE_UP },
   },
   {
     id: 'sevens-call-small-bet-king-river-3bet-pot',
@@ -5881,7 +5249,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The K♦. When a king lands after you 3-bet and checked the turn, they put you on A-K: they won’t bet tens or jacks thinly. They bet with a king or better, or with nothing.' },
     ],
     why: 'Even though the bet is small, their range is polarised: kings and better, or Q-J, A-Q and A-J that floated the flop. You beat all of those bluffs and get a good price. Just call; raising only folds out the hands you beat.',
-    source: { by: HHP_BY, title: NINETY, url: 'https://www.youtube.com/watch?v=7zlh-B0dSII&t=1971s', note: MADE_UP },
   },
   {
     id: 'second-pair-check-river-out-of-position',
@@ -5921,7 +5288,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 2♣. You beat their ace highs, smaller pairs and worse nines. A bet only gets called by queens, kings, flushes and better nines.' },
     ],
     why: 'Wide against wide, after a small c-bet and a checked turn, your nines have showdown value: you beat lots of ace highs, smaller pairs and worse nines. A bet folds those and gets called by better. Check and get to showdown.',
-    source: { by: HHP_BY, title: NINETY, url: 'https://www.youtube.com/watch?v=7zlh-B0dSII&t=1460s', note: MADE_UP },
   },
   {
     id: 'ace-ten-fold-utg-triple-barrel',
@@ -5963,7 +5329,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 6♥ and a third bet. On an ace-high board their natural bluffs are only J-T and K-T. Live players don’t turn K-8 or small pairs into triple barrels, and they bet A-K and A-Q for value.' },
     ],
     why: 'Ace-high boards give an early opener very few natural bluffs: J-T and K-T, and little else. Players rarely find the odd ones, and they value-bet their better aces. Your A-T is a bluff catcher against a range that’s nearly all value. Fold.',
-    source: { by: HHP_BY, title: UNDER, url: 'https://www.youtube.com/watch?v=q5uzRc2fBwk&t=405s', note: `${MADE_UP} Marc works out the answer with a solver, set to how he sees live players play this spot.` },
   },
   {
     id: 'top-pair-fold-turn-raise-after-checked-flop',
@@ -5999,7 +5364,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The J♦. You bet half the pot and they raise three times your bet. A player who checked the flop with nothing doesn’t start raising a gutshot or a jack here, and top pair doesn’t play this fast. This is sets, K-J and the odd slowplayed aces.' },
     ],
     why: 'In theory K-Q continues here, but live players hardly ever raise this turn as a bluff after checking the flop. Against sets, two pair and aces you’re nearly drawing dead. Fold.',
-    source: { by: HHP_BY, title: UNDER, url: 'https://www.youtube.com/watch?v=q5uzRc2fBwk&t=811s', note: `${MADE_UP} Marc works out the answer with a solver, set to how he sees live players play this spot.` },
   },
   {
     id: 'top-two-fold-big-river-bet-after-check-raise',
@@ -6043,7 +5407,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The K♣ gives you two pair and they bet over 100 big blinds. You’ve looked strong all hand, and they have almost no hands with nothing left: maybe 6-5 suited.' },
     ],
     why: 'The worst hand they bet this big is A-Q or 4-4, both of which beat you. You check-raised and made the pot huge, so they rarely bluff, the bet is huge for the game, and they have hardly any missed hands. Against an under-bluffed range every bluff catcher folds, even two pair.',
-    source: { by: HHP_BY, title: BUST, url: 'https://www.youtube.com/watch?v=bRdF4OUXy4Q&t=477s', note: `${MADE_UP} Stacks are $1,500 (300bb). Marc calls your seat the lojack; the replay shows it as the second to act, the hijack.` },
   },
   {
     id: 'queens-overbet-blank-turn-capped-range',
@@ -6081,7 +5444,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 3♦ changes nothing and they check. Their best hand is usually A-J or K-J, and they won’t fold that, or their draws, to any size.' },
     ],
     why: 'They’re capped: they’d have raised their sets and two pair on the flop. When their best hands are jacks that won’t fold, put the money in while you can and go big.',
-    source: { by: HHP_BY, title: HUGE, url: 'https://www.youtube.com/watch?v=QX4SMbCOBrY&t=20s', note: `${MADE_UP} Opens are $20.` },
   },
   {
     id: 'nut-flush-overbet-turn-vs-check-raiser',
@@ -6117,7 +5479,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 3♠ gives you the nut flush and they check. A player who check-raises a flush draw is aggressive and would keep betting it, so they rarely have a flush.' },
     ],
     why: 'Their sets and two pair can make a full house, so they won’t fold to any size this turn. That means the bigger you bet, the more you win.',
-    source: { by: HHP_BY, title: HUGE, url: 'https://www.youtube.com/watch?v=QX4SMbCOBrY&t=393s', note: `${MADE_UP} Opens are $20.` },
   },
   {
     id: 'aces-fold-turn-check-raise',
@@ -6154,7 +5515,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The J♠. You bet big to get value from kings and they check-raise. You’ve done nothing but bet, and live players almost never check-raise the turn as a bluff into that. It’s K-J, two pair and sets.' },
     ],
     why: 'When you’ve taken every aggressive action and they answer with a turn check-raise, it isn’t a bluff: it’s K-J, two pair and sets. Your aces are almost drawing dead against that. Throw them away.',
-    source: { by: HHP_BY, title: WHERE, url: 'https://www.youtube.com/watch?v=zX8K86Zldic&t=665s', note: MADE_UP },
   },
   {
     id: 'set-fold-big-river-donk-flush',
@@ -6194,7 +5554,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 6♣ completes the clubs and they lead for over half the pot. You’ve bet every street; they aren’t turning K-Q into a big bluff here.' },
     ],
     why: 'When you’ve shown nothing but aggression and they lead big as soon as the flush comes in, it’s flushes almost every time. Bluffs in this spot are very rare. Your set is a bluff catcher, and it’s a fold.',
-    source: { by: HHP_BY, title: WHERE, url: 'https://www.youtube.com/watch?v=zX8K86Zldic&t=430s', note: MADE_UP },
   },
   {
     id: 'second-pair-call-small-river-after-stab',
@@ -6233,7 +5592,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The Q♠ and another small bet. Players often bet twice with hands like 3-3, 4-4 or a missed straight draw once they think you’re weak.' },
     ],
     why: 'After you check back the flop, players over-bluff with small bets on the turn and river, often with small pairs and missed draws. Call with your pairs, from the top down: nines are a much better call than king high.',
-    source: { by: HHP_BY, title: WHERE, url: 'https://www.youtube.com/watch?v=zX8K86Zldic&t=1120s', note: MADE_UP },
   },
   {
     id: 'middle-pair-call-small-river-after-checked-turn',
@@ -6272,7 +5630,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 2♦ and they bet half the pot. When live players make a strong hand here they get greedy and bet big; with a bluff they fear a call and bet small.' },
     ],
     why: 'They call too wide, raise their strong flop hands, and get to the river with lots of missed gutshots and overcards. A small bet after you check the turn is where those bluffs show up. You’re good here a lot. Call.',
-    source: { by: HHP_BY, title: WHERE, url: 'https://www.youtube.com/watch?v=zX8K86Zldic&t=1484s', note: MADE_UP },
   },
   {
     id: 'seven-high-river-overbet-bluff-capped',
@@ -6312,7 +5669,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 3♣ misses everything and they check. They almost never have better than A-J. If you had aces you wouldn’t bet this big to get called by A-J, so this size is where A-J folds.' },
     ],
     why: 'They’re so capped that their best hand is usually A-J or K-J, and their missed draws can’t call. Bet huge and you fold out everything but the odd set or straight.',
-    source: { by: HHP_BY, title: BLUFF5, url: 'https://www.youtube.com/watch?v=RZs502lh4Q8&t=170s', note: `${MADE_UP} Opens are $20.` },
   },
   {
     id: 'king-flush-shove-over-river-check-raise',
@@ -6358,12 +5714,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The 4♠ gives you a king-high flush. You bet small and they raise to half their stack. A late-position opener has more small suited hands than usual, so more lower flushes, plus straights, and only a few A♠-x flushes beat you. Your small bet also invites bluff raises.' },
     ],
     why: 'Only the handful of ace-high flushes beat you. Lower flushes, straights and sets all lose to you and they’re already half in, and some raises are bluffs at your small bet. You’re way ahead of what they raise with, so put the rest in. Charlie says all in.',
-    source: {
-      by: 'Charlie Carrel',
-      title: 'THE TRUTH - How Good Is Jonathan Little REALLY?',
-      url: 'https://www.youtube.com/watch?v=tPQyBMciHPo&t=2044s',
-      note: 'Jonathan Little’s hand from Day 1 of the WSOP Canada Main Event (no ICM yet), reviewed by Charlie. The vlog doesn’t say how many were dealt in; nine-handed is used. Jonathan shoved and the cutoff folded.',
-    },
   },
   {
     id: 'bottom-pair-fold-small-river-bet-multiway',
@@ -6411,12 +5761,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The Q♥. You check and they bet small. After checking the turn, this is a one-pair hand going for a little value: a queen, a ten, an overpair, threes. A raise won’t make any of that fold.' },
     ],
     why: 'Your big flop lead folded out the ace highs you could beat, so their range is pairs, and every one of them beats a deuce. A small bet here is almost always value. You can’t raise them off it, so fold.',
-    source: {
-      by: 'Charlie Carrel',
-      title: 'He Claims He Crushes Low Stakes, How Good Is He Really?',
-      url: 'https://www.youtube.com/watch?v=gEaEynYWkFM&t=1180s',
-      note: 'A live $2/$5 vlog hand reviewed by Charlie. The vlog doesn’t show stacks or how many were dealt in; 100bb and nine-handed are used. The player called and lost to A-Q.',
-    },
   },
   {
     id: 'queens-check-river-four-bet-pot',
@@ -6468,12 +5812,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'An all in only gets called by hands that beat you: flushes, jacks full, aces and kings. The one worse hand left in their range, a missed 5-4, folds to it. Betting only loses more when you’re beaten, so check and see a showdown.',
-    source: {
-      by: 'Lukas Robinson (GTO Wizard) on PokerNews',
-      title: 'GTO Wizard: Is This River Jam Too Thin with Queens?',
-      url: 'https://www.pokernews.com/strategy/gto-wizard-ept-barcelona-pocket-queens-hand-analysis-50099.htm',
-      note: 'The author played the hand and jammed; this is the solver’s verdict in his article. The table size isn’t given (nine-handed here); the article’s pots run about half a big blind above its own bets. Every bet size here is all in. The small blind showed A♠A♥.',
-    },
   },
   {
     id: 'bottom-two-pair-polarized-river-bet',
@@ -6515,12 +5853,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their bet is polarized: a full house or a bluff. There are only a handful of full houses (one combo of K-9 suited and three of 7-7) against more than fifty missed flush and straight draws, and your nines beat every one of those. You need to win about 32% of the time, so call.',
-    source: {
-      by: 'Bart Hanson on CardPlayer',
-      title: 'Crushing Live Poker With Twitter (the July 15 hand)',
-      url: 'https://www.cardplayer.com/?p=1038132',
-      note: 'A $10/$20 game; the dollar amounts are turned into big blinds. Stacks were “over $5,000 deep” (250bb here).',
-    },
   },
   {
     id: 'set-of-queens-check-on-flush-river',
@@ -6564,12 +5896,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'If you bet, the flushes call and the kings fold: only better hands put more money in. It is very unlikely a worse hand calls, so a bet just loses more when you are beaten. Check, and fold if they bet big.',
-    source: {
-      by: 'Bart Hanson on CardPlayer',
-      title: 'Crushing Live Poker With Twitter (pocket queens on a heart river)',
-      url: 'https://www.cardplayer.com/?p=1036822',
-      note: 'The column prints the game as “$5-$5”; it is played as $2/$5 here. Stacks aren’t given (100bb here). The column’s verdict is to check and fold.',
-    },
   },
   {
     id: 'aces-fold-after-turn-call',
@@ -6613,12 +5939,6 @@ export const SCENARIOS: Scenario[] = [
       { street: 'river', text: 'The T♠ and they move all in. This type of player only bets like this with sets and two pair; bluffs are very rare.' },
     ],
     why: 'Calling the turn was to find out where you stand so you can fold the river safely. Check-raise, bet, then all in: from a player who only bets his monsters, that is sets and two pair nearly every time. You need about 25% and win far less, so fold.',
-    source: {
-      by: 'Bart Hanson on CardPlayer',
-      title: 'Bart Hanson: Crushing Live Poker With Twitter (pocket aces against a check-raise)',
-      url: 'https://www.cardplayer.com/?p=1035802',
-      note: 'A $2/$5 game; the dollar amounts are turned into big blinds. Which seat the other caller had isn’t given (the cutoff here); stacks are set so the river shove is the column’s $360.',
-    },
   },
   {
     id: 'nines-call-polarized-river-bet-low-stakes',
@@ -6670,12 +5990,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A big river lead from this player is polarized. The value is a couple of combos of T-9, because your hand blocks most of them. Missed heart draws (like the A♥T♥ they showed) are far more common, and they all lose to your nines. Folding quickly would be a mistake; call.',
-    source: {
-      by: 'Kat Martin on Red Chip Poker',
-      title: 'Hand-Reading Heroics: An Interesting Call At $1/$2',
-      url: 'https://redchippoker.com/hand-reading-heroics-an-interesting-call-at-1-2/',
-      note: 'The flop and turn bet sizes aren’t given; they’re set so the river pot is the article’s $180. Stacks are about $300 (150bb). The limper is assumed to fold the flop.',
-    },
   },
   {
     id: 'top-pair-fold-calling-station-river-bet',
@@ -6720,12 +6034,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A player who has only called all hand now bets big. Their range is sets, the 5-4 straight and two pair; very few hands you beat would lead like this. You need about 28% and win much less, so fold.',
-    source: {
-      by: 'PokerStrategy.com',
-      title: 'On the River: Theory Put to Practice (in position, made hand, example 1)',
-      url: 'https://www.pokerstrategy.com/strategy/bss/on-the-river-practice/',
-      note: 'A $25 no-limit online game; the dollar amounts are turned into big blinds. The limper’s two cards in the article’s range are its read of a weak-tight calling station.',
-    },
   },
   {
     id: 'nines-call-river-bluffer',
@@ -6768,12 +6076,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Against this player, a river bet after the turn checks through is often a bluff with a hand that gave up on the turn. Your nines beat all of those and every small pair and seven. Folding would be too weak; call.',
-    source: {
-      by: 'PokerStrategy.com',
-      title: 'On the River: Theory Put to Practice (in position, made hand, example 2)',
-      url: 'https://www.pokerstrategy.com/strategy/bss/on-the-river-practice/',
-      note: 'A $25 no-limit online game; the dollar amounts are turned into big blinds. The article’s verdict is a call against this aggressive player type.',
-    },
   },
   {
     id: 'top-pair-call-small-river-bet-loose-player',
@@ -6816,12 +6118,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'You only need about 25% against this half-pot bet. A loose player bets worse aces like A-J and A-T for value and turns missed heart draws into bluffs, and you beat all of those. Only A-Q and sets beat you. This is an easy call.',
-    source: {
-      by: 'PokerStrategy.com',
-      title: 'On the River: Theory Put to Practice (out of position, check/call)',
-      url: 'https://www.pokerstrategy.com/strategy/bss/on-the-river-practice/',
-      note: 'A $25 no-limit online game; the dollar amounts are turned into big blinds. The opponent’s stats are 35/16/3.4 (a loose player who isn’t very good).',
-    },
   },
   {
     id: 'top-pair-fold-passive-river-raise',
@@ -6864,12 +6160,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A raise from a player who almost never bluffs is a strong hand: trips, a full house, the 6-5 straight or a backdoor flush. You beat none of those. You need about 27%, and calling just pays them off, so fold.',
-    source: {
-      by: 'PokerStrategy.com',
-      title: 'On the River: Theory Put to Practice (out of position, bet/fold)',
-      url: 'https://www.pokerstrategy.com/strategy/bss/on-the-river-practice/',
-      note: 'A $25 no-limit online game; the dollar amounts are turned into big blinds. The opponent’s stats are 30/4/0.5 (very passive).',
-    },
   },
   {
     id: 'aces-fold-flush-river-shove',
@@ -6923,12 +6213,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'An overbet all in from a good player on the flush card is almost always a flush or a set. Top pair isn’t shoving, and the hands that could bluff mostly won’t. You need about 34% and win much less, so fold your aces.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Folding Aces On The River',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66489-global-poker-35-11/articles/24528-folding-aces-on-the-river',
-      note: 'The 25-chip ante for nine players is counted as one big blind ante. The river shove is the middle-position player’s whole stack.',
-    },
   },
   {
     id: 'trip-aces-weak-kicker-call-lag',
@@ -6982,12 +6266,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Holding an ace yourself means there is only one ace left for them, which cuts their value hands a lot. Against a loose, aggressive player the missed draws outnumber the better hands. You need about 30%, so make the hero call.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Minimizing Losses With Decently Strong Poker Hands',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66484-alexander-yen-35-6/articles/24476-minimizing-losses-with-decently-strong-poker-hands',
-      note: 'The 300-chip ante for nine players is counted as one big blind ante. Against a tight, passive player the article says folding is reasonable.',
-    },
   },
   {
     id: 'nines-call-down-loose-small-blind',
@@ -7030,12 +6308,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'This player bets with any pair on the board, any gutshot and some pure bluffs, and rarely has two pair or better. Your nines beat every smaller pair and every miss, and lose only to the occasional king. You need about 30%, so call.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Finding A Good Spot To Call Down',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66480-josh-arieh-35-2/articles/24431-finding-a-good-spot-to-call-down',
-      note: 'A five-handed table in a $10,000 event with no ante; the small blind’s stack isn’t given (300bb here). The verdict trusts the read on this opponent.',
-    },
   },
   {
     id: 'sevens-call-turn-shove-three-bet-pot',
@@ -7078,12 +6350,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'You only need to win about a quarter of the time. Their value is big pairs and top pair, but they also shove A-K, A-5, A-2 and suited connectors with straight and flush draws, and you are ahead of all of those for now. With this price you have to call.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Bluff Catching In The Poker Masters',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66474-the-wsop-main-event-34-22/articles/24357-bluff-catching-in-the-poker-masters',
-      note: 'The article doesn’t give your suits (7♣7♥ here) or the small blind’s stack; its flop pot runs a little above its own bets, and the bets are used.',
-    },
   },
   {
     id: 'queen-jack-call-four-flush-lead',
@@ -7134,12 +6400,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'The lead comes from strong flushes and straights, or from hands like J-T and small pairs turned into bluffs, because marginal flushes would rather check. You beat all the bluffs and need only about 27%, so call.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Bluff Catching On A Four-Flush Board',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66469-daniel-negreanu-34-18/articles/24317-bluff-catching-on-a-four-flush-board',
-      note: 'The small blind’s stack isn’t given (125bb here). They showed J♠T♠ for a bluff.',
-    },
   },
   {
     id: 'top-pair-call-fast-river-bet-three-bet-pot',
@@ -7182,12 +6442,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A player who barrels every street and fires fast on the river has a range of mostly bluffs and a few strong hands. Raising only gets called by the strong hands, and folding gives up to all the bluffs. You need only about 17% here, so simply call down.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Calling Down With Marginal Made Hands',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66462-joe-mckeehen-34-11/articles/24250-calling-down-with-marginal-made-hands',
-      note: 'No ante is given.',
-    },
   },
   {
     id: 'queens-call-down-ace-ace-board',
@@ -7234,12 +6488,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Against most players this is a fold. Against this one, broadway hands and middle pairs that kept betting make up a big part of the range, and your queens beat all of them. You need about 28%, so this is a somewhat easy call with a bluff catcher.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: You Can’t Be Afraid To Call Down',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66453-nick-schulman-34-2/articles/24159-you-can-t-be-afraid-to-call-down',
-      note: 'No ante is given. The same hand is also told in “Hero Calling Against LAGs” (2024). They showed Q♦J♦.',
-    },
   },
   {
     id: 'tens-hero-call-polarized-loose-raiser',
@@ -7286,12 +6534,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Your tens block some of the flushes and the J-T straight, and a strong, loose player turns missed hands like K-J, 7-6 or ace-high with one club into a bluff. Against that polarized range your tens beat every bluff, and you need about 33%. Make the hero call, at least until you know more about this opponent.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Capping Your Downside',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/1626369-david-coleman-38-23/articles/1627732-capping-your-downside',
-      note: 'No ante is given. The same hand is also in “Playing A Marginal Middle Pair” (2016) and “Flopping A Pair And Flush Draw” (2025). The hijack showed 8♥8♦.',
-    },
   },
   {
     id: 'kings-call-splashy-river-bet-three-bet-pot',
@@ -7341,12 +6583,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Your kings beat every queen except two pair and sets, and every missed draw. A splashy player bets a wide range here, so this is an easy river call.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Limiting The Potential Damage With An Overpair',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/1635359-bernhard-binder-39-2/articles/1637498-limiting-the-potential-damage-with-an-overpair',
-      note: 'A seven-handed table; it is laid out on a nine-seat table here. Your stack isn’t given (100bb here). The raiser showed Q♥T♦.',
-    },
   },
   {
     id: 'trip-aces-call-after-turn-check',
@@ -7402,12 +6638,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their turn check took most of the strong aces out of their range, and your own ace leaves them just one. What bets now is mostly K-Q and other hands that missed. Raising only gets called by trips or better, so call: you need about 28%.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Give Them A Chance To Bluff',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66539-chris-brewer-37-9/articles/25071-give-them-a-chance-to-bluff',
-      note: 'A $1,000 WSOP event with a 400 big blind ante. Seats are counted from the raiser in first position. They showed K-Q.',
-    },
   },
   {
     id: 'ace-king-fold-flush-turn-paired-board',
@@ -7456,12 +6686,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their range now holds every flush plus trips and top pairs, and you have ace-high with no heart. Against the made hands an ace or a king helps only some of the time, and against the flushes it never does. You are one of the worst hands in your range here: you need 24% and have far less, so fold.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Folding A-K',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66534-cppt-venetian-37-4/articles/25019-folding-a-k',
-      note: 'Blinds 100-200 with a 200 big blind ante, 8,000 effective (40bb). Which seat “lojack” is on a nine-handed table is our reading.',
-    },
   },
   {
     id: 'ace-king-fold-turn-shove-recreational',
@@ -7510,12 +6734,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'When a straightforward player suddenly shoves on the turn, their range is mostly hands that crush top pair: the straight, two pair and sets. You need about 24% and have far less. You are not pot committed: fold.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: You Are Usually Not Pot Committed On The River',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66527-isaac-haxton-36-23/articles/24948-you-are-usually-not-pot-committed-on-the-river',
-      note: 'Blinds 200-400 with a 400 big blind ante, 12,000 effective (30bb). The shove is the opponent’s whole stack. They showed 7♦6♦.',
-    },
   },
   {
     id: 'eights-call-scary-club-river-polarized',
@@ -7579,12 +6797,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'An aggressive player turns most hands worse than yours into a bluff on a card this scary, like missed heart draws and small pairs. Your eights beat every one of them. You need about 30%, so this call is fairly standard against this player. Against a tight, passive player you would fold.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Calling With A Marginal Hand On The River',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66326-cppt-ocean-s-11-29-8/articles/22749-calling-with-a-marginal-hand-on-the-river',
-      note: 'WPT LA Poker Classic, blinds 150-300 with a 25 ante (counted as 0.75bb). The opponent sits third to act; the column doesn’t name the seat. They mucked.',
-    },
   },
   {
     id: 'weak-ace-fold-river-straight-limped-pot',
@@ -7651,12 +6863,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'The gutshots they were betting with on the flop and turn, Q-J and J-T, have now made the straight, and two pair and sets bet here too. With this board your best hand is aces with K-Q-T, so you split with the weaker aces and lose to everything else. You need about 23% and have less, so fold.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Good Spot For A Hero Call?',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66339-fedor-holz-29-21/articles/22898-good-spot-for-a-hero-call',
-      note: 'Blinds 200-400 with a 25 ante (counted as 0.5625bb). The column says “several limps”: five limpers make its pot, and their seats are our choice. Little prefers the turn call and doesn’t like the river call.',
-    },
   },
   {
     id: 'nines-call-turn-bet-three-bet-pot',
@@ -7699,12 +6905,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'With a marginal made hand against a polarized range you call or fold, never raise. They bet big with draws and air as well as top pair or better, and your nines are well ahead of all the draws and bluffs. You need about 26%, so call, and check behind if they check the river.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: I Am A Calling Station',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/card-player-magazine-seth-davies-volume-38-issue-15/articles/card-player-magazine-38-15-jonathan-little-strategy-calling-station',
-      note: 'A $5,000 event, blinds 1,000-1,500 with a 1,500 big blind ante, 60,000 effective (40bb). They checked the river and showed 7-5 offsuit.',
-    },
   },
   {
     id: 'king-high-fold-river-aggressive-big-blind',
@@ -7751,12 +6951,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'King-high beats only queen-high and worse. Their value is every jack, nine and deuce, plus underpairs and ace-high they overvalue, which is far more than the missed draws. You need about 30% and have much less, so fold. Only if you were sure they bet every turn after a checked flop would calling get close.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Don’t Be A Hero',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/jesse-lonis-card-player-magazine-poker-crusher/articles/card-player-magazine-38-14-jonathan-little-strategy-dont-be-hero',
-      note: '$1-$2, $200 stacks. Little says the turn was an easy fold too. They showed Q-J. The same hand, with K♦5♦ and a 10♥ turn, is in “Hero Calling With King High” (2018).',
-    },
   },
   {
     id: 'king-high-straight-fold-river-shove-flush-board',
@@ -7810,12 +7004,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A raise all in on a board with three clubs is a flush the vast majority of the time. Your straight beats only the odd set they might shove and splits with K-J. You need about 32% and have far less, so this is an easy fold, even with a straight.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Stop Being So Sticky!',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/triton-montenegro-jason-koon-xuan-liu-ben-tollerene/articles/card-player-magazine-38-13-jonathan-little-poker-strategy-stop-being-sticky',
-      note: '$1-$3 with $450 stacks (150bb); all sizes are in big blinds here. They showed A♣5♣.',
-    },
   },
   {
     id: 'nines-straight-fold-river-overbet-flush',
@@ -7867,12 +7055,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Overbetting all in on the flush card is a flush or a higher straight almost every time; there are very few hands that make sense as a bluff. You need about 39% and have far less, so this is an easy fold.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Underpairs Are Tough To Play',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/wsop-jonathan-tamayo-rule-card-player-magazine/articles/card-player-magazine-38-12-jonathan-little-strategy-underpairs',
-      note: '$1-$2 with $200 stacks. Little would have checked the turn instead of leading. They showed A♦T♦.',
-    },
   },
   {
     id: 'fours-fold-river-big-blind-lead',
@@ -7922,12 +7104,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Your fours beat only missed heart draws and air; every queen, jack and deuce, plus bigger pairs and anything with a five, beats you. Those value hands outnumber the bluffs. You need about 26%, so on average this is a pretty simple fold.',
-    source: {
-      by: 'Sam Greenwood on CardPlayer',
-      title: 'Punt Of The Day: Getting Owned By A VIP',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/1630990-phil-hellmuth-38-26/articles/1633604-punt-of-the-day-getting-owned-by-a-vip',
-      note: 'Triton Cyprus, blinds 25,000-50,000 with a 50,000 big blind ante; you have 1,200,000 (24bb). Greenwood says a call against this bluff-happy player is a small deviation; he folded, and they showed 6♠4♣.',
-    },
   },
   {
     id: 'top-pair-fold-river-overbet-solver',
@@ -7977,12 +7153,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'An overbet this big comes from sets, straights, two pair and the best top pairs, plus missed spade draws. Your king with an 8 kicker beats only the bluffs, and they are a bit less likely to bluff than to value bet here. You need about 37%, and the solver folds this hand every time.',
-    source: {
-      by: 'Sam Greenwood on CardPlayer',
-      title: 'Punt Of The Day: Rolling The Dice (Randomizing) Away From An Aggressive Play',
-      url: 'https://www.cardplayer.com/?p=1639361',
-      note: 'Triton Million, blinds 2,000-3,000 with a 3,000 big blind ante. Greenwood says raising the turn was his real mistake; the river is a pure fold in his sim.',
-    },
   },
   {
     id: 'ace-nine-fold-turn-jam-after-min-raise',
@@ -8041,12 +7211,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Against a flush, a straight, a set or two pair your big draw wins only about 24% of the time, and some of your straight cards pair the board or give them a better hand. Calling $106 more into the pot needs about 31%, so fold. Calling the $20 bet instead of raising would have kept this decision away.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Don’t Get Your Money In Behind',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66565-triton-jeju-38-8/articles/25361-don-t-get-your-money-in-behind',
-      note: '$1-$2 with a $160 effective stack. The column doesn’t name the three callers’ seats or your stack ($200 here). They showed Q♥9♥.',
-    },
   },
   {
     id: 'king-high-straight-value-bet-river-in-position',
@@ -8097,12 +7261,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Almost everything that called the turn is worse than you, and plenty of it, two pair, sets, aces, A♣K♣, calls a big bet. Checking wins nothing more. Bet more than half the pot. Two pair and sets call even an overbet, which wins the most; three-quarters pot is nearly as good.',
-    source: {
-      by: 'Sam Greenwood on CardPlayer',
-      title: 'Punt Of The Day: Main Event Runs With Maria Konnikova',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/1625438-triton-jeju-38-22/articles/1625521-punt-of-the-day-main-event-runs-with-maria-konnikova',
-      note: 'EPT Monte Carlo Main Event, blinds 200-400 with a 400 big blind ante; stacks aren’t given (100bb here). Konnikova checked behind and won against Q♥8♥.',
-    },
   },
   {
     id: 'top-pair-value-bet-river-checked-to',
@@ -8154,12 +7312,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Queens and eights are worse than you and some of them will call a modest bet. The busted draws fold whatever you do, and the few hands that beat you would have played the hand faster. Bet a modest size, around a third to a half of the pot, to get called by the most worse hands.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Failing To Go For Value',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66409-global-poker-teams-up-with-nascar-racer-kurt-busch-32-10/articles/23675-failing-to-go-for-value',
-      note: 'A $500 event, blinds 500-1,000 with a 100 ante (counted as 0.9bb). Little suggests about 7,000 into 15,200; they checked and showed Q-T.',
-    },
   },
   {
     id: 'two-pair-call-flush-turn-splashy-button',
@@ -8202,12 +7354,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Raising makes no sense: they fold the hands you beat and continue with the flushes. Their big bet also includes plenty of aces going for thin value and junk that a splashy player bets, and you are way ahead of those. You need about 32%, so call.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Playing Out Of Position With A Marginal Made Hand',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66460-mj-gonzales-34-9/articles/24231-playing-out-of-position-with-a-marginal-made-hand',
-      note: 'A $1,500 event, blinds 50-100 with no ante given; the button has 30,000 (300bb) and your stack isn’t given. The river checked through; Little thinks the button most likely had an ace.',
-    },
   },
   {
     id: 'top-pair-weak-kicker-call-aggressive-button-limped',
@@ -8269,12 +7415,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'If this player bets almost their whole range, your top pair is in excellent shape: kings, eights, worse aces, draws and air all bet here, and only better aces, two pair and sets beat you. Raising folds out the hands you beat. Calling is the only play that makes sense; then check and let them keep bluffing.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Poker Strategy With Jonathan Little: Let Them Bluff!',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/card-player-magazine-michael-mizrachi-grinder-wsop-main-event-38-17/articles/card-player-magazine-38-17-jonathan-little-strategy-let-them-bluff',
-      note: 'Blinds 200-400 with a 50 ante (counted as 1.125bb), 60,000 effective (150bb). Whether it is a cash game or a tournament isn’t said; seats are counted from the two early limpers. The same hand is in “Let Him Bluff” (2018).',
-    },
   },
   {
     id: 'weak-ace-call-lag-river-ace-barrel',
@@ -8321,12 +7461,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A loose player who barrels this wide arrives at the river with plenty of missed straight and flush draws, and the ace is the perfect card to keep bluffing. Your ace beats all of those and every pair they turn into a bluff. They have enough bluffs for a call to win: you need about 28%.',
-    source: {
-      by: 'Fran Ferlan on BlackRain79',
-      title: 'What to Do Versus a Big River Bet (3 Simple Tips), example hand #1',
-      url: 'https://www.blackrain79.com/2021/02/big-river-bet.html',
-      note: 'A teaching hand in a micro-stakes cash game; 6-max and 100bb are used.',
-    },
   },
   {
     id: 'top-two-pair-fold-fish-river-lead-flush',
@@ -8374,12 +7508,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A passive player who has only called all hand and now leads big on the flush card is politely telling you they have the nuts: a flush, K-T or a set. They could have worse two pair, but nothing they have done says so. You need about 31%, so fold.',
-    source: {
-      by: 'Fran Ferlan on BlackRain79',
-      title: 'What to Do Versus a Big River Bet (3 Simple Tips), example hand #2',
-      url: 'https://www.blackrain79.com/2021/02/big-river-bet.html',
-      note: 'A teaching hand in a micro-stakes cash game; 6-max and 100bb are used.',
-    },
   },
   {
     id: 'set-value-bet-river-calling-station-backdoor-flush',
@@ -8424,12 +7552,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A calling station pays off with a wide range of worse hands: every queen, every nine and tens. The odd backdoor flush beats you, but not checking that out of fear costs far more. This is a clear value bet: bet about two-thirds of the pot. If they check-raise all in, your set is probably no good.',
-    source: {
-      by: 'Fran Ferlan on BlackRain79',
-      title: 'Your Ultimate Betting the River Strategy Cheat Sheet, example hand #1',
-      url: 'https://www.blackrain79.com/2021/04/bet-the-river.html',
-      note: 'A teaching hand in a micro-stakes cash game; 6-max and 100bb are used. Fran bets 25bb into 40.5bb, between the trainer’s ⅓ and ¾ sizes.',
-    },
   },
   {
     id: 'jack-high-probe-river-after-turn-check-back',
@@ -8472,12 +7594,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their turn check means they mostly gave up with ace-high, king-high and small pairs, and those can’t call a bet. Jack-high loses to most of that if you check. Take the initiative: a bet of around half the pot folds out the better high cards, and only their weak queens call.',
-    source: {
-      by: 'Fran Ferlan on BlackRain79',
-      title: 'Your Ultimate Bluffing the River Cheat Sheet, example 1',
-      url: 'https://www.blackrain79.com/2021/04/bluff-river.html',
-      note: 'A teaching hand in a micro-stakes cash game; 6-max and 100bb are used. Fran bets 7bb into 13.5bb, between the trainer’s ⅓ and ¾ sizes.',
-    },
   },
   {
     id: 'ace-high-third-barrel-capped-big-blind',
@@ -8519,12 +7635,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their range is full of jacks, small pairs and missed draws, and the king turns every jack into second pair. Those fold to a third bet; only a king calls. Ace-high would lose to all those pairs at showdown, so bet about half the pot and make them fold.',
-    source: {
-      by: 'Fran Ferlan on BlackRain79',
-      title: 'Your Ultimate Bluffing the River Cheat Sheet, example 2',
-      url: 'https://www.blackrain79.com/2021/04/bluff-river.html',
-      note: 'A teaching hand in a micro-stakes cash game; 6-max and 100bb are used. Fran bets 14bb into 28bb, between the trainer’s ⅓ and ¾ sizes.',
-    },
   },
   {
     id: 'second-pair-call-maniac-river-ace',
@@ -8567,12 +7677,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A maniac’s range is so wide there’s no point narrowing it much: aces and better jacks are a small part of it, and pairs below yours, missed draws and air make up most of it. You only need about 20%, so this is a clear bluff-catching spot. Call.',
-    source: {
-      by: 'Fran Ferlan on BlackRain79',
-      title: 'The Ultimate River Poker Strategy Cheat Sheet, example hand #2',
-      url: 'https://www.blackrain79.com/2022/09/river-poker-strategy.html',
-      note: 'A teaching hand in a micro-stakes cash game; 6-max and 100bb are used.',
-    },
   },
   {
     id: 'full-house-overbet-river-passive-caller',
@@ -8617,12 +7721,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their range is full of hands that just got there or were already good: trip tens, spade flushes and weaker full houses like T-5. A passive player calls with all of them and won’t fold for any price. Bet as big as you can: an overbet wins the most.',
-    source: {
-      by: 'Fran Ferlan on BlackRain79',
-      title: 'The Ultimate River Poker Strategy Cheat Sheet, example hand #3',
-      url: 'https://www.blackrain79.com/2022/09/river-poker-strategy.html',
-      note: 'A teaching hand in a micro-stakes cash game; 6-max is used. Fran shoves about 121bb into 58bb; the overbet is the closest size here.',
-    },
   },
   {
     id: 'ace-king-fold-turn-check-raise-draw-board',
@@ -8664,12 +7762,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A check-raise on a card that completes this many draws is very rarely a bluff: it is a straight, a flush, a set or two pair. Against all of those top pair is drawing thin, and the worse aces you beat never play this way. You need about 21%, so fold. This is a textbook spot where overplaying ace-king costs you.',
-    source: {
-      by: 'Fran Ferlan on BlackRain79',
-      title: '5 Poker Hands Everybody Screws Up (Fix This Now), example hand #3',
-      url: 'https://www.blackrain79.com/2023/04/poker-hand-tips.html',
-      note: 'A teaching hand in a micro-stakes cash game; 6-max and 100bb are used. The page puts the caller in the big blind in one place and the small blind in another; the big blind fits its pot.',
-    },
   },
   {
     id: 'ace-high-check-turn-loose-passive-button',
@@ -8706,12 +7798,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A second bet only works if they fold, and a loose, passive player who called the flop with a pair or one of the many draws on this board won’t. You would be betting into hands that call and beat you or have plenty of ways to. Check and give up the bluff.',
-    source: {
-      by: 'Fran Ferlan on BlackRain79',
-      title: 'Stop Bluffing in These 3 Common Situations (Big Mistake!)',
-      url: 'https://www.blackrain79.com/2022/01/stop-bluffing.html',
-      note: 'A teaching hand in a micro-stakes cash game; 6-max and 100bb are used. The page says the blinds folded and the pot is 7.5bb before the flop.',
-    },
   },
   {
     id: 'weak-ace-call-river-shove-three-bet-pot',
@@ -8757,12 +7843,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their value is the better aces, Q-Q and 6-6; with the board paired your 4 no longer plays, so the weaker aces split with you. Against that sit all the spade draws and K-J and K-T that missed, and they keep firing. You need about 27%, so call.',
-    source: {
-      by: 'Ryan Lewis on BlackRain79',
-      title: 'Why You Should Check Call Top Pair in a 3Bet Pot, hand #1',
-      url: 'https://www.blackrain79.com/2020/05/check-call-top-pair.html',
-      note: 'An online cash hand (NL5 to NL50). Stacks aren’t given; 92bb makes the river shove the column’s 50bb. The column’s printed pots don’t add up; the bets are used. They showed K-J offsuit.',
-    },
   },
   {
     id: 'queens-fold-river-shove-over-block-bet',
@@ -8806,12 +7886,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Most regulars are too nitty and don’t bluff enough, and a raise all in over a small bet on this board is full houses, quads and the odd straight. Your queens beat only the missed club draws. You need about 35%, so unless they are hyper-aggressive, make the exploitative fold.',
-    source: {
-      by: 'Pete Clarke on PokerStars Learn',
-      title: 'Inside the Mind of a Pro – Making Sense of Bizarre Aggression',
-      url: 'https://www.pokerstars.com/poker/learn/strategies/inside-the-mind-of-a-pro-making-sense-of-bizarre-aggression/',
-      note: '100NL Zoom; stacks aren’t given (100bb here, which fits the $80 shove). Pete snap-called in the hand and calls that a mistake. The cards they had aren’t shown.',
-    },
   },
   {
     id: 'king-high-shove-river-capped-tight-big-blind',
@@ -8859,12 +7933,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A tight player with a capped range can’t call off their tournament with second pair or a weak ten, and the busted draws fold to anything. King-high wins very little at showdown. Moving all in puts their tournament on the line and makes all of those fold; only the strongest tens call.',
-    source: {
-      by: 'PokerStars Learn',
-      title: 'Triple Barrel Bluffs, example 1',
-      url: 'https://www.pokerstars.com/poker/learn/strategies/triple-barrel-bluffs/',
-      note: 'A $55 tournament, blinds 200-400 with a 25 ante (counted as 0.5625bb). The shove is their 11,600 stack, about 126% of the pot, so the overbet here is all in. No ICM: it isn’t near the money.',
-    },
   },
   {
     id: 'ace-high-check-river-instant-turn-call',
@@ -8911,12 +7979,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'The instant turn call says they have a pair or better and won’t fold it, so a bluff mostly gets called by better. The hands that would fold, overcards and missed draws, are exactly the ones your ace-high already beats. Check behind and take the showdown.',
-    source: {
-      by: 'PokerStars Learn',
-      title: 'Triple Barrel Bluffs, example 2',
-      url: 'https://www.pokerstars.com/poker/learn/strategies/triple-barrel-bluffs/',
-      note: 'Blinds 200-400 with a 25 ante (counted as 0.5625bb); you have 32,000 (80bb), they have 16,000. They showed K♥T♦.',
-    },
   },
   {
     id: 'ace-king-fold-river-three-bet-pot-counterfeit-board',
@@ -8964,12 +8026,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'With two pairs on the board you are playing ace-king high, and almost everything in their range beats that: every overpair and J-J. You only beat 9-9 and the odd bluff. Even at 3-to-1 you can’t beat enough, so the fold is justified.',
-    source: {
-      by: 'Melvin Schroen on PokerListings',
-      title: 'Hand of the Week: Kassouf’s “Nine High Like a Boss” Moment',
-      url: 'https://www.pokerlistings.com/hand-analysis/kassoufs-nine-high-like-a-boss-moment',
-      note: 'Ka Kwan Lau against Will Kassouf, 2016 WSOP Main Event; blinds 50,000-100,000 with a 15,000 ante (nine antes counted). Lau folded and Kassouf showed 9♠9♥.',
-    },
   },
   {
     id: 'top-pair-fold-river-overbet-paired-board',
@@ -9018,12 +8074,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'There’s a good chance they are bluffing, but they would play a monster exactly the same way, and a big blind has too many eights in their range. Against an overbet you need about 38%, and the odds just don’t justify a call. Fold.',
-    source: {
-      by: 'Melvin Schroen on PokerListings',
-      title: 'Hand of the Week: Brutal Overbet Ties Baumann’s Hands',
-      url: 'https://www.pokerlistings.com/hand-analysis/brutal-overbet-ties-baumanns-hands',
-      note: 'Gaëlle Baumann against Jason McConnon, 2016 WSOP Main Event Day 5; blinds 12,000-24,000 with a 4,000 ante (nine antes counted). She folded; he showed 7♣4♥.',
-    },
   },
   {
     id: 'third-pair-call-short-stack-river-bet-three-bet-pot',
@@ -9071,12 +8121,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their range is highly polarized and holds more weak hands than strong ones: A-K, A-Q and other high cards that missed bet here as often as the few overpairs, sets and runner-runner flushes. You need about 22%, so make the strong call against a weak range.',
-    source: {
-      by: 'Melvin Schroen on PokerListings',
-      title: 'Hand of the Week: Hellmuth Stunts on River, Crashes Hard',
-      url: 'https://www.pokerlistings.com/hand-analysis/hellmuth-stunts-on-river-crashes-hard',
-      note: 'Brian Rast against Phil Hellmuth, $100,000 Poker Masters 2017; blinds 2,000-4,000 with a 4,000 big blind ante, before the money. Hellmuth showed Q♥6♦.',
-    },
   },
   {
     id: 'queens-check-river-paired-board-three-bet-pot',
@@ -9125,12 +8169,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'After calling twice on this board their range is trips, full houses, jacks, middle pairs and ace-high. If you bet, the trips and full houses call and the hands you beat fold, apart from the odd J-J. Check behind and see if your hand is good; if they check-raise, it isn’t.',
-    source: {
-      by: 'Melvin Schroen on PokerListings',
-      title: 'Hand of the Week: Blink and Your WSOP Main Event is Over',
-      url: 'https://www.pokerlistings.com/hand-analysis/blink-and-youre-out-of-the-main-event',
-      note: 'Valentin Vornicu against Kenny Hallaert, 2016 WSOP Main Event Day 7; blinds 100,000-200,000 with a 30,000 ante (nine antes counted). Vornicu bet, called a check-raise all in and lost to A♦T♦.',
-    },
   },
   {
     id: 'quads-call-river-all-in-raise-flush-board',
@@ -9183,12 +8221,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their raise narrows them to K-K, J-J, 9-9 and Q♠T♠, and K-K and J-J would have 3-bet preflop. That leaves 9-9 and Q♠T♠, and there are three ways to hold nines for every one straight flush. You need about 25%, so calling is the correct decision.',
-    source: {
-      by: 'Melvin Schroen on PokerListings',
-      title: 'Hand of the Week: Bowker Folds Quads in WSOP Main Event!',
-      url: 'https://www.pokerlistings.com/hand-analysis/poker-how-to-fold-quads-in-the-wsop-main-event',
-      note: 'Kyle Bowker, 2016 WSOP Main Event Day 2C; blinds 400-800 with a 100 ante (nine antes counted). The callers’ seats are our reading of “two middle-position players”. Bowker folded on a live read.',
-    },
   },
   {
     id: 'top-pair-call-river-barrel-missed-draws',
@@ -9232,12 +8264,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'They would bet A-K, A-J, A-7 and sets the same way, but every diamond draw, heart draw and gutshot missed, and those have nothing left but a bluff. Because none of the draws came in, you pretty much have to call: you need about 24%.',
-    source: {
-      by: 'Arved Klöhn on PokerListings',
-      title: 'Hand of the Week: Nothing Says Success Like Success',
-      url: 'https://www.pokerlistings.com/hand-analysis/poker-nothing-is-as-successful-as-success',
-      note: 'Andreas Klatt against Romain Nardin, PokerStars Championship Monte Carlo 2017, ten left on two tables (in the money; the column doesn’t use ICM). Blinds 25,000-50,000 with a 5,000 ante; a six-seat table is used. Nardin showed 9♥6♥.',
-    },
   },
   {
     id: 'top-pair-top-kicker-call-turn-check-raise-shove',
@@ -9281,12 +8307,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A set is possible, but sets are rare and they would often bet them earlier. Semi-bluffs with spades and overcards are far more common for a bluffy player, and you are well ahead of those and of any worse jack. You need about 40%; knowing their game and your history, you can’t fold top pair, top kicker.',
-    source: {
-      by: 'Melvin Schroen on PokerListings',
-      title: 'Hand of the Week: Colman Meets His Main Event Bogeyman',
-      url: 'https://www.pokerlistings.com/hand-analysis/pons-plays-boogeyman-to-colmans-me',
-      note: 'Fernando Pons against Dan Colman, 2016 WSOP Main Event Day 6; blinds 80,000-160,000 with a 20,000 ante (nine antes counted). Colman had a worse jack and Pons won.',
-    },
   },
   {
     id: 'aces-call-turn-check-raise-all-in-low-board',
@@ -9333,12 +8353,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their all-in range has sets and straights, but also diamond draws and pairs with straight draws, and you are well ahead of all of those. You need about 34%. The solver calls aces every time, and even against a tighter, value-heavy range aces are still a profitable call.',
-    source: {
-      by: 'Lukas Robinson (GTO Wizard) on PokerNews',
-      title: 'GTO Wizard: Did Phil Ivey Punt With Pocket Aces?',
-      url: 'https://www.pokernews.com/strategy/gto-wizard-did-phil-ivey-punt-with-pocket-aces-52717.htm',
-      note: 'Phil Ivey against Gytis Lazauninkas, Triton Jeju $200,000 Invitational; blinds 500-1,000 (a big blind ante makes the column’s 22,500 pot). Stacks are Ivey’s 222bb. Lazauninkas had a set of nines.',
-    },
   },
   {
     id: 'jacks-call-small-river-bet-four-flush-lag',
@@ -9386,12 +8400,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'With the J♥ on the board there are few K♥ and Q♥ combos, and a loose player has relatively few hands that can value bet here and at least as many that can’t win without bluffing. You beat every weak pair and every float. You need about 22%, so call.',
-    source: {
-      by: 'Andrew Brokos on Thinking Poker',
-      title: 'Out of Position Against a LAG',
-      url: 'https://www.thinkingpoker.net/index.php?page_id=7641',
-      note: 'A student’s $1-$2 6-max online hand; stacks aren’t given (100bb here). The student folded.',
-    },
   },
   {
     id: 'ten-high-bluff-river-capped-flop-check-back',
@@ -9435,12 +8443,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their flop check capped them at one pair most of the time, and the king adds nothing to that. Ten-high can’t win at showdown, so bet about three-quarters of the pot: one-pair hands, even most aces, can’t call that, and only the odd two pair does.',
-    source: {
-      by: 'Andrew Brokos on Thinking Poker',
-      title: 'Capped Ranges, example 2',
-      url: 'https://www.thinkingpoker.net/index.php?page_id=7637',
-      note: 'Live $5-$10, six-handed, $1,000 effective. The answer is the article’s bet of $450 into $585; they folded.',
-    },
   },
   {
     id: 'ace-high-call-river-weak-limper-paired-board',
@@ -9490,12 +8492,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their value range is a nine, trip deuces and the odd pocket pair. Against that sit all the missed heart draws, broadway hands and wheel draws a weak player bets when checked to. Ace-high beats all of those. You need about 29%, so call.',
-    source: {
-      by: 'Andrew Brokos on Thinking Poker',
-      title: 'What’s Your Play: Busted Draw (results)',
-      url: 'https://www.thinkingpoker.net/2012/08/8722/',
-      note: 'PokerStars SCOOP $2,100, 6-max, 700-1,400 with a 175 ante, early in the event (no ICM). Brokos called and lost to A♣A♠, and still likes the call.',
-    },
   },
   {
     id: 'top-pair-small-river-bet-after-three-checks',
@@ -9537,12 +8533,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'They are unlikely to bluff if you check, so you have to bet to win more. Their range is weak aces, small pairs and high cards: the best way to get called by really weak hands is to give them irresistible odds. Bet small, about a quarter to a third of the pot.',
-    source: {
-      by: 'Thinking Poker',
-      title: 'What’s Your Play: Rivered Top Pair (results)',
-      url: 'https://www.thinkingpoker.net/2013/04/whats-your-play-rivered-top-pair-results/',
-      note: 'A reader’s hand from a 6-max online tournament, blinds 50-100, about 200bb deep. The hero bet 122 into 460 and got called by A-4 offsuit.',
-    },
   },
   {
     id: 'top-pair-fold-sudden-big-river-bet-straightforward',
@@ -9589,12 +8579,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A player like this isn’t bluffing here and isn’t value betting worse: a big bet after checking the turn means trips or a full house. Top pair only beats the odd missed club draw. You need about 31%, so this is the right fold, even if you checked the turn hoping to call.',
-    source: {
-      by: 'Andrew Brokos on Thinking Poker',
-      title: 'What’s Your Play: Underrepresented Top Pair (results)',
-      url: 'https://www.thinkingpoker.net/2013/07/whats-your-play-underrepresented-top-pair-results/',
-      note: 'Live $2-$5, nine-handed; the raiser has $600. Brokos had a button straddle, left out here (it doesn’t change the action). They showed 7-7.',
-    },
   },
   {
     id: 'top-two-check-river-good-aggressive-player',
@@ -9646,12 +8630,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'After calling a flop raise and checking twice, their range is sets and straights they are happy to check to you, or one pair that won’t call a big bet. Few of their hands need to bluff, so a bet gets paid only by better and folds out the worse. Checking is better.',
-    source: {
-      by: 'Andrew Brokos on Thinking Poker',
-      title: 'What’s Your Play: Top Two on the River (results)',
-      url: 'https://www.thinkingpoker.net/2011/12/whats-your-play-top-two-on-the-river-results/',
-      note: 'PokerStars $3-$6 deep 6-max with about a $0.60 ante. Brokos bet, faced an all-in check-raise and folded.',
-    },
   },
   {
     id: 'top-pair-fold-big-river-bet-best-player',
@@ -9704,12 +8682,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'This river is bad for your hand and good for many of the draws they could have. Their big bet is mostly straights, flushes, sets and better kings, and their small turn bet left few bluffs. You need about 31%, so you can exploit them by folding your bluff-catchers.',
-    source: {
-      by: 'Andrew Brokos on Thinking Poker',
-      title: 'What’s Your Play: Top Pair Facing River Bomb (results)',
-      url: 'https://www.thinkingpoker.net/2015/03/whats-your-play-top-pair-facing-river-bomb-results/',
-      note: 'Live, a $10 limp implies $5-$10; you have about $2,500 and the raiser covers. Brokos called at the table and lost to 9-8 offsuit, and says folding was right.',
-    },
   },
   {
     id: 'two-pair-big-river-value-bet-caller',
@@ -9760,12 +8732,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'They have an incentive to bet some of their strong hands themselves, so their check leans towards hands that call out of disbelief: a six, a five, a small pair or ace-high. Bet the largest amount they will call with that whole checking range: about 80% of the pot.',
-    source: {
-      by: 'Andrew Brokos on Thinking Poker',
-      title: 'Hand of the Week: Value Betting the River',
-      url: 'https://www.thinkingpoker.net/2015/09/hand-of-the-week-value-betting-the-river/',
-      note: 'A live game with a $30 open; the blinds aren’t given ($5-$10 here, $2,500 stacks). The column’s pot is after rake. Brokos bet $225 into $278 and they called and mucked.',
-    },
   },
   {
     id: 'top-pair-call-river-donk-unknown',
@@ -9811,12 +8777,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their line rules out most strong hands, which would have raised somewhere. What leads here is mostly worse kings, tens and missed heart and straight draws, all hands you beat. You need about 27%; as a default against an unknown, call rather than raise.',
-    source: {
-      by: 'James “SplitSuit” Sweeney',
-      title: 'Facing A River Donk (Hand Analysis)',
-      url: 'https://www.splitsuit.com/facing-a-river-donk-hand-analysis',
-      note: '50NL online, nine-handed. They showed J♣9♣.',
-    },
   },
   {
     id: 'ace-high-fold-river-shove-three-bet-pot',
@@ -9870,12 +8830,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Ace-high is not a bluff-catcher here: any pair, any king and any flush beats you, and a straightforward player’s shove is full of those. You beat only an ace-high bluff, and they rarely run one. You need about 31%, so fold.',
-    source: {
-      by: 'Bart Hanson on Crush Live Poker',
-      title: 'From a Bluff to a Bluff Catcher',
-      url: 'https://crushlivepoker.com/articles/from-a-bluff-to-a-bluff-catcher',
-      note: 'Live $5-$10 at Commerce; you have $5,000 and the small blind $4,000. Bart folded; they showed A-T offsuit (the suits aren’t given).',
-    },
   },
   {
     id: 'set-overbet-river-range-full-of-kings',
@@ -9924,12 +8878,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their range is full of kings that won’t fold, plus sevens and small sets. A few club flushes beat you, but not enough to stop you betting. When you have value and think they will call down, go big: an overbet wins the most.',
-    source: {
-      by: 'Bart Hanson on Crush Live Poker',
-      title: 'Choosing Larger River Sizing',
-      url: 'https://crushlivepoker.com/articles/choosing-larger-river-sizing',
-      note: 'Live $5-$10 at Commerce, about $2,000 effective. Bart overbet $575 into about $530 and got called by K-Q.',
-    },
   },
   {
     id: 'jacks-call-river-shove-face-up-overpair',
@@ -9979,12 +8927,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Against a player who bluffs when they think you are marginal, their shove holds plenty of big cards and air alongside the overpairs, sets and straights. Your jacks beat every bluff. You need about 35%, so call. Most weak players won’t fire this bluff, so this works against this kind of opponent.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Turning Your Hand Face Up On Purpose',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66271-top-five-poker-cities-27-7/articles/21842-turning-your-hand-face-up-on-purpose',
-      note: 'A hand Little watched at a high buy-in EPT event; sizes are in big blinds and no ante is given. The cutoff showed Q♠J♥.',
-    },
   },
   {
     id: 'trips-fold-river-shove-tight-passive-check-raiser',
@@ -10031,12 +8973,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A tight, passive player who check-raises the turn and shoves the river has a jack or better every time. You lose to every value hand they can have: better kickers, full houses and the new straights, and beat only a vastly overplayed overpair. You need about 31%, so find the fold. Don’t level yourself into thinking they are bluffing your splashy bet.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Finding Folds at the WSOP (hand 2)',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66281-john-hennigan-27-16/articles/22007-finding-folds-at-the-wsop',
-      note: 'Blinds 150-300 with a 25 ante (nine antes counted), 15,000 effective. Little called and lost to 6♦6♠.',
-    },
   },
   {
     id: 'ace-high-check-river-double-paired-board',
@@ -10085,12 +9021,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Betting turns your hand into a bluff that only gets called by full houses and straights, while the hands that would fold, counterfeited pairs and missed draws, are ones you already beat. A tight player rarely has the ace-high your bet could fold. Check, and fold to a bet.',
-    source: {
-      by: 'Jonathan Little on CardPlayer',
-      title: 'Fun Cash Game Hand',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66283-november-9-27-18/articles/22043-fun-cash-game-hand',
-      note: 'A televised $5-$10 hand Little reviews; seats are our reading of middle position, the 3-bettor and the button. The player bet $325, faced a raise and folded; the button had A♥Q♥.',
-    },
   },
   {
     id: 'ace-high-fold-river-lead-paired-dry-board',
@@ -10139,12 +9069,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'They called the flop on a board with no draws, so they arrived with a made hand or big cards, and few worthless hands. Nearly all of those beat ace-high now. You need about 27% and have far less, so fold.',
-    source: {
-      by: 'Ed Miller on CardPlayer',
-      title: 'Picking Off Bluffs (example 2)',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/65774-steve-gross-23-3/articles/19052-picking-off-bluffs',
-      note: 'An example hand at $2-$5 with $500 stacks (100bb). The limper’s seat is our choice.',
-    },
   },
   {
     id: 'top-pair-fold-river-shove-after-flop-raise',
@@ -10190,12 +9114,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A raise on a dry flop followed by two more big bets is sets, a better queen or two pair. The only way top pair wins is a stone-cold bluff, and that is a long shot. You need about 24%, so calling is a bad call: fold.',
-    source: {
-      by: 'Ed Miller on CardPlayer',
-      title: 'Are You Paying Off Too Much? (example 1)',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/65761-billy-baxter-22-20/articles/18770-are-you-paying-off-too-much',
-      note: 'An example hand at $2-$5 with about $500 stacks (100bb).',
-    },
   },
   {
     id: 'top-pair-fold-small-turn-big-river-pattern',
@@ -10247,12 +9165,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'The big river bet, well over the size most live players bluff with, points to trips, a full house or a straight that just got there. The draws bricked, so a bluff is possible, but not often enough. You need about 29%, so fold.',
-    source: {
-      by: 'Ed Miller on CardPlayer',
-      title: 'Three Bet-Sizing Tells (hand 2)',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66333-jonathan-little-29-15/articles/22830-three-bet-sizing-tells',
-      note: 'An example hand at $2-$5 with $1,000 stacks (200bb).',
-    },
   },
   {
     id: 'top-pair-fold-river-bet-monotone-flop-low-stakes',
@@ -10301,12 +9213,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'You hold the A♥, so they have no nut-flush-draw bluffs, and the straight draws all made a pair of tens. What’s left is flushes, straights, sets and two pair. The average $1-$2 player bluffs here less than 10% of the time; you need about 26%. Folding should be automatic.',
-    source: {
-      by: 'Ed Miller on CardPlayer',
-      title: 'Stop Paying Them Off',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66219-greg-merson-25-24/articles/20912-stop-paying-them-off',
-      note: 'A student’s $1-$2 hand with $300 stacks; the student’s seat isn’t given (cutoff here). The student called and lost to a small flush.',
-    },
   },
   {
     id: 'top-pair-fold-pot-river-bet-flush-and-straight',
@@ -10357,12 +9263,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Both the flush draw and the J-9 straight draw have come in. Few hands spend this much on the flop and turn and end up with nothing, so far more often they have the big hand they’re representing. You have a bluff catcher and need about 34%: fold.',
-    source: {
-      by: 'Ed Miller on CardPlayer',
-      title: 'Top Pair as a Bluff Catcher (example 2)',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/65787-2010-european-poker-tour-grand-final-23-12/articles/19339-top-pair-as-a-bluff-catcher',
-      note: 'An example hand at $2-$5 with $1,000 stacks (200bb).',
-    },
   },
   {
     id: 'trips-call-half-pot-river-bet-limped-pot',
@@ -10417,12 +9317,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their river bet holds plenty of missed spade and straight draws and value hands like 8-7, A-7 and 6-5, and you beat all of those. Eights full or a better six are possible but rare. Your hand will probably win more than half the time and you only need about 26%: folding would be horrendous.',
-    source: {
-      by: 'Steve Zolotow on CardPlayer',
-      title: 'His Worst Mistake Occurred After the Hand Was Over',
-      url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66295-wynn-poker-room-28-3/articles/22244-his-worst-mistake-occurred-after-the-hand-was-over',
-      note: 'Zolotow’s own $5-$10 hand at Bellagio; he had about $550 (55bb). The pot sizes follow his bets. The button folded and showed 9♣6♣.',
-    },
   },
   {
     id: 'ace-jack-check-back-no-bluff',
@@ -10465,12 +9359,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A bluff only works if better hands fold. Their kings call, and Q-J is already behind your ace high, so a bet wins nothing that checking doesn’t. With no clear reason to bet, check back and take the showdown.',
-    source: {
-      by: 'Nathan Williams (BlackRain79)',
-      title: 'The Triple Barrel Bluff Ultimate Guide, example #3',
-      url: 'https://www.blackrain79.com/2013/10/triple-barrel-bluffing.html',
-      note: 'A full-ring micro-stakes hand; the article gives no bet sizes or stacks, so standard ones (100bb) are used. The big blind folds before the flop.',
-    },
   },
   {
     id: 'nines-eight-take-free-showdown',
@@ -10513,12 +9401,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Betting only gets called by the kings, high pairs and aces that beat you, and folds the busted hands your pair of eights already beats. Neither the king nor the ace helps the hands you could have. Take the free showdown.',
-    source: {
-      by: 'Nathan Williams (BlackRain79)',
-      title: 'How to Bluff the River Like a Poker Pro, example #2',
-      url: 'https://www.blackrain79.com/2016/02/bluffing-river-like-pro-at-micros.html',
-      note: 'A full-ring micro-stakes hand against a 15/12/3 regular; the article gives no bet sizes or stacks, so standard ones (100bb) are used. The blinds fold before the flop.',
-    },
   },
   {
     id: 'king-ten-check-back-passive-big-blind',
@@ -10562,12 +9444,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A value bet needs worse hands to call. After two calls from a passive player, the hands that call a third bet are mostly A-K and K-Q, which beat you, and the straight raises. Only queens are worse, and not enough of them. Check back and take the showdown.',
-    source: {
-      by: 'MiiWiin (PokerStrategy.com)',
-      title: 'River Value Bets (1) - Basics, example 1',
-      url: 'https://www.pokerstrategy.com/strategy/weekly-no-limit/river-value-bets-basics/',
-      note: 'A $25 6-max hand, so stacks are 100bb; the article gives the bets in dollars ($0.75 open, $1.20 flop, $3.00 turn) and they are used at 0.25 a big blind. The opponent’s final range (A-K suited, K-Q suited, three combos of Q-Q, 7♦6♦) is the author’s own narrowed range.',
-    },
   },
   {
     id: 'king-high-straight-check-back-vs-ace-jack',
@@ -10615,12 +9491,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Betting is lose-lose. Two pairs and sets fold, so a bet wins nothing more from them, while A-J and the jacks that split can check-raise and push you off your share. Check back and take the showdown.',
-    source: {
-      by: 'Andrew Brokos (Thinking Poker)',
-      title: 'What’s Your Play? Ran Out a Straight (results)',
-      url: 'https://www.thinkingpoker.net/2014/03/whats-your-play-ran-out-a-straight-results/',
-      note: 'A live $5-$10 full-ring hand with a $20 straddle, from the question post (thinkingpoker.net/2014/03/whats-your-play-ran-out-a-straight/); the straddle is the big blind here, so sizes are in $20 units. The opener started with $1,570; the hero covers. The hero bet $200, the opener shoved and showed A-J.',
-    },
   },
   {
     id: 'nine-high-flush-fold-turn-raise-recreational',
@@ -10673,12 +9543,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Your flush only beats bluffs here, and this player hardly ever bluffs with a big raise. What raises is a higher flush. You don’t have the price to call and hope for a straight flush: fold, and it isn’t close.',
-    source: {
-      by: 'Andrew Brokos (Thinking Poker)',
-      title: 'What’s Your Play? Flush With Redraw (results)',
-      url: 'https://www.thinkingpoker.net/2016/12/whats-your-play-flush-with-redraw-results/',
-      note: 'A live $5-$10 hand from the question post (thinkingpoker.net/2016/12/whats-your-play-flush-with-redraw/); stacks $2,000 (you), $3,500 and $1,800. The raiser is the article’s MP, two seats after UTG+1, called the hijack here. The raiser showed A♦K♦.',
-    },
   },
   {
     id: 'top-pair-fold-river-jam-after-check-raise',
@@ -10723,12 +9587,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A straightforward player rarely jams this line as a bluff, and every value hand he jams beats top pair with an eight kicker. Against this player, fold.',
-    source: {
-      by: 'Jonathan Little (PokerCoaching)',
-      title: 'Top Pair Facing a Check-Raise: Q8s BTN vs BB 100bb Cash',
-      url: 'https://pokercoaching.com/blog/top-pair-facing-check-raise-q8s-btn-vs-bb-100bb-cash/',
-      note: 'An 8-handed cash hand, 100bb deep; the article gives the pots (6.5, 20.9 and 62.7bb) and the 7.2bb check-raise but not the open, the flop bet or the jam, so a 3bb open and a 2bb c-bet are used and the jam is the rest of the stack. Played on a six-seat table here.',
-    },
   },
   {
     id: 'middle-pair-fold-river-after-turn-pot-lead',
@@ -10776,12 +9634,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Their value is straights, sets and two pair, and every one beats middle pair. The missed draws you beat mostly give up against a straightforward player. Even the solver folds Q-8 here; call only against a loose, splashy player who barrels every draw.',
-    source: {
-      by: 'Jonathan Little (PokerCoaching)',
-      title: 'Middle Pair Poker Strategy with Q8s: BTN vs BB in a 100bb Cash Game',
-      url: 'https://pokercoaching.com/blog/middle-pair-poker-strategy-with-q8s-btn-vs-bb-in-a-100bb-cash-game/',
-      note: 'An 8-handed cash hand, 100bb deep, played on a six-seat table here. The article gives the pots (6.5 and 19.5bb) and the bets but not the open, so a 3bb open is used. It names the value as straights, sets and two pair; the hands are those that make them. The missed draws are at a quarter weight because the author says straightforward players don’t bluff this river.',
-    },
   },
   {
     id: 'kings-check-river-paired-flush-board',
@@ -10837,12 +9689,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'No worse hand calls: T-T and J-J fold, and they won’t bet if you check. Every hand that pays you off beats you. Check, and fold if they bet.',
-    source: {
-      by: 'Bart Hanson on Crush Live Poker',
-      title: 'River Play',
-      url: 'https://crushlivepoker.com/articles/river-play1',
-      note: 'Live $5-$10 at the Bicycle Casino, $3,000 effective. The seats follow the article (the limper under the gun, you on their left and the caller on yours); it doesn’t say the limper and button folded the flop, but only two others are left by the turn. Bart checked, the opponent checked back with A♥A♦.',
-    },
   },
   {
     id: 'aces-small-river-bet-flush-completes',
@@ -10882,12 +9728,6 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'Checking and calling is the worst option: their kings check behind and only flushes bet. A small bet gets called by K-Q and K-J at this level, and if they raise you can fold.',
-    source: {
-      by: 'Bart Hanson on Crush Live Poker',
-      title: 'Rarely Check Call the River',
-      url: 'https://crushlivepoker.com/articles/rarely-check-call-the-river',
-      note: 'Live $1-$2, $300 effective; sizes in $2 units. The article says to bet small without a number, so the trainer’s third-pot bet is used; it implies a bigger bet loses the kings.',
-    },
   },
   {
     id: 'tens-check-back-nit-paired-flush-board',
@@ -10932,11 +9772,5 @@ export const SCENARIOS: Scenario[] = [
       },
     ],
     why: 'A nit never folds overpairs or a flush, and never calls with A-K or A-Q. So a bet only gets called when you’re beaten. Check back and take the showdown.',
-    source: {
-      by: 'James “SplitSuit” Sweeney',
-      title: 'A River Decision: Bet Or Check?',
-      url: 'https://www.splitsuit.com/river-decision-bet-or-check',
-      note: 'Live $1-$2; sizes in $2 units. The article gives the $22 3-bet, the $335 river pot and $213 behind but not the open or the flop and turn bets; a $6 open, a $40 flop bet (“almost pot”) and a $104 turn bet are used, which make those numbers.',
-    },
   },
 ];

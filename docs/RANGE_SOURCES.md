@@ -1,5 +1,7 @@
 # Range training: where every hand comes from
 
+**This file is the only record.** Since 17 Nov 2026 (the owner's call, after weighing App Review guideline 5.2.1 and the authors' rights) the hands in `scenarios.ts` carry no source, link or note, and nothing in the app, website or store page says where a hand came from. A hand's id below is its link to the code. Add a row here for every new hand.
+
 Every hand in `src/train/ranges/scenarios.ts` is a hand from a published breakdown (a real hand, or a teaching hand the expert built to make a point): the article's seats, action, board, cards and answer, with the opponent's range built from the expert's own read. This file lists them so nobody adds a hand twice and every answer can be checked against its source.
 
 Rules (the owner's, November 2026):

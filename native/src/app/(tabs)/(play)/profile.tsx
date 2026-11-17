@@ -1,4 +1,4 @@
-import { router, Stack } from 'expo-router';
+import { Color, router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -47,15 +47,17 @@ export default function ProfileScreen() {
     Keyboard.dismiss();
   };
 
+  // Light mode: Apple's grouped grey, so the white list rows stand out from the page (white on white hid them).
+  const page = dark || process.env.EXPO_OS !== 'ios' ? colors.background : Color.ios.systemGroupedBackground;
   const record = usePokerRecord();
   const changed = clean !== profile.name;
   const stats = record.hands ? `${record.hands.toLocaleString('en-US')} hands · ${Math.round((record.won / record.hands) * 100)}% won` : 'Play a hand to start';
 
   return (
-    <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
+    <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: page }}>
       <Stack.Screen options={{ title: '', headerTransparent: true }} />
       {/* The Games-app header: a deep blue glow behind your face that fades into the page. */}
-      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${colors.background as string} 100%)`), opacity: dark ? 1 : 0.9 }} />
+      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${page as string} 100%)`), opacity: dark ? 1 : 0.9 }} />
       <NativeMenu
         transparent
         top={

@@ -24,6 +24,8 @@ allowed, so one slot is free, kept for the update that brings back the parked ga
 A slide that shows a Premium game wears a small gold "Premium" tag with a crown above its headline (`premium()` in
 `slides.cjs`; the owner's call, 17 Nov 2026), so nobody downloads expecting every game free.
 
+No drop shadows anywhere (the owner, 17 Nov 2026): not under the phone, the pulled-out panels, the chat bubbles, the game tiles or the code card.
+
 Only the first three show in search results. The type is Inter Display (not SF Pro, whose licence covers UI mock-ups,
 not marketing headlines). Emoji are only ever cut from real iPhone screenshots, never drawn.
 

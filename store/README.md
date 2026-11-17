@@ -5,16 +5,21 @@ with the owner, one asset at a time, from Apple's [asset best practices](https:/
 
 ## Screenshots (`screenshots/`)
 
-Seven slides on white, in upload order, at the two iPhone sizes App Store Connect takes: `6.9in-1320x2868` (the
-iPhone Pro Max class) and `6.3in-1206x2622` (the required medium Dynamic Island class). JPEG, no transparency.
+Eight slides on white, in upload order, at the two iPhone sizes App Store Connect takes: `6.9in-1320x2868` (the
+iPhone Pro Max class) and `6.3in-1206x2622` (the required medium Dynamic Island class). JPEG, no transparency. Ten are
+allowed, so two slots are free (one is kept for the update that brings back the parked games).
 
 1. Your friends. One table. (Hold'em with chat bubbles)
 2. Add friends with a code. Free. (the lobby, its game code pulled out)
-3. 13 games. One app. (every game's picture)
-4. Three cards. Throw one away. (Crazy Pineapple's discard)
-5. Roll the die. Swap the river. (Die on the River)
-6. Make the right call. Built-in range trainer. See why, hand by hand. (the daily hand's Best play)
-7. No one around? Bots fill the seats.
+3. 13 games. One app. (every game's picture; tag "12 with Premium")
+4. Three cards. Throw one away. (Crazy Pineapple's discard; Premium tag)
+5. Roll the die. Swap the river. (Die on the River; Premium tag)
+6. Bend the rules. Play a power card. (Power Cards, the Fold Tax panel pulled out; Premium tag)
+7. Make the right call. Built-in range trainer. See why, hand by hand. (the daily hand's Best play, free)
+8. No one around? Bots fill the seats. (a Crazy Pineapple table; Premium tag)
+
+A slide that shows a Premium game wears a small gold "Premium" tag with a crown above its headline (`premium()` in
+`slides.cjs`; the owner's call, 17 Nov 2026), so nobody downloads expecting every game free.
 
 Only the first three show in search results. The type is Inter Display (not SF Pro, whose licence covers UI mock-ups,
 not marketing headlines). Emoji are only ever cut from real iPhone screenshots, never drawn.
@@ -24,8 +29,9 @@ session). The layouts are `scripts/slides.cjs` and `scripts/slides.html`; the pi
 
 - `holdem-yourturn.png`, `pineapple-discard.png`, `pineapple-yourturn.png`, `dice-dice.png`: How to Play's iPhone 17
   Pro simulator shots (`native/assets/howto`), which are 804 pixels wide, so the slides are a little soft.
-- `lobby-sb.png`: the owner's own iPhone screenshot of the lobby, with a clean 9:41 status bar drawn over the real one.
-  It shows the owner's name on their seat.
+- `lobby-sb.png`, `power-sb.png`, `power-panel.png`: the owner's own iPhone screenshots of the lobby and a Power Cards
+  table and its Fold Tax panel, with a clean 9:41 status bar drawn over the real one. They show the owner's name on
+  their seat.
 - `web-hand-sb.png`, `bestplay.png`, `chart.png`: Range training from the app's web build (its icons and font are the
   web's stand-ins), with a drawn status bar.
 - `x-*.png` (bubble faces), `discard-row.png`, `rolled.png`, `codecard.png`: pieces cut from those.

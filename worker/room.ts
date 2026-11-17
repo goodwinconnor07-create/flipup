@@ -169,7 +169,7 @@ export class TableRoom extends DurableObject<Env> {
         if (action.name !== undefined && !isFreeBot(action.name)) {
           return this.send(ws, { t: 'reject', id, error: 'That bot needs FlipUp Premium.' });
         }
-        // No name asked for: pick a free bot that isn't seated yet, never a random one from the whole roster.
+        // No name asked for: pick a free bot that isn't seated yet, never a random Premium one.
         if (action.name === undefined) {
           const seated = new Set(game.players.map((p) => p.name));
           const name = FREE_BOT_NAMES.find((n) => !seated.has(n));

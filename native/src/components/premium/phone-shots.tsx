@@ -22,8 +22,8 @@ import { Icon } from '../icon';
 import type { PerkId } from './perks';
 
 /** The screen the pictures are laid out on: an iPhone 17 Pro, in points. */
-const SCREEN_W = 402;
-const SCREEN_H = 874;
+export const SCREEN_W = 402;
+export const SCREEN_H = 874;
 /** The app's dark blue page, still (the moving one stays on the real page around the phone). */
 const PAGE = 'linear-gradient(180deg, #0d2160 0%, #081433 45%, #050b1f 100%)';
 const PANEL = 'rgba(255,255,255,0.085)';

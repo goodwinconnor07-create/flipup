@@ -92,7 +92,7 @@ function Welcome() {
               // From a join link: where Continue takes you, on its own line with room around it.
               <View style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.085)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
                 <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={{ fontSize: 15, lineHeight: 20, color: '#ffffff', flexShrink: 1 }}>
-                  <Text style={{ fontWeight: '700' }}>{host}'s table</Text>
+                  <Text style={{ fontWeight: '700' }}>{host}’s table</Text>
                   {[game, code].filter(Boolean).map((t) => ` · ${t}`).join('')}
                 </Text>
               </View>

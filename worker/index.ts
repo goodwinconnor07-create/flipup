@@ -184,7 +184,7 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
  */
 async function liveRoute(request: Request, env: Env, code: string, action: string | undefined): Promise<Response> {
   if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
-  if (limited(request, 'live', 120, 60_000)) return json({ error: 'Slow down a little.' }, 429);
+  if (await limited(request, 'live', 120, 60_000)) return json({ error: 'Slow down a little.' }, 429);
   const body = (await readJson(request, 2048)) as Record<string, unknown> | null;
   if (!body) return json({ error: 'Bad request.' }, 400);
   const room = env.TABLE_ROOM.getByName(code);

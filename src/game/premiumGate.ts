@@ -20,7 +20,7 @@ export const variantNeedsPremium = (v: Variant): boolean => isPremiumVariant(v);
 export const gamesNeedPremium = (games: readonly Variant[]): boolean => games.some(variantNeedsPremium);
 
 /**
- * The bots a free host can seat: the ten original ones, one of each playing style. Premium opens the whole roster.
+ * The bots a free host can seat: the ten original ones, one of each playing style. Premium opens every bot.
  * Sitting at someone else's table never needs this; only the host picks the bots.
  */
 export const FREE_BOT_NAMES: readonly string[] = ['Luna', 'Eli', 'Remi', 'Emma', 'Anna', 'Max', 'Zoe', 'Theo', 'Ivy', 'Kai'];

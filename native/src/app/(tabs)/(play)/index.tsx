@@ -10,6 +10,7 @@ import { haptic } from '@/components/haptics';
 import { GameBackdrop, shade } from '@/components/home/game-backdrop';
 import { GameSwiper } from '@/components/home/game-swiper';
 import { PlayButton } from '@/components/home/play-button';
+import { LockVeil } from '@/components/premium/lock-veil';
 import { SmallButton } from '@/components/home/small-button';
 import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
@@ -20,6 +21,7 @@ import { variantNeedsPremium, isVariant, VARIANTS, variantInfo, type Variant } f
 import { askForName } from '@/state/ask-name';
 import { usePartyRef } from '@/state/party';
 import { usePremium } from '@/state/premium';
+import { unlockToHost } from '@/state/unlock';
 import { useProfile } from '@/state/profile';
 import { useRangeHistory } from '@/state/range-history';
 import { usePokerRecord } from '@/state/record';
@@ -88,6 +90,7 @@ export default function Home() {
   // PLAY opens the page straight away; no colour fills the screen. A Premium game without Premium opens its sheet
   // instead, which explains the game before any setup and leads to the offer.
   const premium = usePremium();
+  const locked = !premium && variantNeedsPremium(variant);
   const start = (path: string, buzz = false) => () => {
     if (buzz) haptic.turn();
     if (!premium && variantNeedsPremium(variant)) {
@@ -160,7 +163,13 @@ export default function Home() {
               <SideButton icon="crown.fill" label={premium ? 'Unlocked' : 'Premium'} say={premium ? 'Your Premium' : undefined} tint={brand.gold} onPress={go('/premium')} />
               <SideButton icon="gearshape.fill" label="Settings" onPress={go('/settings')} />
             </View>
-            <PlayButton label="Host a game" line="with friends · share a code" ink={shade(look.band, 0.35)} onPress={start(`/play-friends?variant=${variant}`)} />
+            {/* A Premium game without Premium: the game sheet's lock (blur, lock, its words) over Host a game; a tap opens the offer for this game. */}
+            <View style={{ borderRadius: 26, borderCurve: 'continuous', overflow: 'hidden' }}>
+              <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}>
+                <PlayButton label="Host a game" line="with friends · share a code" ink={shade(look.band, 0.35)} onPress={start(`/play-friends?variant=${variant}`)} />
+              </View>
+              {locked && <LockVeil compact game={info.name} onPress={() => unlockToHost([variant], premium)} />}
+            </View>
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
               <SmallButton icon="cpu.fill" label="Play bots" onPress={start(`/play-bots?variant=${variant}`, true)} />
               {/* Where Join a game is. While you're at a table or in a party, the way back to it takes this spot. */}

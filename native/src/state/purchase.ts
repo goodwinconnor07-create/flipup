@@ -177,6 +177,9 @@ export function startStore(): Promise<boolean> {
   return ready;
 }
 
+/** How long the Buy button waits for the App Store before it gives up (long enough for a password and Face ID). */
+const PURCHASE_WAIT_MS = 120_000;
+
 const DAYS: Record<string, number> = { day: 1, week: 7, month: 30, year: 365 };
 
 /**
@@ -290,11 +293,24 @@ export async function buyPremium(plan: Plan = 'yearly'): Promise<boolean> {
     return false;
   }
   return new Promise<boolean>((done) => {
-    waiting = { done };
-    requestPurchase({ type: 'subs', request: { apple: { sku: SKU[plan] } } }).catch((e: unknown) => {
-      publish({ busy: false, error: "The App Store couldn't start the purchase. Try again." });
+    // If Apple's sheet never shows and nothing answers, the button must not spin for ever. A purchase that finishes
+    // after this still turns Premium on (the purchase listener doesn't need `waiting`).
+    const giveUp = setTimeout(() => {
+      if (!state.busy || !waiting) return;
+      publish({ busy: false, error: "The App Store didn't answer. Check your connection and try again." });
       waiting = null;
       done(false);
+    }, PURCHASE_WAIT_MS);
+    const finish = (ok: boolean) => {
+      clearTimeout(giveUp);
+      done(ok);
+    };
+    waiting = { done: finish };
+    requestPurchase({ type: 'subs', request: { apple: { sku: SKU[plan] } } }).catch((e: unknown) => {
+      if (isUserCancelledError(e)) publish({ busy: false });
+      else publish({ busy: false, error: "The App Store couldn't start the purchase. Try again." });
+      waiting = null;
+      finish(false);
     });
   });
 }

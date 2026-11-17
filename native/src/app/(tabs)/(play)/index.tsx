@@ -14,6 +14,7 @@ import { LockVeil } from '@/components/premium/lock-veil';
 import { SmallButton } from '@/components/home/small-button';
 import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
+import { AVATAR } from '@/components/profile-menu';
 import { Swap } from '@/components/swap';
 import { useTabPush } from '@/components/use-tab-push';
 import { detail, EASE_OUT } from '@/motion/presets';
@@ -126,7 +127,7 @@ export default function Home() {
               haptics={false}
               style={{ borderRadius: 999, boxShadow: '0 6px 16px -4px rgba(0, 0, 0, 0.5)' }}
             >
-              <Avatar emoji={named ? profile.emoji : undefined} size={50} />
+              <Avatar emoji={named ? profile.emoji : undefined} size={AVATAR} />
             </PressableScale>
           </Animated.View>
 

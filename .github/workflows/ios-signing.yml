@@ -56,6 +56,9 @@ jobs:
           EXPO_ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
           EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
           TERM: xterm
+          # Capabilities (Push Notifications for the Live Activity) are switched on by hand in the Apple developer portal:
+          # Apple's API turns away EAS's request to switch Push on with an App Store Connect key, so EAS doesn't try.
+          EXPO_NO_CAPABILITY_SYNC: "1"
         run: |
           (while true; do printf '\r'; sleep 4; done) | timeout 900 \
             script -qefc "eas credentials:configure-build --platform ios --profile production" /dev/null

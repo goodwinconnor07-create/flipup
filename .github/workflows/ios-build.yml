@@ -23,6 +23,10 @@ on:
           - expo
           - github-mac
         default: github-mac
+      from_run:
+        description: "Send an earlier build instead of building: the run ID of a GitHub's Mac build from the last 7 days (the number at the end of its address). Leave empty to build."
+        type: string
+        default: ''
 
 # One iOS build at a time. A second run waits for the first instead of cancelling it.
 concurrency:
@@ -31,11 +35,14 @@ concurrency:
 
 permissions:
   contents: read
+  # To download an earlier run's .ipa (from_run).
+  actions: read
 
 jobs:
   build:
     # GitHub's Mac builds the app itself (eas build --local), so it doesn't use an Expo build; Expo's servers do.
-    runs-on: ${{ inputs.where == 'github-mac' && 'macos-26' || 'ubuntu-latest' }}
+    # Sending an earlier build (from_run) needs no Mac.
+    runs-on: ${{ inputs.from_run == '' && inputs.where == 'github-mac' && 'macos-26' || 'ubuntu-latest' }}
     timeout-minutes: 120
     defaults:
       run:
@@ -75,7 +82,7 @@ jobs:
           token: ${{ secrets.EXPO_API_TOKEN }}
 
       - name: Pick Xcode (GitHub's Mac only)
-        if: ${{ inputs.where == 'github-mac' }}
+        if: ${{ inputs.where == 'github-mac' && inputs.from_run == '' }}
         working-directory: .
         # Expo SDK 58's expo-modules-jsi needs Swift from Xcode 26.4 or later (earlier compilers reject its Swift 6
         # code), so take the newest Xcode 26 on the macOS 26 image and stop if it's older than 26.4.
@@ -127,7 +134,25 @@ jobs:
           umask 077
           printf '%s' "$KEY" > "$RUNNER_TEMP/AuthKey.p8"
 
+      - name: Check the earlier run's ID
+        if: ${{ inputs.from_run != '' }}
+        working-directory: .
+        env:
+          RUN_ID: ${{ inputs.from_run }}
+        run: |
+          case "$RUN_ID" in *[!0-9]*) echo "::error::from_run is the number at the end of the build run's address."; exit 1;; esac
+
+      - name: Get the .ipa from the earlier run
+        if: ${{ inputs.from_run != '' }}
+        uses: actions/download-artifact@v4 # pin to a commit SHA when convenient, like the others
+        with:
+          name: FlipUp-ipa
+          run-id: ${{ inputs.from_run }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}
+
       - name: Build
+        if: ${{ inputs.from_run == '' }}
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -150,7 +175,7 @@ jobs:
           fi
 
       - name: Keep the .ipa (GitHub's Mac only)
-        if: ${{ inputs.where == 'github-mac' }}
+        if: ${{ inputs.where == 'github-mac' && inputs.from_run == '' }}
         uses: actions/upload-artifact@v4 # pin to a commit SHA when convenient, like the others
         with:
           name: FlipUp-ipa
@@ -158,7 +183,8 @@ jobs:
           retention-days: 7
 
       - name: Submit to App Store Connect
-        if: ${{ inputs.submit == true }}
+        # from_run always sends: that's all it's for.
+        if: ${{ inputs.submit == true || inputs.from_run != '' }}
         env:
           ASC_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
           ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
@@ -178,7 +204,7 @@ jobs:
             Object.assign(j.submit.production.ios, { ascApiKeyPath: process.env.ASC_KEY_PATH, ascApiKeyId: process.env.ASC_KEY_ID, ascApiKeyIssuerId: process.env.ASC_ISSUER_ID });
             fs.writeFileSync("eas.json", JSON.stringify(j, null, 2));
           '
-          if [ "${{ inputs.where }}" = "github-mac" ]; then
+          if [ "${{ inputs.where }}" = "github-mac" ] || [ -n "${{ inputs.from_run }}" ]; then
             eas submit --platform ios --path "$RUNNER_TEMP/FlipUp.ipa" --non-interactive
           else
             eas submit --platform ios --latest --non-interactive

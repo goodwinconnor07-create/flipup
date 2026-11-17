@@ -9,7 +9,7 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
-import { freeThisWeek, isPremiumVariant, VARIANTS, withVariant, type VariantInfo } from '@/engine';
+import { isPremiumVariant, VARIANTS, withVariant, type VariantInfo } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { dispatch, useTable } from '@/state/session';
 import { setDraft, useDraft } from '@/state/setup-draft';
@@ -134,11 +134,6 @@ function GameRow({ info, chosen, locked, onPress }: { info: VariantInfo; chosen:
         <ThemedText variant="footnote" tone="secondaryLabel" numberOfLines={2}>
           {info.tagline}
         </ThemedText>
-        {isPremiumVariant(info.id) && info.id === freeThisWeek() && (
-          <ThemedText variant="caption1" style={{ color: brand.gold, fontWeight: '700' }}>
-            Free this week
-          </ThemedText>
-        )}
       </View>
       {chosen ? (
         <Icon name="checkmark" size={18} color={colors.accent} weight="bold" />

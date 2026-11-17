@@ -50,7 +50,7 @@ export interface LiveState {
   /** Your turn's clock, in seconds since 1970: when it started and when it runs out. Null with no clock. */
   turnStart: number | null;
   turnEnd: number | null;
-  /** The status line: "Mia is thinking", "You won 12 bb", "Game over · 2nd of 6". */
+  /** The status line: "Mia is thinking", "Two pair took it", "Game over · 2nd of 6". */
   line: string;
   /** This hand's result for you in big blinds (+ up, - down). 0 until it's over. */
   net: number;
@@ -155,11 +155,12 @@ export function liveState(full: Game, deviceId: string, now: number, act = ''): 
     const back = hand.result.won[me.id] ?? 0;
     const net = bb(back - seat.total, big);
     const winners = [...new Set(hand.result.pots.flatMap((p) => p.winners))].filter((id) => id !== me.id);
-    const by = hand.result.showdown && hand.result.names[me.id] ? ` with ${hand.result.names[me.id].toLowerCase()}` : '';
-    if (net > 0) return { ...mine, phase: 'won', net, line: `You won ${bbWords(net)}${by}` };
+    // The pill beside the line shows the amount, so the line says how it happened rather than repeating it.
+    const made = hand.result.showdown ? hand.result.names[me.id] : '';
+    if (net > 0) return { ...mine, phase: 'won', net, line: made ? `${made[0].toUpperCase()}${made.slice(1)} took it` : 'Everyone folded to you' };
     const taker = winners.length ? `${named(winners[0])} took the pot` : 'Hand over';
     if (seat.folded) return { ...mine, phase: 'folded', net, line: `You folded · ${taker}` };
-    if (net < 0) return { ...mine, phase: 'lost', net, line: `${taker} · you lost ${bbWords(net)}` };
+    if (net < 0) return { ...mine, phase: 'lost', net, line: taker };
     return { ...mine, phase: 'even', net, line: 'Split pot · your chips back' };
   }
 

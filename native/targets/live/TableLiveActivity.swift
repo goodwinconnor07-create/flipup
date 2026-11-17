@@ -5,8 +5,9 @@ import WidgetKit
 
 // FlipUp's table on the Lock Screen and in the Dynamic Island, laid out like Flighty's: a small top row (the game and
 // the hand), a big middle row (your cards on the left, the board and pot on the right), a hairline, then one status
-// line with a pill on the right. On your turn the hairline is the gold clock draining and the pill is Check (or what
-// it costs to call). Near-black card, generous padding so nothing meets the rounded corners. Your cards are face down
+// line. On your turn the card warms towards gold, the hairline is the clock draining, the countdown is the biggest
+// thing on it, and Check is the one button (only real buttons look like buttons). Near-black card, generous padding
+// so nothing meets the rounded corners. Your cards are face down
 // until the phone is unlocked. The layout is in docs/DESIGN.md ("Live Activity").
 
 typealias LiveState = TableActivityAttributes.ContentState
@@ -35,7 +36,7 @@ struct TableLiveActivity: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: TableActivityAttributes.self) { context in
       LockScreenView(attrs: context.attributes, state: context.state, stale: context.isStale)
-        .activityBackgroundTint(LivePalette.card)
+        .activityBackgroundTint(context.state.isTurn && !context.isStale ? LivePalette.turnCard : LivePalette.card)
         .activitySystemActionForegroundColor(.white)
     } dynamicIsland: { context in
       let s = context.state
@@ -107,7 +108,7 @@ struct LockScreenView: View {
 
       if state.playing {
         HStack(alignment: .top, spacing: 12) {
-          YourHand(state: state, width: 38)
+          YourHand(state: state, width: 44)
           Spacer(minLength: 8)
           BoardAndPot(state: state, width: 26)
         }
@@ -134,7 +135,7 @@ struct TopRow: View {
 
   var body: some View {
     HStack(spacing: 6) {
-      Text(attrs.emoji).font(.subheadline)
+      FlipUpMark(size: 18)
       Text(attrs.game)
         .font(.system(.subheadline, design: .rounded).weight(.bold))
         .foregroundStyle(.white)
@@ -168,7 +169,7 @@ struct YourHand: View {
       }
       Text(state.phase == "folded" ? "Folded" : (state.handName.isEmpty ? "Your hand" : state.handName))
         .font(.system(.footnote, design: .rounded).weight(.semibold))
-        .foregroundStyle(state.phase == "folded" ? LivePalette.quiet : .white)
+        .foregroundStyle(state.phase == "folded" ? LivePalette.quiet : LivePalette.handBlue)
         .lineLimit(1)
         .privacySensitive()
     }
@@ -217,68 +218,62 @@ struct StatusRow: View {
 
   var body: some View {
     HStack(alignment: .center, spacing: 12) {
-      VStack(alignment: .leading, spacing: 3) {
-        title
-        Text(subline)
-          .font(.footnote.weight(.medium))
-          .foregroundStyle(LivePalette.quiet)
-          .monospacedDigit()
-          .lineLimit(1)
+      if state.isTurn && !stale {
+        turn
+      } else {
+        VStack(alignment: .leading, spacing: 3) {
+          Text(stale ? "Open FlipUp to catch up" : state.line)
+            .font(.system(.headline, design: .rounded).weight(.bold))
+            .foregroundStyle(state.won && !stale ? LivePalette.gold : .white)
+            .lineLimit(1)
+          Text("\(LiveState.bb(state.stack)) behind")
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(LivePalette.quiet)
+            .monospacedDigit()
+            .lineLimit(1)
+        }
       }
       Spacer(minLength: 4)
-      pill
+      if !stale { pill }
     }
   }
 
-  @ViewBuilder private var title: some View {
-    if stale {
-      Text("Open FlipUp to catch up")
-        .font(.system(.headline, design: .rounded).weight(.bold))
-        .foregroundStyle(.white)
-    } else if state.isTurn {
-      HStack(spacing: 6) {
+  /** Your turn: the countdown is the biggest thing on the card, in gold, with what it costs under it. */
+  private var turn: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      if let clock = state.clock {
+        Text(timerInterval: clock, countsDown: true)
+          .font(.system(size: 34, weight: .heavy, design: .rounded))
+          .foregroundStyle(LivePalette.gold)
+          .monospacedDigit()
+          .frame(maxWidth: 120, alignment: .leading)
+      } else {
         Text("Your turn")
-          .font(.system(.headline, design: .rounded).weight(.bold))
-          .foregroundStyle(.white)
-        if let clock = state.clock {
-          Text(timerInterval: clock, countsDown: true)
-            .font(.system(.headline, design: .rounded).weight(.bold))
-            .foregroundStyle(LivePalette.gold)
-            .monospacedDigit()
-            .frame(maxWidth: 56, alignment: .leading)
-        }
+          .font(.system(size: 30, weight: .heavy, design: .rounded))
+          .foregroundStyle(LivePalette.gold)
       }
-    } else {
-      Text(state.line)
-        .font(.system(.headline, design: .rounded).weight(.bold))
-        .foregroundStyle(state.won ? LivePalette.gold : .white)
+      (Text(state.clock == nil ? "" : "Your turn · ").foregroundStyle(.white)
+        + Text(state.canCheck ? "free to check" : "\(LiveState.bb(state.toCall)) to call")
+          .foregroundStyle(state.canCheck ? LivePalette.quiet : LivePalette.gold))
+        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+        .monospacedDigit()
         .lineLimit(1)
     }
   }
 
-  private var subline: String {
-    if state.isTurn {
-      return state.canCheck ? "Free to check · \(LiveState.bb(state.stack)) behind" : "\(LiveState.bb(state.toCall)) to call · \(LiveState.bb(state.stack)) behind"
-    }
-    return "\(LiveState.bb(state.stack)) behind"
-  }
-
+  /** Only a real button looks like one: Check when it's free. After a hand, your net. */
   @ViewBuilder private var pill: some View {
-    if stale {
-      EmptyView()
-    } else if state.isTurn && state.canCheck && !state.act.isEmpty {
+    if state.isTurn && state.canCheck && !state.act.isEmpty {
       Button(intent: CheckIntent(origin: attrs.origin, code: attrs.code, act: state.act, hand: state.hand, seq: state.seq)) {
         Text("Check")
-          .font(.system(.subheadline, design: .rounded).weight(.heavy))
+          .font(.system(.headline, design: .rounded).weight(.heavy))
           .foregroundStyle(.black)
-          .padding(.horizontal, 16)
-          .padding(.vertical, 8)
+          .padding(.horizontal, 20)
+          .padding(.vertical, 10)
           .background(Capsule().fill(LivePalette.gold))
       }
       .buttonStyle(.plain)
-    } else if state.isTurn {
-      Pill(text: "Call \(LiveState.bb(state.toCall))", tint: LivePalette.gold, filled: false)
-    } else if ["won", "lost", "even"].contains(state.phase) || (state.phase == "folded" && state.net != 0) {
+    } else if !state.isTurn && (["won", "lost", "even"].contains(state.phase) || (state.phase == "folded" && state.net != 0)) {
       Pill(text: state.netText, tint: state.won ? LivePalette.gold : .white, filled: state.won)
     }
   }

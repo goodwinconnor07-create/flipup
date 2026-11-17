@@ -3,9 +3,11 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-// FlipUp's table on the Lock Screen and in the Dynamic Island. It answers one question at a glance: is it my turn?
-// Your turn is gold, with the clock draining; every other moment is calm white on the app's deep blue. Your cards are
-// face down until the phone is unlocked. The layout is in docs/DESIGN.md ("Live Activity").
+// FlipUp's table on the Lock Screen and in the Dynamic Island, laid out like Flighty's: a small top row (the game and
+// the hand), a big middle row (your cards on the left, the board and pot on the right), a hairline, then one status
+// line with a pill on the right. On your turn the hairline is the gold clock draining and the pill is Check (or what
+// it costs to call). Near-black card, generous padding so nothing meets the rounded corners. Your cards are face down
+// until the phone is unlocked. The layout is in docs/DESIGN.md ("Live Activity").
 
 typealias LiveState = TableActivityAttributes.ContentState
 
@@ -33,28 +35,42 @@ struct TableLiveActivity: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: TableActivityAttributes.self) { context in
       LockScreenView(attrs: context.attributes, state: context.state, stale: context.isStale)
-        .activityBackgroundTint(LivePalette.night)
+        .activityBackgroundTint(LivePalette.card)
         .activitySystemActionForegroundColor(.white)
     } dynamicIsland: { context in
       let s = context.state
+      let a = context.attributes
       return DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
-          HoleCards(cards: s.cards, width: 30)
-            .padding(.leading, 4)
+          if s.playing {
+            YourHand(state: s, width: 28)
+              .padding(.leading, 6)
+              .dynamicIsland(verticalPlacement: .belowIfTooWide)
+          } else {
+            TopRow(attrs: a, state: s).padding(.leading, 6)
+          }
         }
         DynamicIslandExpandedRegion(.trailing) {
-          VStack(alignment: .trailing, spacing: 2) {
-            Text(s.potText).font(.system(.subheadline, design: .rounded).weight(.semibold)).monospacedDigit()
-            Text("\(LiveState.bb(s.stack)) left").font(.caption2).foregroundStyle(LivePalette.quiet).monospacedDigit()
+          if s.playing {
+            BoardAndPot(state: s, width: 19)
+              .padding(.trailing, 6)
+              .dynamicIsland(verticalPlacement: .belowIfTooWide)
           }
-          .padding(.trailing, 4)
-        }
-        DynamicIslandExpandedRegion(.center) {
-          BoardRow(board: s.board, width: 22)
         }
         DynamicIslandExpandedRegion(.bottom) {
-          StatusBar(attrs: context.attributes, state: s, stale: context.isStale, compact: true)
-            .padding(.top, 4)
+          VStack(spacing: 10) {
+            if !s.playing {
+              Text(s.line)
+                .font(.system(.title3, design: .rounded).weight(.bold))
+                .foregroundStyle(s.over && s.place == 1 ? LivePalette.gold : .white)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+              Hairline(state: s)
+              StatusRow(attrs: a, state: s, stale: context.isStale)
+            }
+          }
+          .padding(.horizontal, 6)
+          .padding(.top, 6)
         }
       } compactLeading: {
         HoleCards(cards: s.cards, width: 15, overlap: 0.1)
@@ -72,6 +88,11 @@ struct TableLiveActivity: Widget {
   }
 }
 
+extension LiveState {
+  /** A hand is on: the middle row shows cards. Not in the lobby or once the table is over. */
+  var playing: Bool { !over && phase != "lobby" }
+}
+
 // MARK: - Lock Screen
 
 struct LockScreenView: View {
@@ -80,110 +101,204 @@ struct LockScreenView: View {
   let stale: Bool
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      HStack(spacing: 6) {
-        Text(attrs.emoji).font(.footnote)
-        Text(attrs.game).font(.system(.footnote, design: .rounded).weight(.semibold))
-        Spacer(minLength: 8)
-        Text(state.round.isEmpty ? (state.hand > 0 ? "Hand \(state.hand)" : attrs.code) : state.round)
-          .font(.caption).foregroundStyle(LivePalette.quiet).monospacedDigit()
-      }
-      .foregroundStyle(.white.opacity(0.9))
-      .accessibilityElement(children: .combine)
+    VStack(alignment: .leading, spacing: 0) {
+      TopRow(attrs: attrs, state: state)
+        .padding(.bottom, 14)
 
-      if state.over || state.phase == "lobby" {
-        Text(state.line)
-          .font(.system(.title3, design: .rounded).weight(.bold))
-          .foregroundStyle(state.over && state.place == 1 ? LivePalette.gold : .white)
-      } else {
-        HStack(alignment: .center, spacing: 14) {
-          VStack(alignment: .leading, spacing: 5) {
-            if state.cards.isEmpty {
-              Text("Not in this hand").font(.footnote).foregroundStyle(LivePalette.quiet)
-            } else {
-              HoleCards(cards: state.cards, width: 32)
-                .opacity(state.phase == "folded" ? 0.45 : 1)
-            }
-            if !state.handName.isEmpty {
-              Text(state.handName)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(LivePalette.quiet)
-                .lineLimit(1)
-                .privacySensitive()
-            }
-          }
-          Spacer(minLength: 0)
-          BoardRow(board: state.board, width: 25)
+      if state.playing {
+        HStack(alignment: .top, spacing: 12) {
+          YourHand(state: state, width: 38)
+          Spacer(minLength: 8)
+          BoardAndPot(state: state, width: 26)
         }
+        .padding(.bottom, 16)
+        Hairline(state: state)
+          .padding(.bottom, 14)
+        StatusRow(attrs: attrs, state: state, stale: stale)
+      } else {
+        Text(state.line)
+          .font(.system(.title2, design: .rounded).weight(.bold))
+          .foregroundStyle(state.over && state.place == 1 ? LivePalette.gold : .white)
+          .lineLimit(2)
       }
-
-      StatusBar(attrs: attrs, state: state, stale: stale, compact: false)
     }
-    .padding(16)
+    .padding(.horizontal, 22)
+    .padding(.vertical, 20)
   }
 }
 
-// MARK: - The bottom line: your turn and its clock, or what's happening
+/** The small row along the top: the game on the left, the hand or party round on the right. */
+struct TopRow: View {
+  let attrs: TableActivityAttributes
+  let state: LiveState
 
-struct StatusBar: View {
+  var body: some View {
+    HStack(spacing: 6) {
+      Text(attrs.emoji).font(.subheadline)
+      Text(attrs.game)
+        .font(.system(.subheadline, design: .rounded).weight(.bold))
+        .foregroundStyle(.white)
+        .lineLimit(1)
+      Spacer(minLength: 8)
+      Text(state.round.isEmpty ? (state.hand > 0 ? "Hand \(state.hand)" : attrs.code) : state.round)
+        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+        .foregroundStyle(LivePalette.quiet)
+        .monospacedDigit()
+        .lineLimit(1)
+    }
+    .accessibilityElement(children: .combine)
+  }
+}
+
+/** Your cards, big, with what they make under them (hidden with the cards while the phone is locked). */
+struct YourHand: View {
+  let state: LiveState
+  let width: CGFloat
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      if state.cards.isEmpty {
+        Text("Sitting out")
+          .font(.system(.headline, design: .rounded).weight(.bold))
+          .foregroundStyle(LivePalette.quiet)
+          .frame(height: width * 1.38, alignment: .leading)
+      } else {
+        HoleCards(cards: state.cards, width: width)
+          .opacity(state.phase == "folded" ? 0.4 : 1)
+      }
+      Text(state.phase == "folded" ? "Folded" : (state.handName.isEmpty ? "Your hand" : state.handName))
+        .font(.system(.footnote, design: .rounded).weight(.semibold))
+        .foregroundStyle(state.phase == "folded" ? LivePalette.quiet : .white)
+        .lineLimit(1)
+        .privacySensitive()
+    }
+  }
+}
+
+/** The board on the right with the pot under it, both lined up to the right edge. */
+struct BoardAndPot: View {
+  let state: LiveState
+  let width: CGFloat
+
+  var body: some View {
+    VStack(alignment: .trailing, spacing: 6) {
+      BoardRow(board: state.board, width: width)
+      Text(state.potText)
+        .font(.system(.footnote, design: .rounded).weight(.semibold))
+        .foregroundStyle(.white)
+        .monospacedDigit()
+        .lineLimit(1)
+    }
+  }
+}
+
+/** A hairline across the card; on your turn it's the gold clock, draining. */
+struct Hairline: View {
+  let state: LiveState
+
+  var body: some View {
+    if state.isTurn, let clock = state.clock {
+      ProgressView(timerInterval: clock, countsDown: true) { EmptyView() } currentValueLabel: { EmptyView() }
+        .progressViewStyle(.linear)
+        .tint(LivePalette.gold)
+        .accessibilityLabel("Time left")
+    } else {
+      Rectangle().fill(LivePalette.hairline).frame(height: 1).accessibilityHidden(true)
+    }
+  }
+}
+
+// MARK: - The bottom row: what's happening, with a pill on the right
+
+struct StatusRow: View {
   let attrs: TableActivityAttributes
   let state: LiveState
   let stale: Bool
-  let compact: Bool
 
   var body: some View {
-    if stale && !state.over {
-      Text("Open FlipUp to catch up").font(.footnote).foregroundStyle(LivePalette.quiet)
+    HStack(alignment: .center, spacing: 12) {
+      VStack(alignment: .leading, spacing: 3) {
+        title
+        Text(subline)
+          .font(.footnote.weight(.medium))
+          .foregroundStyle(LivePalette.quiet)
+          .monospacedDigit()
+          .lineLimit(1)
+      }
+      Spacer(minLength: 4)
+      pill
+    }
+  }
+
+  @ViewBuilder private var title: some View {
+    if stale {
+      Text("Open FlipUp to catch up")
+        .font(.system(.headline, design: .rounded).weight(.bold))
+        .foregroundStyle(.white)
     } else if state.isTurn {
-      VStack(alignment: .leading, spacing: 6) {
-        HStack(spacing: 8) {
-          Text("YOUR TURN")
-            .font(.system(.caption, design: .rounded).weight(.heavy))
-            .tracking(0.6)
+      HStack(spacing: 6) {
+        Text("Your turn")
+          .font(.system(.headline, design: .rounded).weight(.bold))
+          .foregroundStyle(.white)
+        if let clock = state.clock {
+          Text(timerInterval: clock, countsDown: true)
+            .font(.system(.headline, design: .rounded).weight(.bold))
             .foregroundStyle(LivePalette.gold)
-          if let clock = state.clock {
-            ProgressView(timerInterval: clock, countsDown: true) { EmptyView() } currentValueLabel: { EmptyView() }
-              .progressViewStyle(.linear)
-              .tint(LivePalette.gold)
-            Text(timerInterval: clock, countsDown: true)
-              .font(.system(.caption, design: .rounded).weight(.semibold))
-              .monospacedDigit()
-              .foregroundStyle(LivePalette.gold)
-              .frame(width: 34, alignment: .trailing)
-          } else {
-            Spacer(minLength: 0)
-          }
-        }
-        HStack(spacing: 8) {
-          Text(state.canCheck ? "Check or bet · \(state.potText)" : "\(LiveState.bb(state.toCall)) to call · \(state.potText)")
-            .font(.footnote.weight(.medium))
-            .foregroundStyle(.white)
             .monospacedDigit()
-            .lineLimit(1)
-          Spacer(minLength: 4)
-          if state.canCheck && !state.act.isEmpty {
-            Button(intent: CheckIntent(origin: attrs.origin, code: attrs.code, act: state.act, hand: state.hand, seq: state.seq)) {
-              Text("Check").font(.system(.subheadline, design: .rounded).weight(.bold)).padding(.horizontal, 6)
-            }
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
-            .tint(LivePalette.blue)
-            .controlSize(compact ? .small : .regular)
-          }
+            .frame(maxWidth: 56, alignment: .leading)
         }
       }
     } else {
-      HStack(spacing: 8) {
-        Text(state.line)
-          .font(.footnote.weight(state.won ? .semibold : .regular))
-          .foregroundStyle(state.won ? LivePalette.gold : LivePalette.quiet)
-          .lineLimit(1)
-        Spacer(minLength: 4)
-        if !state.over && state.phase != "lobby" {
-          Text(state.potText).font(.footnote.weight(.semibold)).monospacedDigit().foregroundStyle(.white)
-        }
-      }
+      Text(state.line)
+        .font(.system(.headline, design: .rounded).weight(.bold))
+        .foregroundStyle(state.won ? LivePalette.gold : .white)
+        .lineLimit(1)
     }
+  }
+
+  private var subline: String {
+    if state.isTurn {
+      return state.canCheck ? "Free to check · \(LiveState.bb(state.stack)) behind" : "\(LiveState.bb(state.toCall)) to call · \(LiveState.bb(state.stack)) behind"
+    }
+    return "\(LiveState.bb(state.stack)) behind"
+  }
+
+  @ViewBuilder private var pill: some View {
+    if stale {
+      EmptyView()
+    } else if state.isTurn && state.canCheck && !state.act.isEmpty {
+      Button(intent: CheckIntent(origin: attrs.origin, code: attrs.code, act: state.act, hand: state.hand, seq: state.seq)) {
+        Text("Check")
+          .font(.system(.subheadline, design: .rounded).weight(.heavy))
+          .foregroundStyle(.black)
+          .padding(.horizontal, 16)
+          .padding(.vertical, 8)
+          .background(Capsule().fill(LivePalette.gold))
+      }
+      .buttonStyle(.plain)
+    } else if state.isTurn {
+      Pill(text: "Call \(LiveState.bb(state.toCall))", tint: LivePalette.gold, filled: false)
+    } else if ["won", "lost", "even"].contains(state.phase) || (state.phase == "folded" && state.net != 0) {
+      Pill(text: state.netText, tint: state.won ? LivePalette.gold : .white, filled: state.won)
+    }
+  }
+}
+
+/** Flighty's gate pill: a capsule holding one short fact. Filled when it's good news, tinted otherwise. */
+struct Pill: View {
+  let text: String
+  let tint: Color
+  let filled: Bool
+
+  var body: some View {
+    Text(text)
+      .font(.system(.subheadline, design: .rounded).weight(.heavy))
+      .monospacedDigit()
+      .lineLimit(1)
+      .foregroundStyle(filled ? Color.black : tint)
+      .padding(.horizontal, 14)
+      .padding(.vertical, 7)
+      .background(Capsule().fill(filled ? tint : tint.opacity(0.16)))
   }
 }
 

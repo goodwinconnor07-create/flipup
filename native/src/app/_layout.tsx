@@ -79,6 +79,10 @@ export default function RootLayout() {
     headerTransparent: true,
     headerLargeTitle: true,
     headerLargeTitleShadowVisible: false,
+    // Fully see-through at the top of the page (the blue shows right up to the status bar), the blur only once the
+    // page scrolls under the bar. Without this the blur material is on at the top too, a flat grey band over the blue,
+    // and it grows into a grey block when the page is pulled down.
+    headerLargeStyle: { backgroundColor: 'transparent' },
     headerBlurEffect: 'systemMaterialDark' as const,
     headerTintColor: colors.accent as string,
     headerTitleStyle: { color: '#ffffff' },

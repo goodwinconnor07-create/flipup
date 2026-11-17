@@ -17,6 +17,10 @@ import { clearReplays, KEEP, removeReplay, restoreReplay, useReplays, useStars, 
 import { offerUndo } from '@/state/undo';
 import { brand, ForceScheme, radius, ROUNDED, spacing } from '@/theme';
 
+/** How far the page's background reaches past the list: up under the see-through bar and the pull-down, and down past a short list. Kept modest because the lights are placed by percentage of the background's height. */
+const BLEED_TOP = 320;
+const BLEED_BOTTOM = 200;
+
 /**
  * Saved hands (free): every hand you saved at the table with Save hand, newest first, starred ones on top.
  * A tap plays it back (`replay/[id]`); a long press offers Share and Remove.
@@ -70,11 +74,13 @@ function Bank() {
   return (
     // The scroll view is the screen (not inside the background), so the large title sits clear on the page and the bar blurs only once it scrolls.
     <ScrollView
-      style={{ backgroundColor: GRAIN_NIGHT[0] }}
+      style={{ backgroundColor: GRAIN_NIGHT[1] }}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: insets.bottom + spacing.xl, gap: spacing.lg }}
     >
-      <GrainBackground style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+      {/* The page's blue reaches past the list on every side: up under the see-through bar, down past a short list and out into
+          the rubber band, so there's no seam under the header and no darker band below. */}
+      <GrainBackground style={{ position: 'absolute', top: -BLEED_TOP, left: 0, right: 0, bottom: -BLEED_BOTTOM }} />
       {list.length > 0 && (
           <ThemedText variant="callout" tone="secondaryLabel">
             {list.length ? `${list.length} of ${KEEP} saved. ${editing ? 'Tap the red button to remove a hand.' : 'Tap one to watch it back.'}` : undefined}

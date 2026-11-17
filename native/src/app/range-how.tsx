@@ -25,8 +25,8 @@ const STEPS: { icon: IconName; title: string; line: string }[] = [
   },
   {
     icon: 'book.fill',
-    title: 'Learn from the pros',
-    line: 'Every hand comes from a published breakdown by a pro or coach, with a link to read it in full.',
+    title: 'Come back daily',
+    line: 'There is a new hand every day, the same for everyone. Keep your run of best plays going.',
   },
 ];
 

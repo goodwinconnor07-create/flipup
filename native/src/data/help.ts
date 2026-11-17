@@ -110,7 +110,7 @@ export const HELP: HelpSection[] = [
     items: [
       {
         q: 'What is the Train tab?',
-        a: 'Real hands from published poker strategy breakdowns. You see the table and the action, choose a play, then see why it’s best and how often each play wins.',
+        a: 'Poker hands to practise. You see the table and the action, choose a play, then see why it’s best and how often each play wins.',
       },
       {
         q: 'What are the ways to train?',
@@ -118,7 +118,7 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'What do Best play, Also good and Missed mean?',
-        a: 'Best play is the answer the expert chose. Also good is close to it. Missed is the rest. A miss is never a failure: it shows you what they could have had so you can spot it next time.',
+        a: 'Best play is the play that wins the most on average. Also good is close to it. Missed is the rest. A miss is never a failure: it shows you what they could have had so you can spot it next time.',
       },
       {
         q: 'Can I get a hint?',

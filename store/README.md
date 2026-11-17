@@ -13,7 +13,7 @@ iPhone Pro Max class) and `6.3in-1206x2622` (the required medium Dynamic Island 
 3. 13 games. One app. (every game's picture)
 4. Three cards. Throw one away. (Crazy Pineapple's discard)
 5. Roll the die. Swap the river. (Die on the River)
-6. Make the right call. Built-in range trainer. Based on real analysis. (the daily hand's Best play)
+6. Make the right call. Built-in range trainer. See why, hand by hand. (the daily hand's Best play)
 7. No one around? Bots fill the seats.
 
 Only the first three show in search results. The type is Inter Display (not SF Pro, whose licence covers UI mock-ups,

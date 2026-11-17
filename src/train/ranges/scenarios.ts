@@ -997,7 +997,7 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 8♠: you bet and they call again. Straights (J-9), full houses, better queens, and draws to broadway.' },
       { street: 'river', text: 'The A♥ completes broadway for K-J and fills up A-Q. The hands below you (A-K, A-J, kings) won’t put more in, and nothing better will fold.' },
     ],
-    why: 'A bet gets called by every hand that beats you and folded by the pairs you beat. They also won’t bluff into trips, because you never fold them. So check, and fold to a real bet. Betting here was the expert’s own mistake in this hand.',
+    why: 'A bet gets called by every hand that beats you and folded by the pairs you beat. They also won’t bluff into trips, because you never fold them. So check, and fold to a real bet.',
     source: {
       by: 'Jonathan Little on CardPlayer',
       title: 'Poker Strategy With Jonathan Little: Tough River Situation',
@@ -5682,7 +5682,7 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 2♣. You overbet and they call: aces, two pair and K-J, plus some K-Q and K-T.' },
       { street: 'river', text: 'The 6♠ and they check. Your jacks beat almost nothing that called twice. Their weak aces and K-Q can’t call a huge bet.' },
     ],
-    why: 'Checking gives up: your jacks beat almost nothing they’d call twice with. A huge bet makes a decent player fold A-9, A-8, A-7 and K-Q nearly every time, and your jacks make K-J, their one common strong hand, unlikely. Go big. Marc shoves (about 1½ pots); the overbet is the closest choice here.',
+    why: 'Checking gives up: your jacks beat almost nothing they’d call twice with. A huge bet makes a decent player fold A-9, A-8, A-7 and K-Q nearly every time, and your jacks make K-J, their one common strong hand, unlikely. Go big.',
     source: { by: HHP_BY, title: JACKS, url: 'https://www.youtube.com/watch?v=HOq682jc1LA&t=2190s', note: 'A viewer’s $5/$10 hand reviewed in the video.' },
   },
   {
@@ -6080,7 +6080,7 @@ export const SCENARIOS: Scenario[] = [
       { street: 'flop', text: 'J♠9♠2♣: a half-pot c-bet gets their sets and two pair to raise, while weaker jacks, nines and draws just call.' },
       { street: 'turn', text: 'The 3♦ changes nothing and they check. Their best hand is usually A-J or K-J, and they won’t fold that, or their draws, to any size.' },
     ],
-    why: 'They’re capped: they’d have raised their sets and two pair on the flop. When their best hands are jacks that won’t fold, put the money in while you can and go big. Marc bets almost twice the pot; the overbet is the closest choice here.',
+    why: 'They’re capped: they’d have raised their sets and two pair on the flop. When their best hands are jacks that won’t fold, put the money in while you can and go big.',
     source: { by: HHP_BY, title: HUGE, url: 'https://www.youtube.com/watch?v=QX4SMbCOBrY&t=20s', note: `${MADE_UP} Opens are $20.` },
   },
   {
@@ -6116,7 +6116,7 @@ export const SCENARIOS: Scenario[] = [
       { street: 'flop', text: 'J♠9♠2♣: they check-raise. Live players rarely check-raise flush draws here, so it’s mostly sets and J-9. You call with the nut flush draw.' },
       { street: 'turn', text: 'The 3♠ gives you the nut flush and they check. A player who check-raises a flush draw is aggressive and would keep betting it, so they rarely have a flush.' },
     ],
-    why: 'Their sets and two pair can make a full house, so they won’t fold to any size this turn. That means the bigger you bet, the more you win. Marc bets about 1¾ pots; the overbet is the closest choice here.',
+    why: 'Their sets and two pair can make a full house, so they won’t fold to any size this turn. That means the bigger you bet, the more you win.',
     source: { by: HHP_BY, title: HUGE, url: 'https://www.youtube.com/watch?v=QX4SMbCOBrY&t=393s', note: `${MADE_UP} Opens are $20.` },
   },
   {
@@ -6311,7 +6311,7 @@ export const SCENARIOS: Scenario[] = [
       { street: 'turn', text: 'The 4♦. They’re capped at A-J or K-J and won’t fold jacks or draws, so you bet nearly twice the pot. They call.' },
       { street: 'river', text: 'The 3♣ misses everything and they check. They almost never have better than A-J. If you had aces you wouldn’t bet this big to get called by A-J, so this size is where A-J folds.' },
     ],
-    why: 'They’re so capped that their best hand is usually A-J or K-J, and their missed draws can’t call. Bet huge and you fold out everything but the odd set or straight. Marc moves all in (about twice the pot); the overbet is the closest choice here.',
+    why: 'They’re so capped that their best hand is usually A-J or K-J, and their missed draws can’t call. Bet huge and you fold out everything but the odd set or straight.',
     source: { by: HHP_BY, title: BLUFF5, url: 'https://www.youtube.com/watch?v=RZs502lh4Q8&t=170s', note: `${MADE_UP} Opens are $20.` },
   },
   {

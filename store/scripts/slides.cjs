@@ -29,7 +29,7 @@ const S = {
  '4-dice': `${glow('rgba(245,135,31,.38)','rgba(37,87,214,.2)')}<h1 style="top:200px">Roll the die.<br><span>Swap the river.</span></h1>
   ${phone('dice-dice.png',{x:155,y:640,dim:true,island:false})}
   <div class="panel" style="left:70px;right:70px;top:1720px;height:800px;padding-top:60px;background:#090a1a"><div class="lbl">Die on the River</div><img src="${img('rolled.png')}" style="width:1000px;margin-top:20px"></div>`,
- '6-training': `${glow('rgba(245,183,0,.22)','rgba(37,87,214,.35)')}<h1 style="top:200px;font-size:116px">Make the right call.<br><span>Built-in range trainer.</span></h1><div style="position:absolute;left:0;right:0;top:470px;text-align:center;font-size:36px;font-weight:500;letter-spacing:.01em;color:var(--mute);opacity:.85">Based on real analysis</div>
+ '6-training': `${glow('rgba(245,183,0,.22)','rgba(37,87,214,.35)')}<h1 style="top:200px;font-size:116px">Make the right call.<br><span>Built-in range trainer.</span></h1><div style="position:absolute;left:0;right:0;top:470px;text-align:center;font-size:36px;font-weight:500;letter-spacing:.01em;color:var(--mute);opacity:.85">See why, hand by hand</div>
   ${phone('web-hand-sb.png',{x:155,y:640,dim:true})}
   <div class="panel" style="left:70px;right:70px;top:1660px;padding:50px 0 40px;background:#1c1c1e;border-color:rgba(255,255,255,.08)"><img src="${img('bestplay.png')}" style="width:1060px;display:block;margin:0 auto"><img src="${img('chart.png')}" style="width:1060px;display:block;margin:10px auto 0"></div>`,
  '7-lobby': `${glow('rgba(37,87,214,.55)')}<h1 style="top:200px">Add friends<br>with a code. <span>Free.</span></h1>

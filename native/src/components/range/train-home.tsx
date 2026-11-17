@@ -333,7 +333,7 @@ function HowItWorks() {
 function Footnote() {
   return (
     <ThemedText variant="footnote" tone="tertiaryLabel" style={{ paddingHorizontal: spacing.xxs }}>
-      Every hand comes from a published breakdown by a pro or coach. Breakdown on each answer links to it.
+      Make your call, then tap Breakdown on your answer to see the numbers behind it.
     </ThemedText>
   );
 }

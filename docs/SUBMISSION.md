@@ -116,8 +116,8 @@ Version 1.0 page and App Information. Your App Store name and legal name: Connor
 > remember how you play.
 >
 > RANGE TRAINER
-> Sharpen your strategy with one real hand a day, taken from a published breakdown by a poker coach. Make your call,
-> then see the expert's play, their read of every range and what each option wins.
+> Sharpen your strategy with one hand a day. Make your call, then see the best play, what each option wins and how
+> often you're ahead of every hand they could hold.
 >
 > SAVE AND SHARE
 > Save your best hands, replay them move by move, and turn them into share cards.
@@ -159,9 +159,12 @@ have the rights to both:
 
 - The table sounds `deal`, `flip`, `fold`, `check`, `chip` and `place` are recordings from Kenney's Casino Audio pack,
   released under CC0 (public domain): free to use in a paid app with no credit needed.
-- Range training's hands come from published strategy articles. The app uses the facts of each hand (seats, stacks,
-  cards, the action and the expert's choice), which aren't anyone's property, writes every explanation in its own
-  words, quotes nothing, shows none of their pictures and links to each source. `docs/RANGE_SOURCES.md` lists them.
+- Range training's hands are modelled on hands from published strategy articles and videos. The app uses the facts of
+  each hand (seats, stacks, cards and the action), which aren't anyone's property, writes every explanation in its own
+  words, quotes nothing and shows no source names, links or pictures (the owner's call, 17 Nov 2026: neither the app,
+  the website nor the store page says where a hand came from). `docs/RANGE_SOURCES.md` keeps the list for the record,
+  and for asking the authors' permission. Whether to rely on the facts alone or get that permission is the owner's
+  decision; App Review can ask for proof of rights (guideline 5.2.1).
 
 Everything else (the icon, the game pictures, the bots' lines, the text) was made for FlipUp. Saying Yes costs
 nothing and matches the truth; saying No would be wrong because of the sounds and the sourced hands.

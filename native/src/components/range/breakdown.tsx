@@ -4,7 +4,7 @@
 // range-numbers.json (worked out ahead, see state/ranges.ts).
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import { Linking, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
@@ -82,10 +82,6 @@ export function Breakdown({ scenario, pick }: { scenario: Scenario; pick: Option
       <Animated.View entering={detail(0, reduce)}>
         <Section title="Why">
           <ThemedText variant="body">{scenario.why}</ThemedText>
-          <ThemedText variant="footnote" tone="secondaryLabel" onPress={() => void Linking.openURL(scenario.source.url)} accessibilityRole="link">
-            From {scenario.source.by}: {scenario.source.title}
-            {scenario.source.note ? ` (${scenario.source.note})` : ''}
-          </ThemedText>
         </Section>
       </Animated.View>
 

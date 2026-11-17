@@ -26,7 +26,7 @@ export const RELEASES: Release[] = [
       { icon: 'cpu.fill', title: 'Play bots anywhere', text: 'Play against bots on your own, even with no signal. Every bot has a style of its own and plenty to say about the hand.' },
       { icon: 'sparkles', title: '12 mini games', text: 'Texas Hold’em plus games with a twist, like Haunted Pot, Crazy Pineapple, Die on the River and Power Cards. Each has its own table and a short How to Play.' },
       { icon: 'party.popper.fill', title: 'Party nights', text: 'Line up 4 to 12 games, play a short table of each, and see who tops the board at the end.' },
-      { icon: 'graduationcap.fill', title: 'Range training', text: 'A free hand every day, taken from a published strategy breakdown. Pick your play, then see why the expert chose theirs.' },
+      { icon: 'graduationcap.fill', title: 'Range training', text: 'A free hand every day. Pick your play, then see why it’s best.' },
       { icon: 'film.stack.fill', title: 'Saved hands', text: 'Save any hand from the table (up to 50) and watch it back move by move. Tap the bookmark again to un-save it, or delete hands from the list. Once it’s over, you see what every bot had.' },
       { icon: 'arrow.counterclockwise', title: 'Review after every hand', text: 'Turn it on in the house rules for a blue Review button and a 10 second countdown to the next hand. Review pauses the clock and lets you replay the hand.' },
       { icon: 'chart.bar.xaxis', title: 'Hold’em or mini games', text: 'Switch your stats between all your poker, Texas Hold’em alone and the mini games alone. The two halves count from this update.' },

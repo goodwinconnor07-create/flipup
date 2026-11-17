@@ -3,7 +3,8 @@
 // A lab bot is a name, a face and eight dials from 0 to 10, plus how it talks. The dials are turned into a full
 // `Style` (botStyles.ts) here, so a lab bot plays through the same brain as the named bots (`decide()` in
 // botPlay.ts, or the game's own in botVariants.ts); the everyday Hold'em engine leaves it alone. The dials stay on
-// the server (or the bots-only phone): `redactForDevice()` strips them like any bot's style.
+// the server (or the bots-only phone): `redactForDevice()` strips them like any bot's style. Bot Lab is Premium (the
+// owner, 17 Nov 2026): the table room refuses a lab bot from a host without it, and so does the phone.
 import { EMOJIS, isEmoji } from './emoji';
 import { isNameBlocked } from './names';
 import { NO_CRAFT, STYLES, type Style } from './botStyles';

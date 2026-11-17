@@ -63,7 +63,7 @@
 > face big (a tap opens the faces under it) and the name as the big rounded title, then "How it plays": eight round
 > dials two to a row on one panel (a blue arc on a faint track, the number in the middle, the dial's name and a
 > word for where it sits), then Table talk. + Add Bot in any lobby opens a small card out of the button: Random bot,
-> your bots, Bot Lab.
+> your bots, Bot Lab. Bot Lab is Premium, and it's the Premium page's bots perk now (the roster is mentioned in its line).
 
 > **Power Cards table (owner, 2026-11-12, built without a mockup at the owner's ask, after playing it):** the power is
 > a card, not a strip. It sits beside your two cards (`PowerCard`: gold foil frame, deep blue face, the power's

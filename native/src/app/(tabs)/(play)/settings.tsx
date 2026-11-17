@@ -97,8 +97,12 @@ export default function SettingsScreen() {
     },
     {
       id: 'botlab',
-      footer: 'Make your own bots and seat them from + Add Bot in any lobby you host.',
-      items: [{ kind: 'link', id: 'botlab', title: 'Bot Lab', symbol: 'flask.fill', detail: labCount ? String(labCount) : undefined, onPress: () => router.push('/bot-lab') }],
+      footer: premium ? 'Make your own bots and seat them from + Add Bot in any lobby you host.' : 'Make your own bots and set how they play. Bot Lab comes with Premium.',
+      items: [
+        premium
+          ? { kind: 'link', id: 'botlab', title: 'Bot Lab', symbol: 'flask.fill', detail: labCount ? String(labCount) : undefined, onPress: () => router.push('/bot-lab') }
+          : { kind: 'link', id: 'botlab', title: 'Bot Lab', symbol: 'flask.fill', trailingCrown: true, onPress: () => router.push({ pathname: '/premium', params: { reason: 'botlab' } }) },
+      ],
     },
     {
       id: 'blocked',

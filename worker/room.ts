@@ -148,8 +148,9 @@ export class TableRoom extends DurableObject<Env> {
     if (premium === false && actionNeedsPremium(action)) return this.send(ws, { t: 'reject', id, error: 'Hosting this game needs FlipUp Premium.' });
     // A host without Premium seats only the free bots.
     if (premium === false) {
-      // A bot the host made in Bot Lab is theirs to seat, Premium or not.
-      if (action.type === 'addBot' && !action.lab) {
+      // Bot Lab is Premium (the owner, 17 Nov 2026): its bots aren't seated for a host without it.
+      if (action.type === 'addBot' && action.lab) return this.send(ws, { t: 'reject', id, error: 'Bot Lab bots need FlipUp Premium.' });
+      if (action.type === 'addBot') {
         if (action.name !== undefined && !isFreeBot(action.name)) {
           return this.send(ws, { t: 'reject', id, error: 'That bot needs FlipUp Premium.' });
         }

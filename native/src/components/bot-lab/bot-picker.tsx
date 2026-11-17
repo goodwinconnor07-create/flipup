@@ -13,6 +13,7 @@ import { labPersona, MAX_LAB_BOTS } from '@/engine';
 import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useLabBots, type LabBot } from '@/state/bot-lab';
+import { usePremium } from '@/state/premium';
 import { brand, motion, ROUNDED, spacing } from '@/theme';
 
 import { haptic } from '../haptics';
@@ -49,12 +50,15 @@ export function BotPicker({
   const [toLab, setToLab] = useState(false);
   const finish = () => {
     onClose();
-    if (toLab) router.push('/bot-lab');
+    if (toLab) router.push(has ? '/bot-lab' : { pathname: '/premium', params: { reason: 'botlab' } });
   };
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  const bots = useLabBots();
+  const has = usePremium();
+  // Bot Lab is Premium: without it your bots stay in the lab and its row opens the offer.
+  const mine = useLabBots();
+  const bots = has ? mine : [];
   const here = new Set(seated.map((n) => n.toLowerCase()));
 
   // Below the button when there's room, else above it; kept on screen sideways.
@@ -76,7 +80,7 @@ export function BotPicker({
   const shade = useAnimatedStyle(() => ({ opacity: t.get() }));
 
   const close = () => setClosing(true);
-  const row = (key: string, title: string, sub: string, lead: ReactNode, onPress: () => void, off = false) => (
+  const row = (key: string, title: string, sub: string, lead: ReactNode, onPress: () => void, off = false, trail?: ReactNode) => (
     <Pressable
       key={key}
       accessibilityRole="button"
@@ -99,6 +103,7 @@ export function BotPicker({
           {sub}
         </Text>
       </View>
+      {trail}
     </Pressable>
   );
   const round = (icon: 'dice.fill' | 'flask.fill') => (
@@ -151,9 +156,11 @@ export function BotPicker({
           {row(
             'lab',
             bots.length ? 'Bot Lab' : 'Make your own bots',
-            bots.length ? `${bots.length} of ${MAX_LAB_BOTS} made` : 'Name them and set how they play',
+            bots.length ? `${bots.length} of ${MAX_LAB_BOTS} made` : has ? 'Name them and set how they play' : 'Bot Lab, with Premium',
             round('flask.fill'),
             () => setToLab(true),
+            false,
+            has ? undefined : <Icon name="crown.fill" size={15} color={brand.gold} />,
           )}
         </ScrollView>
       </Animated.View>

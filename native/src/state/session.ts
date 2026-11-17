@@ -343,8 +343,12 @@ function notify(text: string): void {
 export function dispatch(action: Action): string | null {
   if (!session) return 'No table.';
   // Without Premium the host's bots come from the free ten, even when the button asks for a random one.
+  // Bot Lab is Premium: its bots sit down only for a host who has it.
+  if (action.type === 'addBot' && action.lab && !hasPremium()) {
+    notify('Bot Lab bots need FlipUp Premium.');
+    return 'premium';
+  }
   if (action.type === 'addBot' && !action.lab && !hasPremium()) {
-    // (A bot you made in Bot Lab is yours to seat, Premium or not.)
     if (action.name !== undefined && !isFreeBot(action.name)) {
       notify('That bot needs FlipUp Premium.');
       return 'premium';

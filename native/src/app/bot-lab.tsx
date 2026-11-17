@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import { Face } from '@/components/bot-lab/face';
 import { labPersona, MAX_LAB_BOTS } from '@/engine';
 import { detail } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { usePremium } from '@/state/premium';
 import { useLabBots, type LabBot } from '@/state/bot-lab';
 import { brand, ForceScheme, ROUNDED, spacing, useShadows } from '@/theme';
 
@@ -24,10 +25,16 @@ import { brand, ForceScheme, ROUNDED, spacing, useShadows } from '@/theme';
  * (`bot-lab-edit`). They're seated from + Add Bot in any lobby you host. Always dark, on the moving blue field.
  */
 export default function BotLabScreen() {
+  const has = usePremium();
   return (
-    <ForceScheme scheme="dark">
-      <BotLabPage />
-    </ForceScheme>
+    // Bot Lab is Premium: without it the page is the offer, with Bot Lab first.
+    !has ? (
+      <Redirect href={{ pathname: '/premium', params: { reason: 'botlab' } }} />
+    ) : (
+      <ForceScheme scheme="dark">
+        <BotLabPage />
+      </ForceScheme>
+    )
   );
 }
 

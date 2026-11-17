@@ -17,7 +17,7 @@ import { Confetti } from '@/components/table/confetti';
 import { Swap } from '@/components/swap';
 import { RoundButton } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
-import { FAMILIAR_COUNT, FREE_BOT_NAMES, isVariant, VARIANTS, variantInfo, FREE_VARIANTS } from '@/engine';
+import { isVariant, VARIANTS, variantInfo, FREE_VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePremium } from '@/state/premium';
 import { buyPremium, manageSubscription, ON_SALE, restorePremium, startStore, storeError, useStore, yearlySaving, type Plan, type StoreState } from '@/state/purchase';
@@ -210,7 +210,7 @@ function BrandPill() {
 /** The words over each perk's picture: shorter and louder than the grid's. */
 const HERO_WORDS: Partial<Record<PerkId, { title: string; line: string }>> = {
   range: { title: 'Every range hand', line: 'Every real spot, as many sets as you like.' },
-  bots: { title: 'The whole roster', line: `${FAMILIAR_COUNT} characters and hundreds of regulars. Free tables get ${FREE_BOT_NAMES.length}.` },
+  botlab: { title: 'Bot Lab', line: 'Make your own bots and set how they play.' },
   games: { title: `${VARIANTS.length - FREE_VARIANTS} more games`, line: 'Host every mini game. Friends join free.' },
   share: { title: 'Share cards', line: 'Your best hands and nights, as a picture.' },
   gold: { title: 'Gold name', line: 'Everyone at the table sees it.' },

@@ -6,14 +6,15 @@
 import type { ReactNode } from 'react';
 import { Image, Text, View } from 'react-native';
 
-import { GameCard } from '@/components/lobby/game-card';
+import { Dial } from '@/components/bot-lab/dial';
+import { Face } from '@/components/bot-lab/face';
 import { SHOTS } from '@/components/how-to/shots';
 import { sampleHandData } from '@/components/share/data';
 import { CARD_H, CARD_W, ShareCard } from '@/components/share/designs';
 import { FloatTable } from '@/components/setup/float-table';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { BOTS, botFace, CARD_PACKS, FREE_BOT_NAMES } from '@/engine';
+import { CARD_PACKS, LAB_DIALS, labPersona, type LabDials } from '@/engine';
 import { brand, gradient, ROUNDED, spacing } from '@/theme';
 
 import { PANEL_RADIUS } from '../grouped-list';
@@ -56,8 +57,8 @@ export function PerkScreen({ id }: { id: PerkId }) {
   switch (id) {
     case 'games':
       return <Image source={SHOTS.deuces?.showdown ?? SHOTS.holdem?.flop} style={{ width: SCREEN_W, height: SCREEN_H }} />;
-    case 'bots':
-      return <BotsScreen />;
+    case 'botlab':
+      return <BotLabScreen />;
     case 'range':
       return <RangeScreen />;
     case 'share':
@@ -119,21 +120,26 @@ function Panel({ children, pad = spacing.sm }: { children: ReactNode; pad?: numb
 
 const noop = () => undefined;
 
-/** Play with bots with the Premium roster seated: the characters and regulars a free table doesn't get. */
-function BotsScreen() {
-  const bots = BOTS.filter((b) => !FREE_BOT_NAMES.includes(b.name)).slice(-8, -1);
+/** Bot Lab's editor with a bot being made: its face, its name, what kind of player it is, and its dials. */
+const SAMPLE_DIALS: LabDials = { hands: 3, aggression: 8, bluffing: 7, calling: 4, skill: 9, temper: 2, speed: 6, chat: 7, tone: 'trash' };
+function BotLabScreen() {
   return (
-    <Page title="Play with bots">
-      <Heading title="At the table" detail={`${bots.length + 1} of 9 seats`} />
-      <Panel>
-        <FloatTable
-          seats={[{ key: 'you', emoji: '😎', name: 'You', you: true }, ...bots.map((b) => ({ key: b.name, emoji: botFace(b.emoji), name: b.name }))]}
-          canRemove={false}
-          onHold={noop}
-          onGone={noop}
-        />
+    <Page title="New bot">
+      <View style={{ alignItems: 'center', gap: 6 }}>
+        <Face emoji="🦅" size={104} />
+        <Text style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '800', color: '#ffffff' }}>Hawk</Text>
+        <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)' }}>{labPersona(SAMPLE_DIALS)}</Text>
+      </View>
+      <Heading title="How it plays" />
+      <Panel pad={spacing.md}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.lg }}>
+          {LAB_DIALS.slice(0, 4).map((d) => (
+            <View key={d.id} style={{ width: '50%', alignItems: 'center' }}>
+              <Dial dial={d} value={SAMPLE_DIALS[d.id]} onChange={noop} />
+            </View>
+          ))}
+        </View>
       </Panel>
-      <GameCard variant="holdem" host={false} />
     </Page>
   );
 }

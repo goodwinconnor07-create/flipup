@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -18,6 +18,7 @@ import { ThemedText } from '@/components/themed-text';
 import { DIAL_IDS, isNameBlocked, LAB_DIALS, LAB_FACES, LAB_NAME_MAX, labName, labPersona, MAX_LAB_BOTS, type LabDials, type LabTone } from '@/engine';
 import { enter, exit } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { usePremium } from '@/state/premium';
 import { deleteLabBot, labBot, labBots, newLabBot, restoreLabBot, saveLabBot, type LabBot } from '@/state/bot-lab';
 import { offerUndo } from '@/state/undo';
 import { brand, ForceScheme, ROUNDED, spacing } from '@/theme';
@@ -33,10 +34,16 @@ const TONES: { value: LabTone; label: string }[] = [
  * pinned at the bottom; a bot you have also has Delete, which can be undone. Always dark, like the lobby.
  */
 export default function BotLabEditScreen() {
+  const has = usePremium();
   return (
-    <ForceScheme scheme="dark">
-      <Editor />
-    </ForceScheme>
+    // Bot Lab is Premium: without it the page is the offer, with Bot Lab first.
+    !has ? (
+      <Redirect href={{ pathname: '/premium', params: { reason: 'botlab' } }} />
+    ) : (
+      <ForceScheme scheme="dark">
+        <Editor />
+      </ForceScheme>
+    )
   );
 }
 

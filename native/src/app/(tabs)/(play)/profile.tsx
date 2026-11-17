@@ -37,7 +37,6 @@ export default function ProfileScreen() {
   const clean = cleanName(name);
   const blocked = isNameBlocked(clean);
   const ok = clean.length > 0 && !blocked;
-  const first = !profile.name.trim();
 
   const save = () => {
     if (!ok) return;
@@ -97,7 +96,6 @@ export default function ProfileScreen() {
             autoCapitalize="words"
             autoCorrect={false}
             returnKeyType="done"
-            autoFocus={first}
             onSubmitEditing={save}
             maxFontSizeMultiplier={1.3}
             style={{ fontFamily: ROUNDED, fontSize: 40, fontWeight: '800', textAlign: 'center', color: dark ? '#ffffff' : (colors.label as string), minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}

@@ -6,7 +6,7 @@ import type { MenuGroup, MenuItem } from '@/components/native-menu.types';
 import { useYouGroups } from '@/components/you-settings';
 import { myPlayer } from '@/engine';
 import { tableShare } from '@/state/table-share';
-import { dispatch, leaveTable, me as myDevice, requestLogs, useTable } from '@/state/session';
+import { abandonLobby, dispatch, leaveTable, me as myDevice, requestLogs, useTable } from '@/state/session';
 
 /**
  * The table's menu, as on the web: the table (standings, hand log, invite, table settings, add a bot, sit out), you
@@ -24,6 +24,7 @@ export default function TableMenu() {
   const playing = game.status === 'playing';
   const started = game.status !== 'lobby';
   const ended = game.status === 'ended';
+  const lobby = game.status === 'lobby';
   const close = () => router.back();
   const quick = (fn: () => void) => () => {
     fn();
@@ -48,6 +49,7 @@ export default function TableMenu() {
   const actions: (MenuItem | false)[] = [
     host &&
       !ended &&
+      !lobby &&
       (online || playing) && {
         kind: 'button',
         id: 'end',
@@ -63,13 +65,19 @@ export default function TableMenu() {
     (online || ended) && {
       kind: 'button',
       id: 'leave',
-      title: ended ? 'Close table' : 'Leave game',
+      title: ended ? 'Close table' : lobby ? (host ? 'Close lobby' : 'Leave lobby') : 'Leave game',
       symbol: 'rectangle.portrait.and.arrow.right',
       destructive: true,
       onPress: () =>
         ended
           ? leave()
-          : ask('Leave the table?', online ? (host ? 'The table stays open for the others while it lasts.' : 'Your seat goes to someone else. If a hand is on, your cards are folded.') : "This run won't get a score.", 'Leave', leave),
+          : lobby
+            ? ask(host ? 'Close the lobby?' : 'Leave the lobby?', host ? 'Nobody has been dealt in. Anyone who joined with the code sees it close.' : 'You can join again with the code.', host ? 'Close lobby' : 'Leave', () => {
+                if (host && t.code) abandonLobby(t.code);
+                else leaveTable();
+                goHome();
+              })
+            : ask('Leave the table?', online ? (host ? 'The table stays open for the others while it lasts.' : 'Your seat goes to someone else. If a hand is on, your cards are folded.') : "This run won't get a score.", 'Leave', leave),
     },
     !ended && { kind: 'button', id: 'home', title: 'Home', symbol: 'house.fill', onPress: goHome },
     !!me && playing && { kind: 'button', id: 'sit', title: me.sittingOut ? "I'm back" : 'Sit out', symbol: 'clock.fill', onPress: quick(() => dispatch({ type: 'sitOut', out: !me.sittingOut })) },

@@ -157,6 +157,8 @@ export function partyStandings(view: Pick<PartyView, 'members' | 'live' | 'statu
 export function shufflePlaylist(all: Variant[], count: number, rng: () => number = Math.random): Variant[] {
   const n = Math.max(PARTY_MIN_GAMES, Math.min(PARTY_MAX_GAMES, count));
   const out: Variant[] = [];
+  // Nothing to pick from: an empty bag would loop for ever.
+  if (all.length === 0) return out;
   let bag: Variant[] = [];
   while (out.length < n) {
     if (bag.length === 0) bag = [...all].sort(() => rng() - 0.5);

@@ -37,7 +37,7 @@ export const RELEASES: Release[] = [
       { icon: 'questionmark.circle.fill', title: 'Rules when you need them', text: 'The first time you play a game, a short card sums up its rules before the first hand.' },
       { icon: 'eye.fill', title: 'Easy to read', text: 'VoiceOver reads out your turn, the result of each hand and How to Play. FlipUp follows Reduce Motion, Reduce Transparency, Increase Contrast and your text size, and a Haptics switch in Settings turns the buzzes off without muting the sounds.' },
       { icon: 'arrow.uturn.backward', title: 'Undo', text: 'Removed a bot, a game from the playlist or a saved hand by mistake? Tap Undo for a few seconds.' },
-      { icon: 'crown.fill', title: 'FlipUp Premium', text: 'Host every mini game, make your own bots in Bot Lab and play the whole bot roster. Range training opens up too, and friends always join your games free.' },
+      { icon: 'crown.fill', title: 'FlipUp Premium', text: 'Host every mini game and make your own bots in Bot Lab. Range training opens up too, and friends always join your games free.' },
       { icon: 'hand.raised.fill', title: 'Play chips only', text: 'Chips have no cash value. They can’t be bought, sold or won.' },
     ],
   },

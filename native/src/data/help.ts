@@ -87,7 +87,7 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'What does Premium unlock?',
-        a: 'Premium is a subscription, monthly or yearly, bought through your Apple Account. It unlocks hosting every mini game, the whole bot roster, every Range training hand, share card designs, the gold name and the card backs. Texas Hold’em with ten bots, Saved hands and Replay, and Range training’s daily hand are free. Only the person hosting a table needs Premium; friends who join play every game free.',
+        a: 'Premium is a subscription, monthly or yearly, bought through your Apple Account. It unlocks hosting every mini game, Bot Lab and every bot, every Range training hand, share card designs, the gold name and the card backs. Texas Hold’em with ten bots, Saved hands and Replay, and Range training’s daily hand are free. Only the person hosting a table needs Premium; friends who join play every game free.',
       },
       {
         q: 'How do I cancel Premium?',

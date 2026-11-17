@@ -202,9 +202,11 @@ export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' |
   const seat = mine && hand.seats.find((s) => s.playerId === mine.id);
   if (!mine || !seat || seat.cards.length === 0) return;
   const id = `${game.id}/${hand.number}`;
+  // Online, a replay holds your cards and cards another player chose to show (at the showdown or with Show cards).
+  // A busted player's "show to busted" view sends every card, but those weren't shown to the table, so they stay out.
+  const visibleSeats = hand.seats.filter((s) => s.cards.length > 0 && (full || s.playerId === mine.id || s.shown));
   // Whose cards this phone can see: a show after the hand changes it.
-  const key = `${id}|${hand.seats
-    .filter((s) => s.cards.length > 0)
+  const key = `${id}|${visibleSeats
     .map((s) => s.playerId)
     .sort()
     .join(',')}`;
@@ -214,7 +216,7 @@ export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' |
   const variant: Variant = hand.variant ?? game.settings.variant ?? 'holdem';
   // A bots-only table hands over the whole game: every seat's cards and the ghost's, now the hand is over.
   const whole = full?.id === game.id && full.hand?.number === hand.number && full.hand.result ? full.hand : null;
-  const holeSeats = (whole ?? hand).seats.filter((s) => s.cards.length > 0);
+  const holeSeats = whole ? whole.seats.filter((s) => s.cards.length > 0) : visibleSeats;
   const ghost = whole?.ghost ?? hand.ghost ?? result.ghost?.cards;
   const flop = streetCards(variant, 'flop');
   const turn = flop + streetCards(variant, 'turn');

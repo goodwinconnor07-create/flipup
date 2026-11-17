@@ -131,6 +131,20 @@ describe('replay after every hand', () => {
     for (const s of game.hand!.seats) expect(all.holes[s.playerId]).toEqual(s.cards);
   });
 
+  it('online, keeps other players\' cards out unless they showed them', () => {
+    const game = finishedHand();
+    const other = game.hand!.seats.find((s) => s.playerId !== game.players.find((p) => p.deviceId === ME)!.id)!;
+    // The view a busted player gets with "show to busted": every card is sent, but only some were shown.
+    other.shown = false;
+    forgetLastHand();
+    noteReplay(game, ME, 'online');
+    expect(lastHand()!.holes[other.playerId]).toBeUndefined();
+    // They tap Show cards after the hand: the same hand picks them up.
+    other.shown = true;
+    noteReplay(game, ME, 'online');
+    expect(lastHand()!.holes[other.playerId]).toEqual(other.cards);
+  });
+
   it('knows who won each pot', () => {
     const game = finishedHand();
     forgetLastHand();

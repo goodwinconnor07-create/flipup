@@ -19,6 +19,9 @@ export class ReportBox extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS reports (id TEXT PRIMARY KEY, at INTEGER NOT NULL, reporter TEXT NOT NULL, body TEXT NOT NULL)');
+    // The daily limit looks a reporter up by time, and every report clears the old ones by time.
+    ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS reports_by_reporter ON reports (reporter, at)');
+    ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS reports_by_time ON reports (at)');
   }
 
   /** RPC: store a report. Returns false when this phone has sent too many today. */

@@ -37,7 +37,7 @@ const S = {
   <div class="panel" style="left:70px;right:70px;top:1660px;padding:50px 0 40px;background:#1c1c1e;border-color:rgba(255,255,255,.08)"><img src="${img('bestplay.png')}" style="width:1060px;display:block;margin:0 auto"><img src="${img('chart.png')}" style="width:1060px;display:block;margin:10px auto 0"></div>`,
  '7-lobby': `${glow('rgba(37,87,214,.55)')}<h1 style="top:200px">Add friends<br>with a code. <span>Free.</span></h1>
   ${phone('lobby-sb.png',{x:155,y:640,dim:true})}
-  <img src="${img('codecard.png')}" style="position:absolute;left:60px;width:1200px;top:1500px;border-radius:84px;box-shadow:0 60px 140px var(--shadow)">`,
+  <img src="${img('codecard.png')}" style="position:absolute;left:60px;width:1200px;top:1500px;border-radius:84px">`,
  '8-power': `${glow('rgba(40,170,235,.35)','rgba(245,183,0,.14)')}${premium()}<h1 style="top:200px">Bend the rules.<br><span>Play a power card.</span></h1>
   ${phone('power-sb.png',{x:155,y:640,dim:true})}
   <div class="panel" style="left:70px;right:70px;top:1800px;padding:56px 0 50px"><img src="${img('power-panel.png')}" style="width:1100px;display:block;margin:0 auto"></div>`,

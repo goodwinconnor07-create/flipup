@@ -83,10 +83,10 @@ Version 1.0 page and App Information. Your App Store name and legal name: Connor
 | Field | What to put |
 |---|---|
 | Name | FlipUp: Poker with Friends |
-| Subtitle | Variants and party nights |
+| Subtitle | Texas Hold'em + 12 mini games |
 | Category | Games; subcategory Card |
-| Promotional text | Poker night on your phones: host a table, friends join with a code, and bots fill the empty seats. Texas Hold'em plus 12 mini games with a twist. |
-| Keywords | `poker,holdem,texas,cards,friends,party,bots,game night,mini games,pineapple,range,training,offline` |
+| Promotional text | Poker night on your phones. Host a table, friends join with a code, bots fill the empty seats. Texas Hold'em, 12 mini games and a daily range trainer hand. |
+| Keywords | `holdem,gto,trainer,range,training,strategy,multiplayer,party,bots,offline,card,chips,night,pineapple` (100 of 100 characters; words in the name and subtitle are left out because Apple indexes those already) |
 | Support URL | https://playflipup.com/support |
 | Marketing URL | https://playflipup.com |
 | Privacy Policy URL | https://playflipup.com/privacy |
@@ -99,23 +99,33 @@ Version 1.0 page and App Information. Your App Store name and legal name: Connor
 
 > FlipUp is poker night on your phones.
 >
-> Host a table and your friends join from their own iPhones with a six-character code or a QR code. There are no
-> accounts and nothing to sign up for. Bots fill any empty seats, each with its own style and plenty to say.
+> PLAY WITH FRIENDS
+> Host a table and your friends join from their own iPhones with a six-character code or a QR code. No accounts,
+> nothing to sign up for. Bots fill any empty seats, each with its own style and plenty to say.
 >
-> Play Texas Hold'em, or one of 12 mini games with a twist. In Haunted Pot you have to beat the ghost as well as your
-> friends. Die on the River lets a die swap a board
-> card, and Crucifix lays the board out as a cross. Every game has its own table and a short How to Play.
+> 13 WAYS TO PLAY
+> Texas Hold'em, plus 12 mini games with a twist. Throw a card away in Crazy Pineapple. Roll a die to swap the river
+> in Die on the River. Beat the ghost as well as your friends in Haunted Pot. Read the board as a cross in Crucifix.
+> Every game has its own table and a short How to Play.
 >
-> Line up a party of 4 to 12 games and see who's on top of the board at the end of the night. No friends around? Play
-> bots on your own, even with no signal.
+> PARTY NIGHTS
+> Line up 4 to 12 games and see who tops the board at the end of the night.
 >
-> Range training gives you one real hand a day from a published strategy breakdown. Pick your play, then see why the
-> expert chose theirs. Save your best hands, watch them back move by move and turn them into a share card.
+> BOTS WORTH PLAYING
+> No one around? Play bots on your own, even with no signal. They open from real GTO preflop charts, read the board and
+> remember how you play.
+>
+> RANGE TRAINER
+> Sharpen your strategy with one real hand a day, taken from a published breakdown by a poker coach. Make your call,
+> then see the expert's play, their read of every range and what each option wins.
+>
+> SAVE AND SHARE
+> Save your best hands, replay them move by move, and turn them into share cards.
 >
 > FLIPUP PREMIUM
-> Premium lets you host every mini game and play the whole bot roster, and it opens all of Range training. Friends
-> always join your games free. Premium is an auto-renewing subscription, monthly or yearly, with an introductory offer
-> for new subscribers. Payment is charged to your Apple Account, and a subscription renews unless you cancel it at
+> Premium lets you host every mini game, play the whole bot roster and opens all of the range trainer, with more share
+> card designs, card backs and a gold name. Friends always join your games free. Premium is an auto-renewing
+> subscription, monthly or yearly, with an introductory offer for new subscribers. Payment is charged to your Apple Account, and a subscription renews unless you cancel it at
 > least 24 hours before the end of the period. Manage or cancel it in your Apple Account settings.
 > Terms of use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 > Privacy policy: https://playflipup.com/privacy

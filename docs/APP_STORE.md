@@ -61,8 +61,8 @@ honestly (2.3.6), name at most 30 characters with no keyword stuffing (2.3.7), m
 
 **What we'll do:** screenshots taken from the real native build. Nothing about Campaign, roulette, blackjack or
 AI Legends anywhere in the listing, since they won't be in the app. The description says plainly that chips are
-play chips with no cash value. Name "FlipUp: Poker with Friends" is 26 characters; subtitle "Variants and party
-nights" is 25.
+play chips with no cash value. Name "FlipUp: Poker with Friends" is 26 characters; subtitle "Texas Hold'em + 12 mini games"
+is 29.
 
 ### 2.5.2 Software requirements (no downloaded code)
 

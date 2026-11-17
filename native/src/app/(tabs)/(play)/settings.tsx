@@ -11,6 +11,7 @@ import type { MenuGroup } from '@/components/native-menu.types';
 import { useYouGroups } from '@/components/you-settings';
 import { deleteMyData } from '@/state/account';
 import { useBlocked } from '@/state/blocks';
+import { useLabBots } from '@/state/bot-lab';
 import { usePremium } from '@/state/premium';
 import { manageSubscription, ON_SALE, restorePremium, storeError, useStore, type StoreState } from '@/state/purchase';
 
@@ -26,6 +27,7 @@ export default function SettingsScreen() {
   const [deleting, setDeleting] = useState(false);
   const premium = usePremium();
   const blocked = useBlocked();
+  const labCount = useLabBots().length;
   const store = useStore();
   const you = useYouGroups({});
   const restore = async () => {
@@ -92,6 +94,15 @@ export default function SettingsScreen() {
             premium && (store.owned === 'monthly' || store.owned === 'yearly') && { kind: 'link', id: 'manage', title: 'Manage subscription', onPress: () => void manageSubscription() },
           ]
         : [],
+    },
+    {
+      id: 'botlab',
+      footer: premium ? 'Make your own bots and seat them from + Add Bot in any lobby you host.' : 'Make your own bots and set how they play. Bot Lab comes with Premium.',
+      items: [
+        premium
+          ? { kind: 'link', id: 'botlab', title: 'Bot Lab', symbol: 'flask.fill', detail: labCount ? String(labCount) : undefined, onPress: () => router.push('/bot-lab') }
+          : { kind: 'link', id: 'botlab', title: 'Bot Lab', symbol: 'flask.fill', trailingCrown: true, onPress: () => router.push({ pathname: '/premium', params: { reason: 'botlab' } }) },
+      ],
     },
     {
       id: 'blocked',

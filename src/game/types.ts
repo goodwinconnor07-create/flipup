@@ -1,5 +1,6 @@
 // The table and everything in it. One Game is one table, from lobby to the last hand.
 
+import type { LabBotSpec, LabDials } from './botLab';
 import type { Style } from './botStyles';
 import type { Card } from './cards';
 import type { Variant } from './variants';
@@ -66,6 +67,8 @@ export interface Player {
   gold?: boolean;
   /** Bot lab only (botSim.ts): the style this seat plays instead of its own. Stripped before the table is sent to any phone. */
   labStyle?: Style;
+  /** A bot made in the app's Bot Lab: its dials, played through `labStyle()` (botLab.ts). Stripped like `style`. */
+  lab?: LabDials;
   /** Stable bot identity, private on online tables. */
   botProfile?: string;
 }
@@ -471,8 +474,8 @@ export type Action =
   /** This phone takes a seat (or updates its name and picture). */
   | { type: 'join'; name: string; emoji: string }
   | { type: 'setLook'; name: string; emoji: string; bubble?: string; cardPack?: string; gold?: boolean }
-  /** `name` seats a bot from `BOTS` by name (the setup page's picks). */
-  | { type: 'addBot'; name?: string }
+  /** `name` seats a bot from `BOTS` by name (the setup page's picks); `lab` seats one the host made in Bot Lab. */
+  | { type: 'addBot'; name?: string; lab?: LabBotSpec }
   /** Host removes a player or bot; anyone can remove themselves. */
   | { type: 'remove'; playerId: string }
   | { type: 'settings'; settings: Partial<Settings> }

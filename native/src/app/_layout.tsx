@@ -39,8 +39,8 @@ void startStore();
 
 /** Every screen that opens as a bottom sheet: each gets a light tap as it rises and as it goes, and a tick when its detent changes. */
 const SHEETS = new Set([
-  'game/[id]', 'lobby-game', 'premium', 'premium-perk', 'share-card', 'table-menu', 'table-standings', 'table-theme', 'table-settings', 'range-breakdown',
-  'range-how', 'hand-rankings', 'table-log', 'card-packs', 'blocked', 'emoji', 'join', 'party-sheet', 'how-to-play/[id]',
+  'game/[id]', 'lobby-game', 'premium-perk', 'share-card', 'table-menu', 'table-standings', 'table-theme', 'table-settings', 'range-breakdown',
+  'range-how', 'hand-rankings', 'table-log', 'card-packs', 'blocked', 'your-name', 'emoji', 'join', 'party-sheet', 'how-to-play/[id]',
 ]);
 
 // The root: the tab bar, and the sheets that open over it. Sheets are real iOS form sheets with detents and a
@@ -104,6 +104,9 @@ export default function RootLayout() {
         {/* A party's playlist, pushed from Play with friends; Save takes it back there. */}
         <Stack.Screen name="party-playlist" options={{ headerShown: false, title: 'Party playlist', statusBarStyle: 'light' }} />
         <Stack.Screen name="play-bots" options={({ route }) => ({ headerShown: false, title: 'Play with bots', statusBarStyle: 'light', ...fadeAfterFill(route) })} />
+        {/* Bot Lab, from Settings: your own bots, and the editor for one. Dark pages of their own, like Play with bots. */}
+        <Stack.Screen name="bot-lab" options={{ headerShown: false, title: 'Bot Lab', statusBarStyle: 'light' }} />
+        <Stack.Screen name="bot-lab-edit" options={{ headerShown: false, title: 'Bot', statusBarStyle: 'light' }} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
         {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. */}
         <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />
@@ -112,7 +115,8 @@ export default function RootLayout() {
         {/* How to Play: a story on black in a sheet at full height (a black page, so it keeps its own fill); the X closes it. */}
         <Stack.Screen name="how-to-play/[id]" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
         {/* Range training's table: its own night room over the tabs, like Play with bots, so nothing covers the answers. */}
-        <Stack.Screen name="premium" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'FlipUp Premium' }} />
+        {/* Premium is a full page (the owner, 17 Nov 2026: not a pull-up sheet); its round X closes it. */}
+        <Stack.Screen name="premium" options={{ presentation: 'fullScreenModal', headerShown: false, title: 'FlipUp Premium', statusBarStyle: 'light', gestureEnabled: false }} />
         {/* A perk sheet is only as tall as what it says (the games list is long, so it gets the two detents). */}
         <Stack.Screen name="premium-perk" options={({ route }) => ({ ...sheet, sheetAllowedDetents: (route.params as { id?: string } | undefined)?.id === 'games' ? [0.75, 1] : 'fitToContents', headerShown: false, title: 'Premium' })} />
         {/* Share cards, the hand bank and Replay. */}

@@ -16,6 +16,7 @@ const SIMS = [
   'src/game/redactLeaks.test.ts',
   'src/game/fuzzActions.test.ts',
   'src/game/powers.test.ts',
+  'src/game/botLab.test.ts',
   'src/bot_engine/everyday.test.ts',
   'src/bot_engine/feel.test.ts',
   'src/game/variantFeel.test.ts',

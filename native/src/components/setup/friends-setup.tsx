@@ -26,7 +26,7 @@ import { HouseRules } from '../lobby/house-rules';
 import { Players, type PlayerLine } from '../lobby/players';
 import { openPlayerMenu } from '../player-menu';
 import { ThemedText } from '../themed-text';
-import { randomBot, type RowBot } from './row-bot';
+import { labRowBot, randomBot, type RowBot } from './row-bot';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 import { lobbyRows, usePartyView } from '../party/panel';
 import { PartyCard, PartyRules, StartPartyButton } from './party-pieces';
@@ -222,11 +222,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
       const m = made.current;
       if (m.making) await m.making;
       if (!m.code) await makeLobby();
-      await catchUp(
-        m.code!,
-        s,
-        bots.map((b) => b.name),
-      );
+      await catchUp(m.code!, s, bots);
       if (dispatch({ type: 'start' })) throw new Error("You're offline. Try again in a moment.");
       m.opened = true;
       router.push('/table');
@@ -366,7 +362,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
               <StartPartyButton />
             </View>
 
-            <Players rows={rows} onAdd={addBot} />
+            <Players rows={rows} onAdd={addBot} onAddLab={(b) => !full && setBots((have) => [...have, labRowBot(b)])} />
 
             <HouseRules
               settings={s}
@@ -404,14 +400,14 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
  * Brings the lobby made for the invites up to date before you go to it: the settings as they are now and the bots
  * you picked. Waits a few seconds for the table to come through first. Throws if it doesn't.
  */
-async function catchUp(code: string, settings: Settings, botNames: string[]): Promise<void> {
+async function catchUp(code: string, settings: Settings, bots: RowBot[]): Promise<void> {
   for (let i = 0; i < 25 && !(currentTable().code === code && currentTable().game && currentTable().conn === 'open'); i++)
     await new Promise((r) => setTimeout(r, 200));
   const t = currentTable();
   if (t.code !== code || !t.game) throw new Error("Your table didn't answer. Check your connection and try again.");
   if (JSON.stringify({ ...t.game.settings, ...settings }) !== JSON.stringify(t.game.settings) && dispatch({ type: 'settings', settings }))
     throw new Error("You're offline. Try again in a moment.");
-  for (const name of botNames) if (!t.game.players.some((p) => p.name === name)) dispatch({ type: 'addBot', name });
+  for (const b of bots) if (!t.game.players.some((p) => p.name === b.name)) dispatch(b.lab ? { type: 'addBot', lab: b.lab } : { type: 'addBot', name: b.name });
 }
 
 /** What the server is told about a party. */

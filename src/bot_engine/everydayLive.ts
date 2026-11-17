@@ -29,7 +29,8 @@ export interface EverydayBotState {
   director?: DirectorState;
   directedHand?: number;
 }
-const eligible = (p: Player) => p.bot && !p.labStyle;
+// Bot Lab bots play their own dials (botLab.ts) through the style brain, not the everyday engine.
+const eligible = (p: Player) => p.bot && !p.labStyle && !p.lab;
 const factory = new BotFactory();
 const casual = new BotService(new EverydayProvider(96), 'contextual', LEARNING_CONFIG, { experience: 'human-table-1' });
 const challenge = new BotService(new EverydayProvider(160), 'contextual', LEARNING_CONFIG, { experience: 'human-table-1' });

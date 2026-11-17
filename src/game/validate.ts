@@ -7,6 +7,7 @@ import { isVariant } from './variants';
 import { isBubbleId } from './bubbles';
 import { isPackId } from './cardPacks';
 import { BOTS } from './botStyles';
+import { parseLabBot } from './botLab';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
 import { isBotDifficulty } from '../bot_engine/everyday';
@@ -74,6 +75,10 @@ export function parseAction(raw: unknown): Action | null {
     case 'addBot':
       // (A legend used to be seatable here; there are none now, so anything naming one is refused.)
       if (a.legend !== undefined) return null;
+      if (a.lab !== undefined) {
+        const lab = a.name === undefined ? parseLabBot(a.lab) : null;
+        return lab ? { type: 'addBot', lab } : null;
+      }
       if (a.name !== undefined) return typeof a.name === 'string' && BOTS.some((b) => b.name === a.name) ? { type: 'addBot', name: a.name } : null;
       return { type: 'addBot' };
     case 'start':

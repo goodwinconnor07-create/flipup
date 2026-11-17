@@ -1,5 +1,6 @@
 // The bots a host seats on Play with bots and Play with friends: a random one from `BOTS` nobody has picked yet.
-import { addedLine, balancedBotPool, botFace, botsFor } from '@/engine';
+import { addedLine, balancedBotPool, botFace, botsFor, type LabBotSpec } from '@/engine';
+import { labSpec, type LabBot } from '@/state/bot-lab';
 import { knownBots } from '@/state/table-feel';
 
 /** A bot seated in a lobby. `greet` is its first word, said once a moment after it sits down. */
@@ -8,7 +9,12 @@ export interface RowBot {
   name: string;
   emoji: string;
   greet?: string;
+  /** A bot you made in Bot Lab: seated with its dials (`addBot` with `lab`), not from the roster. */
+  lab?: LabBotSpec;
 }
+
+/** A Bot Lab bot as a lobby row. */
+export const labRowBot = (b: LabBot): RowBot => ({ key: `lab:${b.id}:${Date.now()}`, name: b.name, emoji: b.emoji, lab: labSpec(b) });
 
 /**
  * A random bot for the lobby: one from `BOTS` nobody has picked yet, with a face nobody at the table has (always the

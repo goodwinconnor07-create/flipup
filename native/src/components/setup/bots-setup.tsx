@@ -5,6 +5,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type Settings } from '@/engine';
+import type { LabBot } from '@/state/bot-lab';
 import { usePremium } from '@/state/premium';
 import { insertAt, offerUndo } from '@/state/undo';
 import { useProfile } from '@/state/profile';
@@ -18,7 +19,7 @@ import { GameCard } from '../lobby/game-card';
 import { HouseRules } from '../lobby/house-rules';
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
 import { ThemedText } from '../themed-text';
-import { randomBot, type RowBot } from './row-bot';
+import { labRowBot, randomBot, type RowBot } from './row-bot';
 import { FloatTable } from './float-table';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 
@@ -74,12 +75,14 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
   const openAndDeal = () => {
     setBusy(true);
     saveSettings(s);
+    const named = bots.filter((b) => !b.lab);
     openLocalTable(
       s,
-      bots.length,
+      named.length,
       profile.name,
       profile.emoji,
-      bots.map((b) => b.name),
+      named.map((b) => b.name),
+      bots.flatMap((b) => (b.lab ? [b.lab] : [])),
     );
     // Straight to the deal ("Dealing in 3…"): the bots are already picked here, so no second lobby.
     dispatch({ type: 'start' });
@@ -104,6 +107,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
           bots={bots}
           room={room}
           onAdd={addBot}
+          onAddLab={(b) => room > 0 && setBots((have) => [...have, labRowBot(b)])}
           onRemove={(b) => {
             const at = bots.findIndex((x) => x.key === b.key);
             setBots((have) => have.filter((x) => x.key !== b.key));
@@ -145,11 +149,13 @@ function BotsCard({
   bots,
   room,
   onAdd,
+  onAddLab,
   onRemove,
 }: {
   bots: RowBot[];
   room: number;
   onAdd: () => void;
+  onAddLab: (b: LabBot) => void;
   onRemove: (b: RowBot) => void;
 }) {
   const panel = usePanel();
@@ -189,6 +195,7 @@ function BotsCard({
             canRemove={staying.length > min}
             onHold={popOut}
             onAdd={room > 0 ? onAdd : undefined}
+            onAddLab={room > 0 ? onAddLab : undefined}
             onGone={(key) => {
               const b = bots.find((x) => x.key === key);
               setLeaving((l) => l.filter((k) => k !== key));

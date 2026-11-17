@@ -1,3 +1,4 @@
+import { labStyle, type LabDials } from './botLab';
 import { individualStyle, makeRoster } from './botProfiles';
 
 // Ten poker foundations, with individual player traits layered on top. A bot's style never leaves the
@@ -367,7 +368,7 @@ export function dulled(style: Style, d: number): Style {
 }
 
 /** How a seat plays: the bot lab's style for it, or the bot's own (with its individual quirks), or dulled at an easy campaign table. */
-export const playerStyle = (p: { style?: string; botProfile?: string; labStyle?: Style; dull?: number } | undefined): Style => {
-  const s = p?.labStyle ?? styleOf(p?.style, p?.botProfile);
+export const playerStyle = (p: { style?: string; botProfile?: string; labStyle?: Style; lab?: LabDials; dull?: number } | undefined): Style => {
+  const s = p?.labStyle ?? (p?.lab ? labStyle(p.lab) : styleOf(p?.style, p?.botProfile));
   return p?.dull ? dulled(s, p.dull) : s;
 };

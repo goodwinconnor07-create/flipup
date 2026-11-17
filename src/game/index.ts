@@ -22,6 +22,7 @@ export * from './reactions';
 export * from './ids';
 export * from './raiseSizes';
 export * from './names';
+export * from './botLab';
 export * from './emoji';
 export * from './bubbles';
 export * from './cardPacks';

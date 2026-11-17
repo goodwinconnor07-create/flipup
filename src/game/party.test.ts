@@ -48,6 +48,10 @@ describe('party scoring', () => {
       list.slice(1).forEach((g, i) => expect(g).not.toBe(list[i]));
     }
   });
+
+  it('returns an empty list, not a hang, when there is nothing to pick from', () => {
+    expect(shufflePlaylist([], 5)).toEqual([]);
+  });
 });
 
 describe('a party round', () => {

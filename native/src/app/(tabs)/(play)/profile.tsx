@@ -1,5 +1,5 @@
 import { Color, router, Stack } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -14,6 +14,7 @@ import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { cleanName, FREE_VARIANTS, isNameBlocked, LIMITS, NAME_BLOCKED, VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { askForName } from '@/state/ask-name';
 import { usePremium } from '@/state/premium';
 import { saveProfile, useProfile } from '@/state/profile';
 import { usePokerRecord } from '@/state/record';
@@ -37,7 +38,12 @@ export default function ProfileScreen() {
   const clean = cleanName(name);
   const blocked = isNameBlocked(clean);
   const ok = clean.length > 0 && !blocked;
-  const first = !profile.name.trim();
+
+  // No name yet: ask in the small sheet (the one Join uses) instead of raising the keyboard over the page.
+  useEffect(() => {
+    const t = setTimeout(() => void askForName(), 350);
+    return () => clearTimeout(t);
+  }, []);
 
   const save = () => {
     if (!ok) return;
@@ -97,7 +103,6 @@ export default function ProfileScreen() {
             autoCapitalize="words"
             autoCorrect={false}
             returnKeyType="done"
-            autoFocus={first}
             onSubmitEditing={save}
             maxFontSizeMultiplier={1.3}
             style={{ fontFamily: ROUNDED, fontSize: 40, fontWeight: '800', textAlign: 'center', color: dark ? '#ffffff' : (colors.label as string), minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}

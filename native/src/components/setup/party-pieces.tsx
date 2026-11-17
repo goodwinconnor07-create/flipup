@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 import { PARTY_BLIND_HANDS, PARTY_FILL, PARTY_STACKS, variantInfo, type Variant } from '@/engine';
+import { usePremium } from '@/state/premium';
 import { clearPartyDraft } from '@/state/party-draft';
 import { brand, ROUNDED, spacing } from '@/theme';
 
@@ -20,14 +21,17 @@ const chips = (n: number) => n.toLocaleString('en-US');
 /** Under the game card: the way into a party, for a night of more than one game. */
 export function StartPartyButton() {
   const panel = usePanel();
+  // A party plays a playlist of mini games, and all of those are Premium: without it the button opens the offer.
+  const premium = usePremium();
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel="Want to play more than one game? Start a party"
-      accessibilityHint="Opens the party playlist"
+      accessibilityLabel={`Want to play more than one game? Start a party${premium ? '' : '. Premium'}`}
+      accessibilityHint={premium ? 'Opens the party playlist' : 'Opens FlipUp Premium'}
       onPress={() => {
         haptic.tap();
-        router.push('/party-playlist');
+        if (premium) router.push('/party-playlist');
+        else router.push({ pathname: '/premium', params: { reason: 'game' } });
       }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: PANEL_RADIUS, borderCurve: 'continuous', borderWidth: 1, borderColor: panel.edge, backgroundColor: panel.fill }}
     >
@@ -42,6 +46,7 @@ export function StartPartyButton() {
           Start a party
         </Text>
       </View>
+      {!premium && <Icon name="crown.fill" size={16} color={brand.gold} />}
       <Icon name="chevron.right" size={15} color="rgba(255,255,255,0.6)" />
     </PressableScale>
   );

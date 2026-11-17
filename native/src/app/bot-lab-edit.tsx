@@ -4,7 +4,7 @@ import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-nativ
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Dial } from '@/components/bot-lab/dial';
+import { DialSlider } from '@/components/bot-lab/dial-slider';
 import { Face } from '@/components/bot-lab/face';
 import { GrainBackground } from '@/components/grain-background';
 import { PANEL_RADIUS, usePanel } from '@/components/grouped-list';
@@ -177,18 +177,14 @@ function Editor() {
               </Text>
             </Pressable>
           </View>
-          <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, paddingVertical: spacing.md, paddingHorizontal: spacing.xs }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.lg }}>
-              {LAB_DIALS.map((d) => (
-                <View key={d.id} style={{ width: '50%', alignItems: 'center' }}>
-                  <Dial dial={d} value={bot.dials[d.id]} onChange={(v) => dial({ [d.id]: v })} onDrag={setTurning} />
-                </View>
-              ))}
-            </View>
+          {/* One setting a row, each with the table's raise slider: drag sideways or tap a spot. */}
+          <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, paddingHorizontal: spacing.md }}>
+            {LAB_DIALS.map((d, i) => (
+              <View key={d.id} style={{ paddingVertical: spacing.md, borderTopWidth: i ? 1 : 0, borderTopColor: panel.edge }}>
+                <DialSlider dial={d} value={bot.dials[d.id]} onChange={(v) => dial({ [d.id]: v })} onDrag={setTurning} />
+              </View>
+            ))}
           </View>
-          <ThemedText variant="footnote" tone="secondaryLabel" style={{ paddingHorizontal: spacing.xxs }}>
-            Drag a dial up or right to turn it up, down or left to turn it down.
-          </ThemedText>
         </View>
 
         <View style={{ gap: spacing.sm }}>

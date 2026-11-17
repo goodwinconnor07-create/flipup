@@ -6,7 +6,7 @@
 import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
-import { Dial } from '@/components/bot-lab/dial';
+import { DialSlider } from '@/components/bot-lab/dial-slider';
 import { Face } from '@/components/bot-lab/face';
 import { GameThumb } from '@/components/game-picture';
 import { sampleHandData } from '@/components/share/data';
@@ -132,11 +132,9 @@ function BotLabScreen() {
       </View>
       <Heading title="How it plays" />
       <Panel pad={spacing.md}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.lg }}>
+        <View style={{ gap: spacing.md }}>
           {LAB_DIALS.slice(0, 4).map((d) => (
-            <View key={d.id} style={{ width: '50%', alignItems: 'center' }}>
-              <Dial dial={d} value={SAMPLE_DIALS[d.id]} onChange={noop} />
-            </View>
+            <DialSlider key={d.id} dial={d} value={SAMPLE_DIALS[d.id]} onChange={noop} />
           ))}
         </View>
       </Panel>

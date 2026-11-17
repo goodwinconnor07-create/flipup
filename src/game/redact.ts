@@ -23,7 +23,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     ...game,
     hostDeviceId: shown(game.hostDeviceId),
     // Bots' styles and identities and their notes on players stay on the server.
-    players: game.players.map(({ style: _style, labStyle: _labStyle, botProfile: _profile, ...p }) =>
+    players: game.players.map(({ style: _style, labStyle: _labStyle, lab: _lab, botProfile: _profile, ...p }) =>
       p.deviceId ? { ...p, deviceId: shown(p.deviceId) } : p,
     ),
     botTable: undefined,

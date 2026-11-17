@@ -52,8 +52,18 @@
 > 4.2s and swipeable (still under Reduce Motion), on a night-to-bright-blue light that falls to black; then the plans
 > as big dark cards you swipe between (Yearly, Best value, with the gold Save pill; Monthly, Most flexible): badge,
 > name, line, the App Store's price, one big blue button, two lines of what's in it. A tap on a picture opens `premium-perk`.
+> **Changed 17 Nov 2026 (owner):** a full page, not a pull-up sheet, closed by the round X; the app's own moving blue
+> field and type (no bright gradient to black); each perk shown like an App Store screenshot, its title and line over
+> an iPhone showing the app, cut off by the plan cards. Plan cards are solid dark panels at the panel radius.
 > The owner said to build it without a mockup. Share cards come in five designs that are pictures, not app screens, so
 > they keep their own looks (felt, gold foil, receipt, poster) whatever this box says.
+
+> **Bot Lab (owner, 2026-11-17, built without a mockup at the owner's ask):** Settings > Bot Lab is a dark page like
+> Play with bots: your bots two to a row on the see-through panels, a round + at the top right. The editor puts the
+> face big (a tap opens the faces under it) and the name as the big rounded title, then "How it plays": eight round
+> dials two to a row on one panel (a blue arc on a faint track, the number in the middle, the dial's name and a
+> word for where it sits), then Table talk. + Add Bot in any lobby opens a small card out of the button: Random bot,
+> your bots, Bot Lab.
 
 > **Power Cards table (owner, 2026-11-12, built without a mockup at the owner's ask, after playing it):** the power is
 > a card, not a strip. It sits beside your two cards (`PowerCard`: gold foil frame, deep blue face, the power's

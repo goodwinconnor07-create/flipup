@@ -126,6 +126,9 @@ const WEB = {
   'arrow.uturn.up': 'u_turn_right',
   'heart.slash.fill': 'heart_broken',
   snowflake: 'ac_unit',
+  // Bot Lab.
+  'flask.fill': 'science',
+  'dice.fill': 'casino',
   'sun.max.fill': 'sunny',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 

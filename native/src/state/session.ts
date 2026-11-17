@@ -21,6 +21,7 @@ import {
   type HandLog,
   type ServerMessage,
   type Settings,
+  type LabBotSpec,
   FREE_BOT_NAMES,
   isFreeBot,
   isVariant,
@@ -342,7 +343,8 @@ function notify(text: string): void {
 export function dispatch(action: Action): string | null {
   if (!session) return 'No table.';
   // Without Premium the host's bots come from the free ten, even when the button asks for a random one.
-  if (action.type === 'addBot' && !hasPremium()) {
+  if (action.type === 'addBot' && !action.lab && !hasPremium()) {
+    // (A bot you made in Bot Lab is yours to seat, Premium or not.)
     if (action.name !== undefined && !isFreeBot(action.name)) {
       notify('That bot needs FlipUp Premium.');
       return 'premium';
@@ -508,10 +510,10 @@ export function requestLogs(): void {
 }
 
 /** Opens a bots-only table on this phone and seats you at it. */
-export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[]): void {
+export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[], labs: LabBotSpec[] = []): void {
   closeConnection();
   const fast = isFast();
-  const game = createTable({
+  let game = createTable({
     hostDeviceId: me,
     name: cleanName(name) || 'You',
     emoji,
@@ -522,6 +524,11 @@ export function openLocalTable(settings: Settings, bots: number, name: string, e
     now: toTableTime(Date.now(), fast),
   });
   if (fast) game.fast = true;
+  // Bots you made in Bot Lab sit down after the named ones, the same way an online host seats them.
+  for (const lab of labs) {
+    const r = applyAction(game, { type: 'addBot', lab }, { deviceId: me, now: game.createdAt, rng: cryptoRng });
+    if (r.ok) game = r.game;
+  }
   // Bots you've played on this phone before know you: one greets you as a regular.
   const rivals = rivalsFor(game.players.filter((p) => p.bot).map((p) => p.name));
   if (Object.keys(rivals).length) game.rivals = rivals;

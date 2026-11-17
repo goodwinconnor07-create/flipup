@@ -14,7 +14,7 @@
 // bot pops out the moment it closes. Let go early and the ring unwinds back to the top, ease-out in 200ms (rule 15),
 // with no overshoot. The ring is red, the app's colour for taking something away. It works the same under Reduce
 // Motion: it shows progress, it doesn't move anything.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { cancelAnimation, Easing, runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
@@ -24,6 +24,9 @@ import { useDrift } from '@/motion/use-drift';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { brand, motion } from '@/theme';
 
+import { type LabBot } from '@/state/bot-lab';
+
+import { BotPicker, type Anchor } from '../bot-lab/bot-picker';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
 
@@ -102,6 +105,7 @@ export function FloatTable({
   onHold,
   onGone,
   onAdd,
+  onAddLab,
 }: {
   seats: FloatSeat[];
   canRemove: boolean;
@@ -109,8 +113,18 @@ export function FloatTable({
   onGone: (key: string) => void;
   /** Adds a bot; while set, an Add button floats at the end of the group. */
   onAdd?: () => void;
+  /**
+   * Seats a bot you made in Bot Lab. While set, the Add button opens a small menu (`BotPicker`): a random bot,
+   * then your Bot Lab bots, then Bot Lab itself.
+   */
+  onAddLab?: (bot: LabBot) => void;
 }) {
   const [width, setWidth] = useState(0);
+  const [menu, setMenu] = useState<Anchor | null>(null);
+  const openAdd = (anchor?: Anchor) => {
+    if (onAddLab && anchor) setMenu(anchor);
+    else onAdd?.();
+  };
   const seats: FloatSeat[] = onAdd ? [...people, { key: '+add', emoji: '', name: 'Add a bot', add: true }] : people;
   const staying = seats.filter((s) => !s.leaving);
   // Spots are worked out for those staying, so the others move over while one pops out.
@@ -131,11 +145,20 @@ export function FloatTable({
             spot={spotOf.get(s.key) ?? spots[0] ?? { x: width / 2, y: PAD + FACE / 2 }}
             phase={i}
             canRemove={canRemove && !s.you && !s.add && s.removable !== false}
-            onAdd={s.add ? onAdd : undefined}
+            onAdd={s.add ? openAdd : undefined}
             onHold={() => onHold(s.key)}
             onGone={() => onGone(s.key)}
           />
         ))}
+      {menu && (
+        <BotPicker
+          anchor={menu}
+          seated={people.map((p) => p.name)}
+          onRandom={() => onAdd?.()}
+          onLab={(b) => onAddLab?.(b)}
+          onClose={() => setMenu(null)}
+        />
+      )}
     </View>
   );
 }
@@ -154,11 +177,13 @@ function Floater({
   spot: { x: number; y: number };
   phase: number;
   canRemove: boolean;
-  onAdd?: () => void;
+  /** The Add button's tap, with where the button is on screen so a menu can open from it. */
+  onAdd?: (anchor?: Anchor) => void;
   onHold: () => void;
   onGone: () => void;
 }) {
   const reduce = useReduceMotion();
+  const addRef = useRef<ComponentRef<typeof View>>(null);
   // Each face keeps its own slow clock (4.2 to 6.6s a leg), so they never move in step.
   const { t } = useDrift(4200 + ((phase * 937) % 2400));
   const lean = (phase * 1.7) % (Math.PI * 2);
@@ -227,11 +252,14 @@ function Floater({
           onPressOut={() => setHeld(false)}
           onPress={() => {
             haptic.tap();
-            onAdd?.();
+            const ref = addRef.current;
+            if (!ref) return onAdd?.();
+            ref.measureInWindow((ax, ay, aw, ah) => onAdd?.({ x: ax, y: ay, w: aw, h: ah }));
           }}
           style={{ alignItems: 'center' }}
         >
           <View
+            ref={addRef}
             style={{
               width: FACE,
               height: FACE,

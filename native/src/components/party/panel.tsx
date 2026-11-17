@@ -1,6 +1,8 @@
+import { showToast } from '@/state/toast';
+import { userMessage } from '@/state/user-error';
 import { router, useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Text, View } from 'react-native';
 
 import { PARTY_BREAK_SECONDS, partyStandings, variantInfo, type PartyView, type Variant } from '@/engine';
 import { partyLink } from '@/state/api';
@@ -143,7 +145,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
       haptic.success();
     } catch (e) {
       haptic.failure();
-      Alert.alert('Something went wrong', e instanceof Error ? e.message : 'Try again.');
+      showToast(userMessage(e, 'Something went wrong. Try again.'));
     } finally {
       setBusy(false);
     }

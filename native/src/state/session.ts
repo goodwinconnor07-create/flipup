@@ -33,6 +33,7 @@ import { hasPremium } from './premium';
 import { restorePremium } from './purchase';
 import { Connection, type ConnStatus } from './connection';
 import { deviceId } from './device';
+import { UserError } from './user-error';
 import { isFast } from './prefs';
 import { wornLook } from './profile';
 import { noteGame, noteHand } from './record';
@@ -559,7 +560,7 @@ export async function openOnlineTable(settings: Settings, bots: number, name: st
     if (!(await bindPurchase(null))) throw e;
     code = await createOnlineTable(body);
   }
-  if (version !== identityVersion) throw new Error('Your data was reset. Open a new table to continue.');
+  if (version !== identityVersion) throw new UserError('Your data was reset. Open a new table to continue.');
   set({ mode: 'online', code, game: null });
   connect(code);
   return code;
@@ -572,7 +573,7 @@ export async function openOnlineTable(settings: Settings, bots: number, name: st
  */
 export async function changeTableCode(code: string): Promise<string> {
   const old = session?.mode === 'online' ? session.game : null;
-  if (!old || session?.mode !== 'online' || old.status !== 'lobby' || old.hostDeviceId !== me) throw new Error('Only the host can change the code, before the deal.');
+  if (!old || session?.mode !== 'online' || old.status !== 'lobby' || old.hostDeviceId !== me) throw new UserError('Only the host can change the code, before the deal.');
   if (old.code === code) return code;
   const host = old.players.find((p) => p.deviceId === me);
   const fresh = await createOnlineTable({

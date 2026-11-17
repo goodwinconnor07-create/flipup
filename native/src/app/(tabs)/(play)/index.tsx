@@ -15,6 +15,7 @@ import { SmallButton } from '@/components/home/small-button';
 import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
+import { useTabPush } from '@/components/use-tab-push';
 import { detail, EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { variantNeedsPremium, isVariant, VARIANTS, variantInfo, type Variant } from '@/engine';
@@ -91,19 +92,20 @@ export default function Home() {
   // instead, which explains the game before any setup and leads to the offer.
   const premium = usePremium();
   const locked = !premium && variantNeedsPremium(variant);
+  const push = useTabPush();
   const start = (path: string, buzz = false) => () => {
     if (buzz) haptic.turn();
     if (!premium && variantNeedsPremium(variant)) {
       haptic.tap();
-      router.push(`/game/${variant}`);
+      push(`/game/${variant}`);
       return;
     }
-    router.push(path as never);
+    push(path);
   };
 
   const go = (path: string) => () => {
     haptic.tap();
-    router.push(path as never);
+    push(path);
   };
   const named = profile.name.trim().length > 0;
   const pad = { paddingHorizontal: spacing.md };

@@ -30,11 +30,11 @@ export default function EmojiSheet() {
     saveProfile({ emoji });
   };
   return (
-    <SheetScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.lg }}>
+    <SheetScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xl, gap: spacing.md }}>
       <Stack.Screen options={{ title: 'Your emoji' }} />
       <View style={{ alignItems: 'center', gap: spacing.xs }}>
         <Animated.View key={profile.emoji} entering={reduce ? undefined : popIn()}>
-          <Avatar emoji={profile.emoji} size={96} />
+          <Avatar emoji={profile.emoji} size={72} />
         </Animated.View>
         <ThemedText variant="headline">{profile.name.trim() || 'You'}</ThemedText>
       </View>

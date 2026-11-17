@@ -26,7 +26,6 @@ import {
 import { emailReport, type StoredReport } from './reports';
 import { forgetDevice, handleNotification, mayHostPremium, verifyPurchase, type VerifyResult } from './premium';
 import { waitlistRoute } from './waitlist';
-import { isPushToken } from './live';
 
 export { TableRoom } from './room';
 export { PartyRoom } from './party';
@@ -174,34 +173,6 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
   }
   if (own) return json({ error: 'That code is taken. Try another.' }, 409);
   return json({ error: "Couldn't find a free code. Try again." }, 503);
-}
-
-/**
- * A table's Live Activity (worker/live.ts):
- *   POST /api/tables/:code/live        { deviceId, token, sandbox }  this phone's activity and its push token, answers { act }
- *   POST /api/tables/:code/live/stop   { deviceId }                  the phone ended it
- *   POST /api/tables/:code/live/check  { act, hand, seq }            the activity's Check button (no device id: `act` stands in)
- */
-async function liveRoute(request: Request, env: Env, code: string, action: string | undefined): Promise<Response> {
-  if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
-  if (await limited(request, 'live', 120, 60_000)) return json({ error: 'Slow down a little.' }, 429);
-  const body = (await readJson(request, 2048)) as Record<string, unknown> | null;
-  if (!body) return json({ error: 'Bad request.' }, 400);
-  const room = env.TABLE_ROOM.getByName(code);
-  if (action === 'check') {
-    const { act, hand, seq } = body;
-    if (typeof act !== 'string' || act.length > 40 || !Number.isInteger(hand) || !Number.isInteger(seq)) return json({ error: 'Bad request.' }, 400);
-    const result = await room.liveCheck(act, hand as number, seq as number);
-    return result.ok ? json({ ok: true }) : json({ error: result.error }, 409);
-  }
-  if (!isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
-  if (action === 'stop') {
-    await room.stopLive(body.deviceId);
-    return json({ ok: true });
-  }
-  if (!isPushToken(body.token)) return json({ error: 'Missing push token.' }, 400);
-  const reg = await room.registerLive(body.deviceId, body.token, body.sandbox === true);
-  return reg ? json(reg) : json({ error: "You're not at this table." }, 404);
 }
 
 /** The name and picture a phone sends to host or join a party, or an error sentence. */
@@ -358,11 +329,10 @@ export default {
       return request.method === 'POST' ? createTableRoute(request, env) : json({ error: 'Use POST.' }, 405);
     }
 
-    const match = pathname.match(/^\/api\/tables\/([^/]+)(\/ws|\/live(?:\/(check|stop))?)?$/);
+    const match = pathname.match(/^\/api\/tables\/([^/]+)(\/ws)?$/);
     if (match) {
       const code = match[1].toUpperCase();
       if (!isTableCode(code)) return json({ error: "That code doesn't look right." }, 400);
-      if (match[2]?.startsWith('/live')) return liveRoute(request, env, code, match[3]);
       const room = env.TABLE_ROOM.getByName(code);
       if (match[2]) {
         if (!sameSite(request)) return json({ error: 'Not allowed.' }, 403);

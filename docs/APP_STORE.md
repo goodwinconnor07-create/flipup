@@ -242,7 +242,6 @@ What FlipUp collects, all **linked to the user**, all for **App Functionality** 
 |---|---|
 | Identifiers > User ID | The screen name shown at tables and parties ("screen name, handle ... assigned user ID") |
 | Identifiers > Device ID | The random ID the app makes on first launch (`flipup.device`), which proves a phone owns its seat. Not the advertising ID or the vendor ID |
-| Identifiers > Device ID (also) | A Live Activity's push token from Apple, kept by the table with the device ID while you're seated, deleted with the table (`worker/live.ts`). Covered by the same Device ID answer; nothing new to tick |
 | User Content > Gameplay Content | Online tables and parties: seats, moves, chips and results while the table runs (deleted after 30 minutes with no play, and at most 6 hours after it opens, 8 for a 12-game party) |
 | User Content > Other User Content | The emoji picture shown at tables and parties |
 
@@ -293,11 +292,6 @@ the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a ga
 > once subscribed. Free: Texas Hold'em, ten bots, Saved hands and one Range training hand a day. Premium: hosting the
 > 12 mini games, the rest of the bots, Bot Lab (Settings > Bot Lab: make your own bots) and the rest of Range training. Anyone can join any game with a code for free; only
 > the host needs Premium. There are no ads and no tracking.
->
-> Live Activity: while you're seated at an online table (Host a game, then Start game), lock the phone. The Lock
-> Screen and Dynamic Island show your cards, the board, the pot and, on your turn, your clock and a Check button when
-> checking is free. This is the only use of push notifications: the server updates the Live Activity through APNs. It
-> can be turned off in Settings > Live Activity. Tables against bots on the phone don't show one.
 >
 > Account deletion: **Settings** (the gear on the Play tab) > **Delete my data**.
 >

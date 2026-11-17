@@ -280,8 +280,8 @@ the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a ga
 >
 > Online play: tap **Host a game**. The lobby shows a six-character game code; tap **Add Bot** to fill seats and
 > **Start game** to deal. A second device joins with **Join a game** and that code (or by scanning the QR code under
-> **QR**). Party mode starts from the same lobby: **Start a party**, pick
-> the games, **Save playlist**, then **Start party**.
+> **QR**). Party mode starts from the same lobby: **Start a party**, pick the games, **Save playlist**, then
+> **Start party**.
 >
 > Chips are play chips only. They can't be bought, sold, won or exchanged, and there's no real-money play.
 >
@@ -289,9 +289,12 @@ the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a ga
 > (`flipup.premium.yearly`), each with an introductory offer for the first month. Open it from the **Premium**
 > button (crown) on the Play tab, or swipe to any game with a crown and tap **Host a game** or **Play bots**. Buy it
 > with a sandbox account; **Restore** is on the same page and in Settings, and **Manage subscription** is in Settings
-> once subscribed. Free: Texas Hold'em, ten bots, Saved hands and one Range training hand a day. Premium: hosting the
-> 12 mini games, the rest of the bots, Bot Lab (Settings > Bot Lab: make your own bots) and the rest of Range training. Anyone can join any game with a code for free; only
-> the host needs Premium. There are no ads and no tracking.
+> once subscribed.
+> - Free: Texas Hold'em, ten bots, Saved hands and one Range training hand a day.
+> - Premium: hosting the 12 mini games, the rest of the bots, Bot Lab (Settings > Bot Lab: make your own bots) and the
+>   rest of Range training.
+>
+> Anyone can join any game with a code for free; only the host needs Premium. There are no ads and no tracking.
 >
 > Account deletion: **Settings** (the gear on the Play tab) > **Delete my data**.
 >
@@ -301,6 +304,7 @@ the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a ga
 >
 > Permissions are asked only when used: the camera for **Scan a QR code** on Join a game, notifications for the
 > optional daily reminder on the Train tab, and Photos only to add a picture when you tap Save Image on a share card.
+> The daily reminder is a local notification on the phone. The app doesn't use push notifications.
 
 ### Performance
 

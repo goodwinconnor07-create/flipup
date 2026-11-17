@@ -1,7 +1,7 @@
 import SwiftUI
 
 // Playing cards for the Live Activity: a white rounded card with the rank over an SF Symbol suit, hearts and diamonds
-// red, spades and clubs black. A dashed outline holds the place of a board card still to come.
+// red, spades and clubs black. A faint filled slot holds the place of a board card still to come.
 
 enum LivePalette {
   /** The app's deep blue (brand.violet, #2557d6) and its night end, for the activity's background. */
@@ -10,7 +10,10 @@ enum LivePalette {
   /** Gold (brand.gold, #f5b700): your turn and your wins, nothing else. */
   static let gold = Color(red: 0xf5 / 255, green: 0xb7 / 255, blue: 0x00 / 255)
   static let red = Color(red: 0xd9 / 255, green: 0x1e / 255, blue: 0x36 / 255)
-  static let quiet = Color.white.opacity(0.72)
+  static let quiet = Color.white.opacity(0.62)
+  /** The card behind everything: near black, like Flighty's, so the cards and gold carry the colour. */
+  static let card = Color(red: 0.03, green: 0.04, blue: 0.08).opacity(0.86)
+  static let hairline = Color.white.opacity(0.14)
 }
 
 struct LiveCard: View {
@@ -69,7 +72,7 @@ struct EmptySlot: View {
 
   var body: some View {
     RoundedRectangle(cornerRadius: width * 0.2, style: .continuous)
-      .strokeBorder(Color.white.opacity(0.28), style: StrokeStyle(lineWidth: 1, dash: [3, 2.5]))
+      .fill(Color.white.opacity(0.08))
       .frame(width: width, height: width * 1.38)
       .accessibilityHidden(true)
   }
@@ -85,7 +88,7 @@ struct HoleCards: View {
     HStack(spacing: cards.count > 2 ? -width * 0.42 : -width * overlap) {
       ForEach(Array(cards.enumerated()), id: \.offset) { _, card in
         LiveCard(card: card, width: width)
-          .shadow(color: .black.opacity(0.25), radius: 1.5, y: 1)
+          .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
       }
     }
     .privacySensitive()

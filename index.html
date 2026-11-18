@@ -20,10 +20,10 @@
   <body>
     <div class="field" aria-hidden="true"><i></i><i></i><i></i></div>
 
-    <header class="top">
+    <div class="top-wrap"><header class="top">
       <a class="brand" href="/"><img src="/icons/mark.png" alt="" width="32" height="32" />FlipUp</a>
-      <nav><a href="/support">Support</a><a href="/privacy">Privacy</a></nav>
-    </header>
+      <nav><a href="/#games-title" class="wide">Games</a><a href="/#shots-title" class="wide">Screens</a><a href="/support">Support</a><a class="nav-cta" href="/#last">Get notified</a></nav>
+    </header></div>
 
     <!-- A join link (/ACES42, /party/ACES42) shows this instead of the home page. landing.ts fills it in. -->
     <main id="join" class="join" hidden>
@@ -46,10 +46,49 @@
         <figure class="phone hero-phone"><img src="/shots/holdem.webp" alt="A Texas Hold'em table in FlipUp: a split pot, two pair, queens and nines." width="603" height="1311" fetchpriority="high" /></figure>
       </section>
 
-      <section class="shots" aria-label="Screens from the app">
-        <figure><div class="phone"><img src="/shots/deuces.webp" alt="Crazy Deuces: every 2 is wild and shines gold." width="603" height="1311" loading="lazy" /></div><figcaption><b>Crazy Deuces</b>Every 2 is wild, and shines gold so you never miss one.</figcaption></figure>
-        <figure><div class="phone"><img src="/shots/dice.webp" alt="Die on the River: the die rolled a 4 and swapped a board card." width="603" height="1311" loading="lazy" /></div><figcaption><b>Die on the River</b>The river lands, a die rolls, and the board can change.</figcaption></figure>
-        <figure><div class="phone"><img src="/shots/memory.webp" alt="Memory Poker: twenty cards to remember before the deal." width="603" height="1311" loading="lazy" /></div><figcaption><b>Memory Poker</b>Twenty cards flash up and leave the deck. Remember them.</figcaption></figure>
+      <section class="games" aria-labelledby="games-title">
+        <div class="section-head">
+          <p class="eyebrow">Game modes</p>
+          <h2 id="games-title">One deck. A lot of ways to play.</h2>
+          <p class="sub"><b>13 games</b> are in the app on day one, with <b>9 more</b> in the works. Drag the belt, or tap a game to take a look.</p>
+        </div>
+        <div class="belt" id="belt" aria-label="Every game mode. Drag to scroll, tap one to see it.">
+          <div class="belt-row" data-dir="-1"></div>
+          <div class="belt-row" data-dir="1"></div>
+        </div>
+        <article class="game-card" id="game-card" aria-live="polite">
+          <figure class="phone game-shot" id="game-shot"><img alt="" width="603" height="1311" /></figure>
+          <div class="game-words">
+            <div class="game-head"><span class="game-tile" id="game-tile" aria-hidden="true"></span><div><p class="tag" id="game-tag"></p><h3 id="game-name"></h3></div></div>
+            <p class="game-hook" id="game-hook"></p>
+            <p class="game-mood" id="game-mood"></p>
+          </div>
+        </article>
+      </section>
+
+      <section class="store-shots" aria-labelledby="shots-title">
+        <div class="section-head row">
+          <div>
+            <p class="eyebrow">Inside the app</p>
+            <h2 id="shots-title">Take a look around.</h2>
+          </div>
+          <div class="arrows">
+            <button class="round" type="button" id="shots-prev" aria-label="Previous screenshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
+            <button class="round" type="button" id="shots-next" aria-label="Next screenshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg></button>
+          </div>
+        </div>
+        <div class="slides" id="slides" tabindex="0" aria-label="App Store screenshots">
+          <img src="/store-shots/01-friends.webp" alt="Your friends. One table. A Texas Hold'em table with chat bubbles." width="804" height="1748" />
+          <img src="/store-shots/02-lobby.webp" alt="Add friends with a code. The lobby and its game code." width="804" height="1748" loading="lazy" />
+          <img src="/store-shots/03-games.webp" alt="13 games. One app. Every game's picture." width="804" height="1748" loading="lazy" />
+          <img src="/store-shots/04-pineapple.webp" alt="Three cards. Throw one away. Crazy Pineapple's discard." width="804" height="1748" loading="lazy" />
+          <img src="/store-shots/05-dice.webp" alt="Roll the die. Swap the river. Die on the River." width="804" height="1748" loading="lazy" />
+          <img src="/store-shots/06-power.webp" alt="Bend the rules. Play a power card." width="804" height="1748" loading="lazy" />
+          <img src="/store-shots/07-training.webp" alt="Make the right call. The built-in range trainer." width="804" height="1748" loading="lazy" />
+          <img src="/store-shots/08-replay.webp" alt="Save any hand. Replay every move." width="804" height="1748" loading="lazy" />
+          <img src="/store-shots/09-bots.webp" alt="No one around? Bots fill the seats." width="804" height="1748" loading="lazy" />
+        </div>
+        <div class="dots" id="dots" aria-hidden="true"></div>
       </section>
 
       <section class="points">
@@ -59,7 +98,7 @@
         <div><h2>Range training</h2><p>Make the call, then see why it’s the best play.</p></div>
       </section>
 
-      <section class="last">
+      <section class="last" id="last">
         <h2>Be first to the table.</h2>
         <p>One email the day FlipUp is on the App Store. Nothing else.</p>
         <div id="get-2"></div>

@@ -3391,7 +3391,6 @@ export const SCENARIOS: Scenario[] = [
         range: [
           { label: 'Trip fives', hands: 'A5, K5s, 85s, 75s, 65s, 54s', role: 'calls', big: 'folds' },
           { label: 'A queen: a chop', hands: 'AQ, KQ, QJ, QT, Qs8s, Qs7s, Qs6s, Qs5s', role: 'calls' },
-          { label: 'Nines full', hands: '99', role: 'calls' },
           { label: 'Marginal pairs', hands: 'A9, K9s, T9, 98, 97s, 96s, 88, 77, 66, TT, JJ', role: 'folds' },
           { label: 'Missed draws', hands: 'AcKc, AcJc, AcTc, Ac8c, Ac7c, Ac4c, KcJc, KcTc, 7c6c, JT, T8s, 87s', role: 'folds' },
         ],
@@ -3402,7 +3401,7 @@ export const SCENARIOS: Scenario[] = [
     clues: [
       { street: 'preflop', text: 'The button limps, you complete and the big blind checks. The limper’s range is wide: any ace, suited kings, connectors, small pairs.' },
       { street: 'flop', text: 'Q♣5♣5♦: top pair. They bet when it’s checked to them, which they do with trips, queens, pairs and club draws.' },
-      { street: 'turn', text: 'The 9♠ and you lead; they call. They have more trips than you, so checking to call would have been fine too.' },
+      { street: 'turn', text: 'The 9♠ and you lead; they call. They have more trips than you, so checking to call is the usual play.' },
       { street: 'river', text: 'The Q♥ gives you queens full. A five calls a normal bet but rarely an overbet. A queen chops with you. Marginal pairs won’t call anything, and missed draws fold.' },
     ],
     why: 'Their trips will call a big bet about as often as a smaller one, so make it big. An overbet only gets called by calling stations: their fives fold to it. Bet about three quarters of the pot.',
@@ -6716,8 +6715,7 @@ export const SCENARIOS: Scenario[] = [
         pre: 'Live cold call',
         range: [
           { label: 'A straight: 7-6 suited', hands: '76s', role: 'value' },
-          { label: 'Two pair: A-9, A-8, A-5, 9-8', hands: 'A9s, A9o, A8s, A5s, 98s', role: 'value' },
-          { label: 'Sets: 8-8, 5-5', hands: '88, 55', role: 'value' },
+          { label: 'Two pair: A-9, 9-8', hands: 'A9s, A9o, 98s', role: 'value' },
           { label: 'A heart draw', hands: 'KhQh, KhJh, QhJh, JhTh, Th9h', role: 'bluff', weight: 0.25 },
         ],
       },
@@ -6731,7 +6729,7 @@ export const SCENARIOS: Scenario[] = [
         text: 'The 9♣ and they move all in for about half the pot. A player like this usually has what they are representing: 7-6 suited, A-9 or 9-8.',
       },
     ],
-    why: 'When a straightforward player suddenly shoves on the turn, their range is mostly hands that crush top pair: the straight, two pair and sets. You need about 24% and have far less. You are not pot committed: fold.',
+    why: 'When a straightforward player suddenly shoves on the turn, their range is mostly hands that crush top pair: the straight and two pair. You need about 24% and have far less. You are not pot committed: fold.',
   },
   {
     id: 'eights-call-scary-club-river-polarized',

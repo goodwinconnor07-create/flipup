@@ -10013,4 +10013,47 @@ export const SCENARIOS: Scenario[] = [
     ],
     why: 'There are just too many hands you beat: two pair and top pair betting for value and missed draws bluffing. The straights that beat you are unlikely or too loose to be here. You can’t fold a set.',
   },
+  {
+    id: 'top-pair-gutshot-call-turn-lead-three-bet-pot',
+    title: 'Top pair against a small turn lead in a 3-bet pot',
+    concept: 'Bluff catching',
+    table: 9,
+    format: 'tournament',
+    ante: 0.7,
+    hero: { pos: 'HJ', cards: ['As', 'Ts'], pre: '3-bet' },
+    stack: 38,
+    stacks: { LJ: 32 },
+    board: ['Qc', 'Kh', 'Ac', '6s'],
+    actions: [
+      { street: 'preflop', who: 'LJ', move: 'raise', to: 2.3 },
+      { street: 'preflop', who: 'HJ', move: 'raise', to: 7 },
+      { street: 'preflop', who: 'LJ', move: 'call' },
+      { street: 'flop', who: 'LJ', move: 'check' },
+      { street: 'flop', who: 'HJ', move: 'check' },
+      { street: 'turn', who: 'LJ', move: 'bet', to: 6 },
+    ],
+    opponents: [
+      {
+        pos: 'LJ',
+        type: 'Less experienced final-table player',
+        pre: 'Call a 3-bet',
+        range: [
+          { label: 'Two pair: A-Q, K-Q', hands: 'AQs, AQo, KQs, KQo', role: 'value' },
+          { label: 'A-J suited, and J-T for the straight', hands: 'AJs, JTs', role: 'value' },
+          { label: 'Kings with a club draw: K♣J♣, K♣T♣', hands: 'KcJc, KcTc', role: 'bluff' },
+          { label: 'A small pair turned into a bluff', hands: '77, 88, 99, TT, JJ', role: 'bluff', weight: 0.25 },
+        ],
+      },
+    ],
+    best: 'call',
+    clues: [
+      { street: 'preflop', text: 'A final table, about 30 big blinds deep. The player second to act opens, you 3-bet A♠T♠ from the next seat and they call. With A-K or a big pair they’d most likely have shoved.' },
+      { street: 'flop', text: 'Q♣K♥A♣: they check and you check behind with top pair and a gutshot.' },
+      {
+        street: 'turn',
+        text: 'The 6♠ and they lead for less than half the pot. A-Q is the value hand to fear, with suited A-J, K-Q and J-T (which your ten blocks). They could also have peeled with K♣J♣ or K♣T♣, or be bluffing.',
+      },
+    ],
+    why: 'Not many hands beat A-T here: A-Q, suited A-J, K-Q and a J-T your ten blocks, and even against K-Q you have outs. Kings with a club draw and the odd bluff are behind. At this small price, call unless you have an ironclad read.',
+  },
 ];

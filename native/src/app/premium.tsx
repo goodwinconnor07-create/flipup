@@ -39,7 +39,7 @@ const PHONE_SHOW = 0.56;
  * 2026-11-11): the FlipUp | PREMIUM pill and a round close button, then every perk as its own big picture with a title
  * and a line, sliding on by itself every few seconds (swipe them too; still under Reduce Motion), and under it the
  * plans as big dark cards you swipe between, each with its badge, name, line, the App Store's price, one big button
- * and what it includes. Opened with `?reason=` (a locked game, bot, range hand, look, Replay, a share design, an icon
+ * and what it includes. Opened with `?reason=` (a locked game, bot, range hand, look, Replay, an icon
  * or the gold name), whose perk comes first. With Premium the card says what plan you're on.
  */
 export default function PremiumScreen() {
@@ -212,7 +212,6 @@ const HERO_WORDS: Partial<Record<PerkId, { title: string; line: string }>> = {
   range: { title: 'Every range hand', line: 'Every real spot, as many sets as you like.' },
   botlab: { title: 'Bot Lab', line: 'Make your own bots and set how they play.' },
   games: { title: `${VARIANTS.length - FREE_VARIANTS} more games`, line: 'Host every mini game. Friends join free.' },
-  share: { title: 'Share cards', line: 'Your best hands and nights, as a picture.' },
   gold: { title: 'Gold name', line: 'Everyone at the table sees it.' },
   packs: { title: 'Card backs', line: 'On your cards, for the whole table to see.' },
 };

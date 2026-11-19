@@ -110,7 +110,7 @@ export function handData(r: Replay, title: string, who: ShareWho): ShareData {
     tone: r.net > 0 ? 'win' : r.net < 0 ? 'loss' : 'plain',
     subline: r.myHand ?? (r.showdown ? 'Showdown' : r.net > 0 ? 'Everyone folded' : 'Folded'),
     hole: r.holes[r.me],
-    board: r.board.slice(0, Math.min(r.board.length, 5)),
+    board: r.board,
     variant: r.variant,
     game: variantInfo(r.variant).name,
     date: day(r.at),

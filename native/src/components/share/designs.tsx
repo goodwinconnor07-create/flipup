@@ -21,23 +21,13 @@ import { brand, cardColors, ROUNDED } from '@/theme';
 import type { Card, Street, Variant } from '@/engine';
 
 import type { ShareData, ShareSide } from './data';
+import { BAND, CARD_H, CARD_W, handCardLayout, layoutsFor, ROW_MAX, showdownLayout, SIDE_X, VS, type Placed, type ShareLayout } from './layout';
 
-export const CARD_W = 360;
-export const CARD_H = 450;
-const BAND = 58;
+export { CARD_H, CARD_W } from './layout';
 const SHADOW = 0.24;
 const WHITE = '#ffffff';
 
-export type ShareLayout = 'hand' | 'showdown' | 'odds';
-export const LAYOUT_NAMES: Record<ShareLayout, string> = { hand: 'Hand', showdown: 'Showdown', odds: 'Odds' };
-
-const theirCards = (d: ShareData) => (d.matchup?.them?.cards.length ?? 0) > 0;
-/** The ways this card can be drawn: only a hand has a choice, and only of the ones it has the data for. */
-export function layoutsFor(d: ShareData): ShareLayout[] {
-  if (d.kind !== 'hand') return ['hand'];
-  return ['hand', ...(theirCards(d) ? (['showdown'] as const) : []), ...((d.odds?.length ?? 0) >= 2 ? (['odds'] as const) : [])];
-}
-export const isShareLayout = (v: unknown): v is ShareLayout => v === 'hand' || v === 'showdown' || v === 'odds';
+export { isShareLayout, LAYOUT_NAMES, layoutsFor, type ShareLayout } from './layout';
 
 /** Your stats wear the brand: the app's blue in the game pictures' three shades. */
 const BRAND_LOOK = { field: brand.violet, tone: cardColors.violet[0], band: brand.violetDeep } as const;
@@ -208,21 +198,9 @@ const SUITS: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' }
 const sticker = (c: Card, x: number, y: number, s: number, r = 0, glow = false): Shape => ({ kind: 'card', x, y, s, r, rank: c[0] === 'T' ? '10' : c[0], suit: SUITS[c[1]] ?? '♠', glow });
 const drawn = (shapes: Shape[]) => shapes.map((s, i) => draw(s, i));
 
-/** Hole cards fanned like the game pictures' pair: the first tilted left, the last right and a little higher. */
-function holeShapes(cards: Card[], cx: number, cy: number, s: number): Shape[] {
-  const step = 25 * s * (cards.length > 2 ? 0.8 : 1);
-  const mid = (cards.length - 1) / 2;
-  return cards.map((c, i) => sticker(c, cx + (i - mid) * step, cy - (i === cards.length - 1 && cards.length > 1 ? 2 * s : 0), s, cards.length === 1 ? 0 : (i - mid) * (22 / Math.max(1, cards.length - 1))));
-}
-
-/** The board in one row, the cards that swung the hand framed in gold. */
-function boardShapes(d: ShareData, cy: number, width: number): Shape[] {
-  const board = d.board ?? [];
-  if (!board.length) return [];
-  const step = Math.min(56, width / board.length);
-  const s = (step - 6) / 42;
-  const swing = new Set(d.swing ?? []);
-  return board.map((c, i) => sticker(c, 180 + (i - (board.length - 1) / 2) * step, cy, s, 0, swing.has(c)));
+/** Cards placed by layout.ts, drawn as the game pictures' sticker cards; `glow` frames the ones that swung the hand. */
+function cardsAt(cards: Card[], at: Placed[], glow: ReadonlySet<Card> = new Set()): Shape[] {
+  return cards.map((c, i) => sticker(c, at[i].x, at[i].y, at[i].s, at[i].r, glow.has(c)));
 }
 
 /** A headline's size so it fits the card's width. */
@@ -232,16 +210,16 @@ const fit = (text: string, size: number, width = 300) => Math.min(size, width / 
 
 function HandArt({ d }: { d: ShareData }) {
   const hole = d.hole ?? [];
-  const hasBoard = (d.board?.length ?? 0) > 0;
-  const holeY = hasBoard ? 168 : 206;
-  const holeScale = hole.length > 2 ? 1.25 : 1.5;
+  const board = d.board ?? [];
+  const hasBoard = board.length > 0;
+  const at = handCardLayout(hole.length, board.length);
   const line = d.moment?.headline ?? d.subline;
   return (
     <G>
       <Capsule x={180} y={98} text={d.eyebrow} />
-      {drawn(holeShapes(hole, 180, holeY, holeScale))}
-      {drawn(boardShapes(d, 258, 290))}
-      <Sticker x={180} y={hasBoard ? 348 : 336} size={fit(d.headline, 48)} fill={d.tone === 'win' ? GLOW : WHITE}>
+      {drawn(cardsAt(hole, at.hole))}
+      {drawn(cardsAt(board, at.board, new Set(d.swing ?? [])))}
+      <Sticker x={180} y={hasBoard ? 350 : 336} size={fit(d.headline, board.length > ROW_MAX ? 40 : 48)} fill={d.tone === 'win' ? GLOW : WHITE}>
         {d.headline}
       </Sticker>
       {line && (
@@ -254,14 +232,14 @@ function HandArt({ d }: { d: ShareData }) {
 }
 
 /** One player's cards, name and a capsule: your chips for you, their hand (or WON) for them. */
-function Side({ side, x, tag }: { side: ShareSide; x: number; tag?: string }) {
+function Side({ side, x, at, tag }: { side: ShareSide; x: number; at: Placed[]; tag?: string }) {
   return (
     <G>
-      {drawn(holeShapes(side.cards, x, 168, 1.15))}
-      <Words x={x} y={238} size={fit(side.name, 16, 140)} weight="900">
+      {drawn(cardsAt(side.cards, at))}
+      <Words x={x} y={238} size={fit(side.name, 16, 120)} weight="900">
         {side.name}
       </Words>
-      {!!tag && <Capsule x={x} y={262} text={tag.toUpperCase()} max={150} fill={side.won ? GLOW : WHITE} />}
+      {!!tag && <Capsule x={x} y={262} text={tag.toUpperCase()} max={140} fill={side.won ? GLOW : WHITE} />}
     </G>
   );
 }
@@ -269,16 +247,18 @@ function Side({ side, x, tag }: { side: ShareSide; x: number; tag?: string }) {
 function ShowdownArt({ d }: { d: ShareData }) {
   const m = d.matchup!;
   const them = m.them;
+  const board = d.board ?? [];
+  const at = showdownLayout(m.you.cards.length, them?.cards.length ?? 0, board.length);
   return (
     <G>
       <Capsule x={180} y={98} text={d.eyebrow} />
-      <Side side={m.you} x={98} tag={d.headline} />
-      {them && <Side side={them} x={262} tag={them.hand?.split(',')[0] ?? (them.won ? 'Won' : '')} />}
-      <Ink d={circle(180, 168, 23)} fill={GLOW} />
-      <Text x={180} y={174.5} fontFamily={FONT} fontSize={18} fontWeight="900" textAnchor="middle" fill={INK}>
+      <Side side={m.you} x={SIDE_X[0]} at={at.you} tag={d.headline} />
+      {them && <Side side={them} x={SIDE_X[1]} at={at.them} tag={them.hand?.split(',')[0] ?? (them.won ? 'Won' : '')} />}
+      <Ink d={circle(VS.x, VS.y, VS.r)} fill={GLOW} />
+      <Text x={VS.x} y={VS.y + 6.5} fontFamily={FONT} fontSize={18} fontWeight="900" textAnchor="middle" fill={INK}>
         VS
       </Text>
-      {drawn(boardShapes(d, 322, 240))}
+      {drawn(cardsAt(board, at.board, new Set(d.swing ?? [])))}
       {d.moment && (
         <Words x={180} y={377} size={fit(d.moment.headline, 15, 320)} opacity={0.95}>
           {d.moment.headline}

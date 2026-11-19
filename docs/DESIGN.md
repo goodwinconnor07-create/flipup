@@ -7,6 +7,21 @@
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
+> **19 Nov 2026 (owner): shaded, not grey.** A card that isn't part of the hand that matters (a showdown's other cards,
+> your folded cards, a folded player's in a replay) keeps its white face and full-colour ink under a dark shade
+> (`dim` in `playing-card.tsx`), as the big poker apps do; the winning five lift with a gold ring. Grey faces with faded
+> ink were hard to read.
+>
+> **19 Nov 2026 (owner): home game rules and the hand review.** The home game rules sit in the same box as Rebuys,
+> each an on/off switch; turning the ante or bomb pots on adds a row of pills under it (the size, how often), the picked
+> one in the app's blue. The table settings sheet has the same as toggles with a segmented control under them.
+> Run it twice asks in the action area (Once in grey, Twice in the Call blue with a draining bar) and shows both boards
+> on the felt, the first small over the second, each with a round run number. The hand review lives in the replay, not a new
+> screen: a Review card at the top of the list, a line under the felt on each of your moves, a mark beside your moves in
+> the hand log, and one line on the hand recap. It never grades: a pale blue eye where the odds come from real cards,
+> a grey info mark where it's the pot odds and your hand only. Without Premium the card and the line are locked (a
+> crown) and open the offer at `?reason=review`.
+>
 > **12 Nov 2026 (owner): consistency between Play and Train, and a lighter bots lobby.** Range training's ways to train
 > (Daily hand, Endless, Sets, Gaps) are tiles in exactly the style of Play's game tiles: a flat field, a sticker picture
 > from gameArt's shapes (`src/design/trainArt.ts`), the name in white rounded capitals on a darker band, the same crown.

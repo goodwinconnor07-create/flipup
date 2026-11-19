@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, FadeIn, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
-import { holeCountAt, moveLabel, myPlayer, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
+import { handNet, holeCountAt, moveLabel, myPlayer, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { me as myDevice, dispatch } from '@/state/session';
 import { EASE_OUT } from '@/motion/presets';
@@ -288,7 +288,11 @@ function SeatPod({
   const turn = !!hand && !hand.result && hand.toAct === player.id;
   // Before the first hand is dealt nobody is out: they're just waiting for the cards.
   const out = !!hand && (!seat || seat.folded);
+  // What the hand did for them: the net (a split that only gave their own chips back is 0, never "+1,000"), and at a
+  // showdown the name of the hand they showed.
   const won = hand?.result?.won[player.id] ?? 0;
+  const net = hand?.result ? handNet(hand, player.id) : 0;
+  const shownName = hand?.result?.showdown && seat && !seat.folded ? hand.result.names[player.id] : undefined;
   const status = player.stack === 0 && !seat ? 'Out' : player.sittingOut ? 'Away' : null;
   const thinking = turn && player.bot && !hand?.runout;
   // A move from an earlier street clears once the new cards land, so last street's "Raise 25" never sits over this
@@ -439,7 +443,7 @@ function SeatPod({
         )}
         {/* A fixed slot, so a tag coming or going never changes the row's height and moves the table. */}
         <View style={{ height: 20, justifyContent: 'center' }}>
-          <SeatTag c={c} won={won} odds={odds} offline={!!player.offline} />
+          <SeatTag c={c} won={won} net={net} name={shownName} odds={odds} offline={!!player.offline} />
         </View>
       </View>
     </Pressable>
@@ -450,11 +454,16 @@ function SeatPod({
 function SeatTag({
   c,
   won,
+  net,
+  name,
   odds,
   offline,
 }: {
   c: ReturnType<typeof usePlainColors>;
   won: number;
+  net: number;
+  /** The hand they showed at the showdown ("Two pair, kings and fives"). */
+  name?: string;
   odds?: { win: number };
   offline: boolean;
 }) {
@@ -485,7 +494,11 @@ function SeatTag({
       </Text>
     </Animated.View>
   );
-  if (won > 0) return tag(`w${won}`, `+${chips(won)}`, c.gold, brand.goldInk);
+  // A win shows what they're up; a split that only gave chips back says Split; a hand that lost at the showdown says
+  // what it was, so every hand turned over can be read without the log.
+  if (won > 0 && net > 0) return tag(`w${net}`, `+${chips(net)}`, c.gold, brand.goldInk);
+  if (won > 0) return tag('split', 'Split', c.contrast, c.onContrast);
+  if (name) return tag(`n${name}`, name.split(',')[0], 'rgba(255,255,255,0.12)', c.label);
   if (odds) return tag('o', pct(odds.win), c.contrast, c.onContrast);
   if (offline) return tag('off', 'Offline', c.goldBg, c.goldInk);
   return null;

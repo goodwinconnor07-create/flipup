@@ -2,6 +2,7 @@
 
 import { canHit, canRaise, maxRaiseTo, playerById, potTotal } from './holdem';
 import { playablePower } from './powers';
+import type { Card } from './cards';
 import type { Game, Hand, Player, PowerId, Seat } from './types';
 
 export interface Options {
@@ -100,6 +101,27 @@ export function net(player: Player): number {
   return player.stack - player.bought;
 }
 
+/**
+ * What a player won or lost in a finished hand: chips back less chips in (the uncalled part of a bet has already come
+ * back). A split pot where you get your own chips back is 0, not "+1,000".
+ */
+export function handNet(hand: Hand, playerId: string): number {
+  const seat = hand.seats.find((s) => s.playerId === playerId);
+  return (hand.result?.won[playerId] ?? 0) - (seat?.total ?? 0);
+}
+
+/**
+ * Whose cards make the winning hand at a showdown, for lighting them: the main pot's winners (Hit Me: its poker half's;
+ * run it twice: each run's, with the board it was won on). Empty when nobody beat the ghost.
+ */
+export function showdownWinners(hand: Hand): { ids: string[]; board: Card[] }[] {
+  const r = hand.result;
+  if (!r?.showdown) return [];
+  if (r.runs) return r.runs.map((run) => ({ ids: run.winners[0] ?? [], board: run.board }));
+  if (r.blackjack) return [{ ids: r.blackjack.poker[0] ?? [], board: hand.board }];
+  return [{ ids: r.pots[0]?.winners ?? [], board: hand.board }];
+}
+
 /** Best first. */
 export function standings(game: Game): Player[] {
   return [...game.players].sort((a, b) => net(b) - net(a) || b.stack - a.stack);
@@ -123,6 +145,10 @@ export function moveLabel(last: NonNullable<Seat['last']>): string {
       return `All in ${n}`;
     case 'sb':
       return `SB ${n}`;
+    case 'straddle':
+      return `Straddle ${n}`;
+    case 'bomb':
+      return `Bomb ${n}`;
     default:
       return `BB ${n}`;
   }

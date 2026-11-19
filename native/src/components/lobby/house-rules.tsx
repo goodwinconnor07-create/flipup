@@ -1,13 +1,17 @@
 import { Fragment, useState, type ReactNode } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
 
 import {
+  ANTE_CHOICES,
+  anteChips,
+  BOMB_CHOICES,
   BLIND_CAP_CHOICES,
   BLIND_MINUTE_MAX,
   blindsLabel,
+  houseRuleWords,
   levelsFor,
   STACK_CHOICES,
   TIMER_CHOICES,
@@ -18,8 +22,9 @@ import {
 } from '@/engine';
 import { EASE_OUT, enter, exit } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { motion, ROUNDED, spacing, useColors } from '@/theme';
+import { brand, motion, radius, ROUNDED, spacing, useColors } from '@/theme';
 
+import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
 import { SegmentedControl } from '../segmented-control';
@@ -33,7 +38,19 @@ const chips = (n: number) => Math.round(n).toLocaleString('en-US');
  * The house rules, laid out like the lobby in the owner's reference (no presets, the owner's call): each number as a
  * row with its name over its value and the − + stepper on the right, then the switches. `onChange` is the host's; without it (everyone else) the rows only show the values.
  */
-export function HouseRules({ settings: s, onChange, online, bots = 0, started = false }: { settings: Settings; onChange?: (s: Settings) => void; online: boolean; /** Bots the Casual / Challenge level applies to: the everyday bots, not ones made in Bot Lab (they play their own dials). */ bots?: number; started?: boolean }) {
+export function HouseRules({
+  settings: s,
+  onChange,
+  online,
+  bots = 0,
+  started = false,
+}: {
+  settings: Settings;
+  onChange?: (s: Settings) => void;
+  online: boolean;
+  /** Bots the Casual / Challenge level applies to: the everyday bots, not ones made in Bot Lab (they play their own dials). */ bots?: number;
+  started?: boolean;
+}) {
   // Every change keeps "Blinds stop at" above the blinds (`withBlindCap`), as a new stack keeps the blinds in reach.
   const set = (patch: Partial<Settings>) => onChange?.(withBlindCap({ ...s, ...patch }));
   const levels = levelsFor(s.startingStack);
@@ -122,7 +139,9 @@ export function HouseRules({ settings: s, onChange, online, bots = 0, started = 
           onChange={(botDifficulty) => set({ botDifficulty })}
         />
         <ThemedText variant="caption1" tone="secondaryLabel">
-          {started ? 'Challenge bots make fewer small mistakes. Changes next hand.' : 'Casual bots play a relaxed game. Challenge bots make fewer small mistakes.'}
+          {started
+            ? 'Challenge bots make fewer small mistakes. Changes next hand.'
+            : 'Casual bots play a relaxed game. Challenge bots make fewer small mistakes.'}
         </ThemedText>
       </View>
     ),
@@ -157,8 +176,126 @@ export function HouseRules({ settings: s, onChange, online, bots = 0, started = 
   return (
     <RulesFold summary={rulesSummary(s, online)}>
       <Card>{numbers}</Card>
-      <Card>{switches}</Card>
+      <Card>{[...switches, ...homeGameRows(s, edit ? set : undefined)]}</Card>
     </RulesFold>
+  );
+}
+
+/**
+ * Home game rules (19 Nov 2026, the owner's ask), in the same box as Rebuys: each is a switch, and turning the ante
+ * or bomb pots on adds a row of pills under it to pick how much or how often (the owner's call: on/off first, the
+ * detail only once it's on). Run it twice is Texas Hold'em only, so it's left out of the other games.
+ */
+function homeGameRows(s: Settings, set?: (patch: Partial<Settings>) => void): ReactNode[] {
+  const anteLine = s.ante ? `Everyone puts in ${chips(anteChips(s))} before the deal` : 'Everyone puts in a little before the deal';
+  return [
+    <SwitchRow key="ante" label="Ante" line={anteLine} value={!!s.ante} onChange={set ? (on) => set({ ante: on ? 25 : 0 }) : undefined}>
+      {!!s.ante && set && (
+        <ChoicePills
+          label="Ante size"
+          value={s.ante}
+          options={ANTE_CHOICES.filter((a) => a > 0).map((a) => ({ value: a, label: ANTE_WORDS[a] ?? `${a}%` }))}
+          onChange={(ante) => set({ ante })}
+        />
+      )}
+    </SwitchRow>,
+    <SwitchRow
+      key="bomb"
+      label="Bomb pot"
+      line={
+        s.bombEvery
+          ? `Every ${s.bombEvery} hands, everyone puts in 2 big blinds and play starts on the flop`
+          : 'Now and then, everyone puts in 2 big blinds and play starts on the flop'
+      }
+      value={!!s.bombEvery}
+      onChange={set ? (on) => set({ bombEvery: on ? 10 : 0 }) : undefined}
+    >
+      {!!s.bombEvery && set && (
+        <ChoicePills
+          label="Bomb pot every"
+          value={s.bombEvery}
+          options={BOMB_CHOICES.filter((b) => b > 0).map((b) => ({ value: b, label: `Every ${b}` }))}
+          onChange={(bombEvery) => set({ bombEvery })}
+        />
+      )}
+    </SwitchRow>,
+    <SwitchRow
+      key="straddle"
+      label="Straddle"
+      line="The player after the big blind puts in 2 big blinds"
+      value={!!s.straddle}
+      onChange={set ? (straddle) => set({ straddle }) : undefined}
+    />,
+    (s.variant ?? 'holdem') === 'holdem' && (
+      <SwitchRow
+        key="twice"
+        label="Run it twice"
+        line="When players are all in, they can deal the rest twice and split the pot"
+        value={!!s.runTwice}
+        onChange={set ? (runTwice) => set({ runTwice }) : undefined}
+      />
+    ),
+  ].filter(Boolean);
+}
+
+/** The ante's sizes, as a share of the big blind. */
+const ANTE_WORDS: Record<number, string> = { 10: '10% BB', 25: '¼ BB', 50: '½ BB', 100: '1 BB' };
+
+/**
+ * A row of pills under a switch that's on: one choice, the picked one filled in the app's blue. Rows of the page's
+ * own see-through white, so they sit in the panel rather than on it.
+ */
+export function ChoicePills<T extends number | string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  const colors = useColors();
+  const reduce = useReduceMotion();
+  return (
+    <Animated.View
+      entering={Platform.OS === 'web' ? undefined : enter(reduce)}
+      accessibilityRole="radiogroup"
+      accessibilityLabel={label}
+      style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs }}
+    >
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <PressableScale
+            key={String(o.value)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={o.label}
+            onPress={() => {
+              if (on) return;
+              haptic.select();
+              onChange(o.value);
+            }}
+            style={{
+              minHeight: 36,
+              paddingHorizontal: spacing.md,
+              borderRadius: radius.full,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: on ? brand.violet : 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              borderColor: on ? brand.violet : 'rgba(255,255,255,0.14)',
+            }}
+          >
+            <ThemedText variant="subhead" style={{ fontWeight: '700', color: on ? '#ffffff' : (colors.label as string) }}>
+              {o.label}
+            </ThemedText>
+          </PressableScale>
+        );
+      })}
+    </Animated.View>
   );
 }
 
@@ -167,6 +304,7 @@ export function rulesSummary(s: Settings, online: boolean): string {
   const parts = [`${chips(s.startingStack)} chips`, `Blinds ${blindsLabel([s.smallBlind, s.bigBlind])}`];
   if (online) parts.push(s.turnSeconds === 0 ? 'No clock' : `${timerLabel(s.turnSeconds)} to act`);
   parts.push(s.rebuys ? 'Rebuys' : 'No rebuys');
+  parts.push(...houseRuleWords(s));
   return parts.join(' · ');
 }
 
@@ -191,7 +329,16 @@ export function RulesFold({ summary, children }: { summary: string; children: Re
       <ThemedText variant="title2" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
         House rules
       </ThemedText>
-      <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, overflow: 'hidden' }}>
+      <View
+        style={{
+          borderRadius: PANEL_RADIUS,
+          borderCurve: 'continuous',
+          backgroundColor: panel.fill,
+          borderWidth: 1,
+          borderColor: panel.edge,
+          overflow: 'hidden',
+        }}
+      >
         <PressableScale
           accessibilityRole="button"
           accessibilityLabel={`House rules, ${summary}`}
@@ -199,7 +346,14 @@ export function RulesFold({ summary, children }: { summary: string; children: Re
           accessibilityHint={open ? 'Hides the rules' : 'Shows every rule'}
           onPress={toggle}
           outerStyle={{ width: '100%' }}
-          style={{ minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}
+          style={{
+            minHeight: 64,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 14,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.sm,
+          }}
         >
           <ThemedText variant="subhead" tone="secondaryLabel" style={{ flex: 1 }}>
             {summary}
@@ -273,34 +427,37 @@ export function SwitchRow({
   line,
   value,
   onChange,
+  children,
 }: {
   label: string;
   line: string;
   value: boolean;
   onChange?: (on: boolean) => void;
+  /** Shown under the row (the pills of a rule that's on). */
+  children?: ReactNode;
 }) {
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 14,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        minHeight: 64,
-      }}
-    >
-      <View style={{ flex: 1, gap: 2 }}>
-        <ThemedText variant="headline">{label}</ThemedText>
-        <ThemedText variant="subhead" tone="secondaryLabel">
-          {line}
-        </ThemedText>
+    <View style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm, minHeight: 64, justifyContent: 'center' }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 14,
+        }}
+      >
+        <View style={{ flex: 1, gap: 2 }}>
+          <ThemedText variant="headline">{label}</ThemedText>
+          <ThemedText variant="subhead" tone="secondaryLabel">
+            {line}
+          </ThemedText>
+        </View>
+        {onChange ? (
+          <Switch label={label} value={value} onValueChange={onChange} />
+        ) : (
+          <ThemedText tone="secondaryLabel">{value ? 'On' : 'Off'}</ThemedText>
+        )}
       </View>
-      {onChange ? (
-        <Switch label={label} value={value} onValueChange={onChange} />
-      ) : (
-        <ThemedText tone="secondaryLabel">{value ? 'On' : 'Off'}</ThemedText>
-      )}
+      {children}
     </View>
   );
 }

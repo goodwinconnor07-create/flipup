@@ -2,7 +2,7 @@ import { Children, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, Text, useColorScheme, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { count21, lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '@/engine';
+import { count21, lastStanding, options, pot, TIMING, type Game, type Hand, type Player, type Seat } from '@/engine';
 import { detail, rise, sink } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { lastHand } from '@/state/replays';
@@ -108,7 +108,7 @@ const Row = ({ children }: { children: ReactNode }) => (
 export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRaise }: { game: Game; me?: Player; seat?: Seat; myTurn: boolean; sending: boolean; pre: PreAction; setPre: (p: PreAction) => void; onRaise: () => void }) {
   const hand = game.hand;
   const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
-  const now = useTableNow(game.fast, hand?.moment?.gate || waiting ? 200 : 60_000);
+  const now = useTableNow(game.fast, hand?.moment?.gate || waiting || hand?.twice?.until != null ? 200 : 60_000);
   const recap = useTable();
   // Real time for the Review countdown (the table's clock can run fast); ticks only while it counts.
   const [wall, setWall] = useState(0);
@@ -137,7 +137,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
         <MyTurn game={game} hand={hand} seat={seat} sending={sending || onShow} onRaise={onRaise} />
       );
     const who = game.players.find((p) => p.id === hand.toAct);
-    if (hand.runout) return <Note>Running it out…</Note>;
+    if (hand.runout) return <RunOut game={game} hand={hand} me={me} now={now} />;
     const canPre = !!seat && !seat.folded && !seat.allIn && !me.sittingOut;
     const o = canPre && seat ? options(game, hand, seat) : null;
     const set = (kind: 'checkfold' | 'callany' | 'current') => {
@@ -221,6 +221,38 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
       <View style={{ flex: 1 }}>{next}</View>
     </View>
   );
+}
+
+/**
+ * An all-in run-out. With Run it twice on, everyone in it is asked first: Once or Twice, with a bar that drains to
+ * the deal (no answer runs it once). Then the line says which run is coming.
+ */
+function RunOut({ game, hand, me, now }: { game: Game; hand: Hand; me: Player; now: number }) {
+  const t = hand.twice;
+  if (!t) return <Note>Running it out…</Note>;
+  const name = (id: string) => game.players.find((p) => p.id === id)?.name ?? 'Someone';
+  if (t.until != null) {
+    const left = Math.max(0, Math.min(1, (t.until - now) / TIMING.runTwiceAsk));
+    if (t.asked.includes(me.id) && t.votes[me.id] === undefined) {
+      const vote = (yes: boolean) => {
+        haptic.tap();
+        dispatch({ type: 'runTwice', hand: hand.number, yes });
+      };
+      return (
+        <View style={{ gap: spacing.sm }}>
+          <Note strong>Run it twice?</Note>
+          <Row>
+            <TableButton label="Once" tone="pre" onPress={() => vote(false)} />
+            <TableButton label="Twice" tone="blue" fill={left} onPress={() => vote(true)} />
+          </Row>
+        </View>
+      );
+    }
+    const waiting = t.asked.filter((id) => t.votes[id] === undefined).map(name);
+    return <Note>{waiting.length ? `Run it twice? Waiting for ${waiting.join(', ')}…` : 'Run it twice?'}</Note>;
+  }
+  if (!t.agreed) return <Note>Running it once…</Note>;
+  return <Note strong>{t.first ? 'Second run…' : 'Running it twice: first run…'}</Note>;
 }
 
 /** How long this pause was when it began, so the bar drains from full whatever extra time was added. */

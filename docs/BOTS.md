@@ -651,3 +651,15 @@ Full output of the latest run:
 | Soft styles lose, but not absurdly (≥ -250 bb/100) | 100 |
 
 _Ran in 544s._
+
+
+## Hand review
+
+The Premium hand review (`src/train/handReview.ts`) shows facts only. A first version (19 Nov 2026) used the bots' range
+model to guess what each opponent held and graded folds and calls against the pot odds. Measured on the 144 fold-or-call
+Range training hands (published breakdowns with the expert's answer and ranges), it agreed with the experts 56% of the
+time, flagged the expert's own answer in 49 hands, and its chance to win was 24 points off on average; even its most
+confident flags were wrong about one time in four. The same pot-odds rule with the experts' ranges got all 144 right, so
+the arithmetic was fine and the guess at the opponents' hands wasn't (the experts read each player's type; the model
+assumes a typical player). The owner's call: no estimates. The review now counts your chance only against real cards
+(every bot's at a bots-only table, a person's only when they showed) and otherwise gives the pot odds and your hand.

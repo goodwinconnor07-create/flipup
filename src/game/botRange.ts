@@ -213,7 +213,8 @@ export function storyOf(game: Game, hand: Hand, playerId: string): Story {
   const bb = game.settings.bigBlind;
   const acts = (hand.actions ?? []).filter((a) => !a.outOfTurn);
   let level = 0;
-  let cur = bb;
+  // A straddle is the bet to beat before the flop, like a third blind.
+  let cur = hand.straddle?.amount ?? bb;
   let pre: PreLine = 'blind';
   let openBb = 0;
   for (const a of acts) {

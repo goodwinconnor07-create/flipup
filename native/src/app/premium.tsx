@@ -209,6 +209,7 @@ function BrandPill() {
 
 /** The words over each perk's picture: shorter and louder than the grid's. */
 const HERO_WORDS: Partial<Record<PerkId, { title: string; line: string }>> = {
+  review: { title: 'Hand review', line: 'Your odds at every move, against the real cards.' },
   range: { title: 'Every range hand', line: 'Every real spot, as many sets as you like.' },
   botlab: { title: 'Bot Lab', line: 'Make your own bots and set how they play.' },
   games: { title: `${VARIANTS.length - FREE_VARIANTS} more games`, line: 'Host every mini game. Friends join free.' },

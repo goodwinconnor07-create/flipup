@@ -291,8 +291,8 @@ the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a ga
 > with a sandbox account; **Restore** is on the same page and in Settings, and **Manage subscription** is in Settings
 > once subscribed.
 > - Free: Texas Hold'em, ten bots, Saved hands and one Range training hand a day.
-> - Premium: hosting the 12 mini games, the rest of the bots, Bot Lab (Settings > Bot Lab: make your own bots) and the
->   rest of Range training.
+> - Premium: hosting the 12 mini games, the rest of the bots, Bot Lab (Settings > Bot Lab: make your own bots), the
+>   rest of Range training and Hand review (open a Texas Hold'em hand in Saved hands).
 >
 > Anyone can join any game with a code for free; only the host needs Premium. There are no ads and no tracking.
 >
@@ -446,7 +446,7 @@ Store listing:
 ### What Premium unlocks now
 
 As of 17 November 2026: hosting the 12 mini games (no free game of the week), Bot Lab and every bot past the free ten, all of
-Range training past the free daily hand, the card backs, the Premium share-card designs and the gold name. "Type any
+Range training past the free daily hand, Hand review in Saved hands (19 Nov 2026), the card backs, the Premium share-card designs and the gold name. "Type any
 emoji" is free for everyone. Chat bubble effects and AI Legends are no longer in the app.
 
 ### Rewarded ads: dropped (4 November 2026)

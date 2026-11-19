@@ -63,6 +63,10 @@ export const TIMING = {
   fastAfter: 0.45,
   /** A game that ends at once (see endsAtOnce): how long the deciding hand stays on screen before the winner's page. */
   endPause: 3000,
+  /** Run it twice: how long the people in an all-in have to answer before it's dealt once. */
+  runTwiceAsk: 8000,
+  /** Run it twice: the first run stays on the table this long before the second is dealt. */
+  runTwiceGap: 2600,
 };
 
 /** Games that end as soon as one player has all the chips: no rebuys, or an online table. Other tables (bots-only on one phone, rebuys on) wait the rebuy window. */
@@ -316,6 +320,26 @@ export function startHand(game: Game, ctx: ActionContext): void {
   log(game, `Stacks: ${players.map((p) => `${p.name} ${n0(p.stack)}`).join(' · ')}`);
   if (carry) log(game, `The ghost's ${n0(carry)} bounty is in the pot`);
 
+  // House rules: a bomb pot (everyone in for two big blinds, straight to the flop), else antes and then the blinds.
+  const rules = houseRules(game, n);
+  if (rules.bomb) {
+    hand.bomb = rules.bomb;
+    hand.dead = {};
+    for (let i = 0; i < n; i++) {
+      hand.dead[players[i].id] = putDead(seats[i], players[i], rules.bomb);
+      seats[i].last = { move: 'bomb', amount: hand.dead[players[i].id], street: 'preflop' };
+    }
+    log(game, `Bomb pot: everyone puts in ${n0(rules.bomb)}`);
+    hand.currentBet = 0;
+    endStreet(game, ctx);
+    return;
+  }
+  if (rules.ante) {
+    hand.dead = {};
+    for (let i = 0; i < n; i++) hand.dead[players[i].id] = putDead(seats[i], players[i], rules.ante);
+    log(game, `Everyone antes ${n0(rules.ante)}`);
+  }
+
   put(seats[sb], players[sb], game.settings.smallBlind);
   seats[sb].last = { move: 'sb', amount: seats[sb].bet, street: 'preflop' };
   log(game, `${players[sb].name} posts the small blind ${n0(seats[sb].bet)}`);
@@ -323,8 +347,50 @@ export function startHand(game: Game, ctx: ActionContext): void {
   seats[bb].last = { move: 'bb', amount: seats[bb].bet, street: 'preflop' };
   log(game, `${players[bb].name} posts the big blind ${n0(seats[bb].bet)}`);
 
-  continueFrom(game, bb, ctx);
+  // The straddle: the player after the big blind puts in two big blinds, as a third blind. They act last before the flop.
+  let last = bb;
+  const st = (bb + 1) % n;
+  if (rules.straddle && n >= 3 && players[st].stack > rules.straddle && !seats[st].allIn) {
+    put(seats[st], players[st], rules.straddle);
+    seats[st].last = { move: 'straddle', amount: rules.straddle, street: 'preflop' };
+    hand.straddle = { id: players[st].id, amount: rules.straddle };
+    hand.currentBet = rules.straddle;
+    hand.minRaise = rules.straddle;
+    log(game, `${players[st].name} straddles ${n0(rules.straddle)}`);
+    last = st;
+  }
+
+  continueFrom(game, last, ctx);
   playScript(game, ctx);
+}
+
+/**
+ * What the house rules ask of this hand, in chips: a bomb pot's buy-in (every `bombEvery`th hand, which then has no
+ * blinds, antes or straddle), the ante and the straddle. A Scroll card plays none of them.
+ */
+export function houseRules(game: Game, players: number): { bomb: number; ante: number; straddle: number } {
+  const s = game.settings;
+  const none = { bomb: 0, ante: 0, straddle: 0 };
+  if (game.card || players < 2) return none;
+  const every = s.bombEvery ?? 0;
+  if (every > 0 && (game.hands ?? 0) % every === 0) return { ...none, bomb: s.bigBlind * 2 };
+  return {
+    bomb: 0,
+    ante: anteChips(s),
+    straddle: s.straddle && players >= 3 ? s.bigBlind * 2 : 0,
+  };
+}
+
+/** The ante each player puts in, in chips, at these blinds (0 when there's none). */
+export const anteChips = (s: Game['settings']): number => (s.ante ? Math.max(1, Math.round((s.bigBlind * s.ante) / 100)) : 0);
+
+/** Chips into the pot that aren't a bet (an ante, a bomb pot's buy-in): they count for the pots but not the bet to call. */
+function putDead(seat: Seat, player: Player, amount: number): number {
+  const chips = Math.min(amount, player.stack);
+  player.stack -= chips;
+  seat.total += chips;
+  if (player.stack === 0) seat.allIn = true;
+  return chips;
 }
 
 /**
@@ -608,6 +674,7 @@ function endStreet(game: Game, ctx: ActionContext): void {
       log(game, `${nameOf(game, s.playerId)} shows ${cardsText(s.cards)}`);
     }
     hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
+    askToRunTwice(game, ctx);
     schedule(game);
     return;
   }
@@ -989,10 +1056,71 @@ export function resumeBetting(game: Game, ctx: ActionContext): void {
   startBetting(game, ctx);
 }
 
+// ── Run it twice ────────────────────────────────────────────────────────────
+
+/** Whether this run-out can be run twice: the house rule is on, it's Texas Hold'em and there are cards to come. */
+export function canRunTwice(game: Game, hand: Hand): boolean {
+  return !!game.settings.runTwice && variantOf(game) === 'holdem' && hand.street !== 'river' && hand.seats.filter((s) => !s.folded).length >= 2;
+}
+
+/**
+ * An all-in with cards to come, at a table that runs it twice: everyone in the hand is asked. Bots answer at once
+ * (most say yes); a hand with no person left in it is dealt once. Any no, or no answer in time, deals it once.
+ */
+function askToRunTwice(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  if (!canRunTwice(game, hand) || botsOnly(game)) return;
+  const asked = hand.seats.filter((s) => !s.folded).map((s) => s.playerId);
+  const votes: Record<string, boolean> = {};
+  for (const id of asked) if (playerById(game, id)?.bot) votes[id] = ctx.rng() < 0.8;
+  hand.twice = { from: hand.board.length, street: hand.street, votes, asked, until: ctx.now + TIMING.runTwiceAsk, agreed: false };
+  if (Object.values(votes).includes(false)) closeRunTwice(game, ctx);
+  else hand.actAt = hand.twice.until;
+}
+
+/** The answers are in (or time's up): everyone said yes, or it's dealt once. The run-out carries on a beat later. */
+function closeRunTwice(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  const t = hand.twice!;
+  t.until = null;
+  t.agreed = t.asked.every((id) => t.votes[id] === true);
+  const no = t.asked.find((id) => t.votes[id] === false);
+  log(game, t.agreed ? 'Everyone agrees to run it twice' : no ? `${nameOf(game, no)} runs it once` : 'Running it once');
+  hand.actAt = ctx.now + TIMING.runoutStep;
+  schedule(game);
+}
+
+/** A player in the all-in answers whether to run it twice. Returns an error, or null. */
+export function answerRunTwice(game: Game, playerId: string, yes: boolean, ctx: ActionContext): string | null {
+  const t = game.hand?.twice;
+  if (!t || t.until == null) return 'Nothing to answer right now.';
+  if (!t.asked.includes(playerId)) return "You're not in this all-in.";
+  if (t.votes[playerId] !== undefined) return null;
+  t.votes[playerId] = yes;
+  if (!yes || t.asked.every((id) => t.votes[id] !== undefined)) closeRunTwice(game, ctx);
+  return null;
+}
+
 /** One card of an all-in run-out, or the showdown once the river is out. */
 export function runoutStep(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
+  // Run it twice: time to answer is up.
+  if (hand.twice && hand.twice.until != null) {
+    closeRunTwice(game, ctx);
+    return;
+  }
   if (hand.street === 'river') {
+    const t = hand.twice;
+    // The first run is out: keep it, take the board back to where the all-in was, and deal the rest again.
+    if (t?.agreed && !t.first) {
+      t.first = [...hand.board];
+      hand.board = hand.board.slice(0, t.from);
+      hand.street = t.street;
+      log(game, `Second run`);
+      hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runTwiceGap);
+      schedule(game);
+      return;
+    }
     startShowdown(game, ctx);
     return;
   }
@@ -1035,6 +1163,10 @@ export function showdown(game: Game, ctx: ActionContext): void {
   const button = Math.max(0, indexOf(hand, hand.buttonId));
   const variant: Variant = variantOf(game);
   const values = new Map(hand.seats.filter((s) => !s.folded).map((s) => [s.playerId, bestHand(variant, s.cards, hand.board)]));
+  // Run it twice: the hands on the first board too.
+  const firstBoard = hand.twice?.first;
+  const firstValues = firstBoard ? new Map(hand.seats.filter((s) => !s.folded).map((s) => [s.playerId, bestHand(variant, s.cards, firstBoard)])) : null;
+  const runWinners: string[][][] = [[], []];
 
   const pots = buildPots(hand.seats);
   // Haunted Pot: what the ghost was holding goes in the main pot (everyone still in can win it).
@@ -1075,6 +1207,20 @@ export function showdown(game: Game, ctx: ActionContext): void {
       pot.winners = [...new Set([...pokerWinners, ...countWinners])];
       bjWinners.push(countWinners);
       bjPoker.push(pokerWinners);
+      continue;
+    }
+    // Run it twice: half of each pot (the odd chip with it) on the first board, the rest on the second.
+    if (firstValues) {
+      const half = Math.ceil(pot.amount / 2);
+      const halves = [firstValues, values].map((vals) => {
+        const top = Math.max(...pot.eligible.map((id) => vals.get(id)!.score));
+        return pot.eligible.filter((id) => vals.get(id)!.score === top);
+      });
+      pay(half, halves[0]);
+      pay(pot.amount - half, halves[1]);
+      pot.winners = [...new Set(halves.flat())];
+      runWinners[0].push(halves[0]);
+      runWinners[1].push(halves[1]);
       continue;
     }
     // The winner has to beat the ghost too. If they can't (a tie isn't enough), the ghost keeps this pot for the next hand.
@@ -1121,8 +1267,16 @@ export function showdown(game: Game, ctx: ActionContext): void {
       log(game, `${pots[0].winners.map((id) => nameOf(game, id)).join(' and ')} beat${pots[0].winners.length === 1 ? 's' : ''} the ghost and ${pots[0].winners.length === 1 ? 'takes' : 'take'} its ${n0(paid)} bounty`);
     }
   }
+  if (firstValues) {
+    runWinners.forEach((byPot, run) => {
+      const vals = run === 0 ? firstValues : values;
+      const ids = [...new Set(byPot.flat())];
+      log(game, `${run === 0 ? 'First' : 'Second'} run: ${ids.map((id) => `${nameOf(game, id)} wins with ${vals.get(id)!.detail.charAt(0).toLowerCase()}${vals.get(id)!.detail.slice(1)}`).join(', ')}`);
+    });
+    for (const [id, chips] of Object.entries(won)) log(game, `${nameOf(game, id)} wins ${n0(chips)} in all`);
+  }
   pots.forEach((pot, i) => {
-    if (!pot.winners.length || counts) return;
+    if (!pot.winners.length || counts || firstValues) return;
     const which = pots.length > 1 ? (i === 0 ? ' from the main pot' : ' from a side pot') : '';
     const each = Math.floor(pot.amount / pot.winners.length);
     for (const id of pot.winners)
@@ -1144,6 +1298,14 @@ export function showdown(game: Game, ctx: ActionContext): void {
     showdown: true,
     ...(ghost ? { ghost: { cards: hand.ghost!, name: ghost.detail, kept, ...(paid ? { paid } : {}) } } : {}),
     ...(counts ? { blackjack: { counts: Object.fromEntries([...counts].filter(([id]) => names[id])), poker: bjPoker, winners: bjWinners } } : {}),
+    ...(firstValues && firstBoard
+      ? {
+          runs: [
+            { board: [...firstBoard], names: Object.fromEntries([...firstValues].map(([id, v]) => [id, v.detail])), winners: runWinners[0] },
+            { board: [...hand.board], names: { ...names }, winners: runWinners[1] },
+          ],
+        }
+      : {}),
   };
   finishHand(game, ctx, TIMING.afterShowdown);
 }

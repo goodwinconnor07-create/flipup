@@ -40,6 +40,15 @@ When betting can't continue (everyone's all in, or all but one, and the bets are
 - **Showing.** The last player to bet or raise on the river shows first; if nobody bet, the first player left of the button. After that, a hand is shown only if it beats or ties the best hand shown so far, or wins a pot. Losing hands are mucked (hidden), like auto-muck on online sites. **A player who's all in always shows**, even on the river and even when they lose (product owner's call).
 - If everyone else folds, the last player wins without showing.
 
+## House rules
+
+Home game rules the host can turn on (off by default, 19 Nov 2026, the owner's ask; `houseRules()` in `src/game/holdem.ts`). Like any setting they start with the next hand. Party rounds don't use them.
+
+- **Ante.** Everyone dealt in puts in an ante before the blinds: 10%, 25%, 50% or 100% of the big blind (at least 1 chip), so it rises with the blinds. Antes are dead money: they go in the pot but don't count toward the bet to call. A player whose ante takes their last chips is all in for it and can win only what they've matched.
+- **Straddle.** With three or more players dealt in, the player after the big blind puts in two big blinds every hand, as a third blind. The player after them acts first before the flop and the straddler acts last, with the option to raise when everyone calls. The smallest raise is to four big blinds. A player who'd be all in from the straddle doesn't post it (that hand has no straddle). It's never posted heads-up.
+- **Bomb pot.** Every 5th, 10th or 20th hand dealt at the table (by the table's hand count) is a bomb pot: no blinds, antes or straddle; everyone dealt in puts in two big blinds (or all they have) and the hand starts on the flop, with the usual betting from there. The button still moves.
+- **Run it twice** (Texas Hold'em only). When an all-in leaves cards to come, every person still in the hand is asked "Run it twice?" and has 8 seconds to answer. Bots answer at once (they say yes about four times in five); a hand with no person left in it runs once. If everyone says yes, the rest of the board is dealt, then the board goes back to where it was at the all-in and the rest is dealt again from the same deck (with burns). Each pot is split in half: the first half (with the odd chip) is won on the first board, the second on the second, each by the usual showdown and split rules. Any no, or no answer in time, deals it once. Nobody is asked when the all-in comes on the river.
+
 ## Hold'em variants
 
 The host picks the game under **Game** in the table settings (`src/game/variants.ts`). A change of game, like any setting, starts with the next hand. Everything not listed here plays exactly as above. Run-out odds are shown only in plain Hold'em. Hands from a variant still count for the daily streak, but they aren't saved to the hand history or used by twins.

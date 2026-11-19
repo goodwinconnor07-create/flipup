@@ -10,7 +10,9 @@ import { DialSlider } from '@/components/bot-lab/dial-slider';
 import { Face } from '@/components/bot-lab/face';
 import { GameThumb } from '@/components/game-picture';
 import { FloatTable } from '@/components/setup/float-table';
+import { CoachLine, ReviewCard } from '@/components/replay/review';
 import { PlayingCard } from '@/components/table/playing-card';
+import type { ReviewedMove } from '@/state/hand-review';
 import { ThemedText } from '@/components/themed-text';
 import { CARD_PACKS, FREE_VARIANTS, LAB_DIALS, labPersona, VARIANTS, type LabDials } from '@/engine';
 import { brand, gradient, ROUNDED, spacing } from '@/theme';
@@ -55,6 +57,8 @@ export function PerkScreen({ id }: { id: PerkId }) {
   switch (id) {
     case 'games':
       return <GamesScreen />;
+    case 'review':
+      return <ReviewScreen />;
     case 'botlab':
       return <BotLabScreen />;
     case 'range':
@@ -221,6 +225,28 @@ function RangeScreen() {
         </View>
         <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.9)' }}>Top pair is ahead of every hand that calls.</Text>
       </View>
+    </Page>
+  );
+}
+
+/** A sample hand's review at a bots table, from the replay's own pieces: the board, the line on a river fold, and the Review card. */
+const SAMPLE_REVIEW: ReviewedMove[] = [
+  { step: 3, street: 'preflop', move: 'raise', kind: 'exact', toCall: 10, pot: 15, price: null, equity: 0.64, callBb: null, holding: 'Ah 9h', title: '64% to win', line: 'Against their cards you had 64% to win, with 15 in the pot.' },
+  { step: 6, street: 'flop', move: 'call', kind: 'exact', toCall: 40, pot: 100, price: 0.29, equity: 0.41, callBb: 1.7, holding: 'Pair of nines', title: '41% to win · needed 29%', line: 'Against their cards you had 41% to win, and the call needed 29% (40 into 60). On average, calling won 1.7 bb against those cards.' },
+  { step: 9, street: 'river', move: 'fold', kind: 'exact', toCall: 60, pot: 180, price: 0.25, equity: 1, callBb: 18, holding: 'Pair of nines', title: '100% to win · needed 25%', line: 'Against their cards you had 100% to win, and the call needed 25% (60 into 120). On average, calling won 18 bb against those cards.' },
+];
+function ReviewScreen() {
+  return (
+    <Page title="Hand 14">
+      <View style={[{ height: 120, borderRadius: 60, alignItems: 'center', justifyContent: 'center', borderWidth: 6, borderColor: '#0a1636' }, gradient('radial-gradient(circle at 50% 40%, #2b5fd9 0%, #163a9e 70%, #0d2668 100%)')]}>
+        <View style={{ flexDirection: 'row', gap: 5 }}>
+          {(['Qh', '9c', '4d', '8s', '2h'] as const).map((c) => (
+            <PlayingCard key={c} card={c} size="md" />
+          ))}
+        </View>
+      </View>
+      <CoachLine move={SAMPLE_REVIEW[2]} still />
+      <ReviewCard moves={SAMPLE_REVIEW} step={9} onJump={noop} />
     </Page>
   );
 }

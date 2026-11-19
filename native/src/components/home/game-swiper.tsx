@@ -1,14 +1,12 @@
 import { router } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { PanResponder, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, withTiming, type EntryExitAnimationFunction, cancelAnimation, interpolate, runOnJS, useAnimatedReaction, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
+import { useMemo, useRef } from 'react';
+import { PanResponder, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, cancelAnimation, interpolate, runOnJS, useAnimatedReaction, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
 
 import { variantNeedsPremium, VARIANTS, type Variant } from '@/engine';
-import { EASE_OUT, rubber, SETTLE } from '@/motion/presets';
-import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { rubber, SETTLE } from '@/motion/presets';
 import { useDrift } from '@/motion/use-drift';
 import { usePremium } from '@/state/premium';
-import { hasPlayed, usePokerRecord } from '@/state/record';
 import { brand } from '@/theme';
 
 import { GameThumb } from '../game-picture';
@@ -18,8 +16,6 @@ import { PressableScale } from '../pressable-scale';
 
 /** How big each card is by its distance from the middle (0 is the chosen one)... */
 const SCALES = [1, 0.62, 0.46, 0.36];
-/** How long one game sits untouched before the hint pill shows. */
-const HINT_MS = 3000;
 /** ...how far from the middle it sits, in card widths (the outer ones tuck under the inner ones, like a fanned deck)... */
 const PLACES = [0, 0.86, 1.24, 1.5];
 /** ...and how much of it shows. */
@@ -32,19 +28,6 @@ const PROJECT = 0.18;
 const FLICK = 0.3;
 /** The settle spring's natural frequency: a release faster than this × the distance left would overshoot. */
 const OMEGA = Math.sqrt(SETTLE.stiffness / SETTLE.mass);
-
-/**
- * The hint pill arrives from the icon below it: it fades up out of 95% (rule 10, never from 0) and rises 6 points,
- * scaling from its bottom edge, on 250ms ease-out. It leaves 20% shorter, as a plain fade (rule 15).
- */
-const hintIn: EntryExitAnimationFunction = () => {
-  'worklet';
-  const timing = { duration: 250, easing: EASE_OUT };
-  return {
-    initialValues: { opacity: 0, transform: [{ translateY: 6 }, { scale: 0.95 }] },
-    animations: { opacity: withTiming(1, timing), transform: [{ translateY: withTiming(0, timing) }, { scale: withTiming(1, timing) }] },
-  } as never;
-};
 
 /**
  * The games in a line across the whole screen, locked on one at a time: the chosen game big in the middle, its
@@ -63,21 +46,6 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
   // The position along the line, in points: index × step.
   const x = useSharedValue(start * step);
   const drag = useRef({ base: 0, from: 0, ended: 0 });
-  // After 3 seconds on one game with nothing touched, a small pill over the top of its icon says what a tap does.
-  // A new game (or a finger on the slider) starts the count again and takes it away.
-  const reduce = useReduceMotion();
-  const [touched, setTouched] = useState(0);
-  // The hint is "shown for this game and touch count": a new game or touch makes the old answer stale at once.
-  const key = `${variant}:${touched}`;
-  const [shownFor, setShownFor] = useState('');
-  // The hint is for a game you haven't played yet; once a hand has been dealt in it, it never shows.
-  const record = usePokerRecord();
-  const hint = shownFor === key && !hasPlayed(record, variant);
-  useEffect(() => {
-    const t = setTimeout(() => setShownFor(key), HINT_MS);
-    return () => clearTimeout(t);
-  }, [key]);
-
   const pick = (i: number) => {
     const next = VARIANTS[Math.max(0, Math.min(last, i))];
     if (!next) return;
@@ -109,7 +77,6 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
         onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy),
         onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: () => {
-          setTouched((n) => n + 1);
           cancelAnimation(x);
           const base = x.get();
           drag.current = { base, from: Math.round(base / step), ended: 0 };
@@ -165,8 +132,6 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
           left={(width - size) / 2}
           offsets={offsets}
           locked={!premium && variantNeedsPremium(v.id)}
-          // The pill sits over the crown on the chosen icon, so the crown steps aside while it shows.
-          hideBadge={hint && i === start}
           onPress={() => {
             // The web build can still deliver the tap a drag began with.
             if (Date.now() - drag.current.ended < 300) return;
@@ -177,32 +142,11 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
           }}
         />
       ))}
-      {/* The hint: a small pill over the top edge of the chosen icon. A tap on it opens the game's page (how to play). */}
-      {hint && (
-        <View pointerEvents="box-none" style={{ position: 'absolute', top: 18 - 17, left: 0, right: 0, alignItems: 'center', zIndex: 40 }}>
-          <Animated.View style={{ transformOrigin: 'bottom' }} entering={reduce ? FadeIn.duration(200) : hintIn} exiting={FadeOut.duration(200)}>
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel="Learn how to play"
-              haptics={false}
-              onPress={() => {
-                haptic.tap();
-                router.push(`/game/${variant}`);
-              }}
-              style={{ paddingHorizontal: 14, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', boxShadow: '0 6px 16px -4px rgba(0, 0, 0, 0.5)' }}
-            >
-              <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ fontSize: 14, fontWeight: '800', color: '#0b1533' }}>
-                Tap me to learn how to play
-              </Text>
-            </PressableScale>
-          </Animated.View>
-        </View>
-      )}
     </Animated.View>
   );
 }
 
-function Card({ variant, index, x, step, size, left, offsets, locked, hideBadge, onPress }: { variant: Variant; index: number; x: SharedValue<number>; step: number; size: number; left: number; offsets: number[]; locked: boolean; hideBadge: boolean; onPress: () => void }) {
+function Card({ variant, index, x, step, size, left, offsets, locked, onPress }: { variant: Variant; index: number; x: SharedValue<number>; step: number; size: number; left: number; offsets: number[]; locked: boolean; onPress: () => void }) {
   const style = useAnimatedStyle(() => {
     const d = index - x.get() / step;
     const a = Math.abs(d);
@@ -219,7 +163,7 @@ function Card({ variant, index, x, step, size, left, offsets, locked, hideBadge,
         <View style={{ borderRadius: size * 0.24, borderCurve: 'continuous', boxShadow: '0 18px 36px -12px rgba(0, 0, 0, 0.65)' }}>
           <GameThumb variant={variant} size={size} />
         </View>
-        {locked && !hideBadge && (
+        {locked && (
           <Animated.View entering={FadeIn.duration(250)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', top: -8, right: -8, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0b1533', borderWidth: 2, borderColor: brand.gold }}>
             <Icon name="crown.fill" size={15} color={brand.gold} />
           </Animated.View>

@@ -12,11 +12,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { cleanName, FREE_VARIANTS, isNameBlocked, LIMITS, NAME_BLOCKED, VARIANTS } from '@/engine';
+import { cleanName, FREE_VARIANTS, isNameBlocked, isVariant, LIMITS, NAME_BLOCKED, VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePremium } from '@/state/premium';
 import { saveProfile, useProfile } from '@/state/profile';
-import { usePokerRecord } from '@/state/record';
+import { useStored } from '@/state/storage';
 import { brand, gradient, ROUNDED, spacing, useColors, useScheme } from '@/theme';
 import { Announce } from '@/components/announce';
 
@@ -24,7 +24,8 @@ const PIC = 150;
 
 /**
  * Your profile, as on the web: your emoji (tap it to pick another) and your name, which everyone at the table sees;
- * then Settings, and FlipUp Premium. The name is saved with Save; the emoji as you pick it.
+ * then Settings, How to play (for the game Home shows) and FlipUp Premium. Your stats are the Hands tab. The name is
+ * saved with Save; the emoji as you pick it.
  */
 export default function ProfileScreen() {
   const colors = useColors();
@@ -48,9 +49,10 @@ export default function ProfileScreen() {
 
   // Light mode: Apple's grouped grey, so the white list rows stand out from the page (white on white hid them).
   const page = dark || process.env.EXPO_OS !== 'ios' ? colors.background : Color.ios.systemGroupedBackground;
-  const record = usePokerRecord();
   const changed = clean !== profile.name;
-  const stats = record.hands ? `${record.hands.toLocaleString('en-US')} hands · ${Math.round((record.won / record.hands) * 100)}% won` : 'Play a hand to start';
+  // How to play opens the game Home has in the middle (`flipup.homegame`), else Texas Hold'em.
+  const homeGame = useStored<string | null>('flipup.homegame', null);
+  const game = isVariant(homeGame) ? homeGame : 'holdem';
 
   return (
     <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: page }}>
@@ -131,12 +133,11 @@ export default function ProfileScreen() {
         }
         groups={[
           {
-            id: 'poker',
-            header: 'Your poker',
+            id: 'you',
             items: [
-              { kind: 'link', id: 'stats', title: 'Your stats', detail: stats, onPress: () => router.push('/stats') },
               { kind: 'link', id: 'settings', title: 'Settings', detail: 'Sound, looks and your data', onPress: () => router.push('/settings') },
               { kind: 'link', id: 'premium', title: 'FlipUp Premium', detail: premium ? 'Unlocked' : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`, trailingCrown: true, onPress: () => router.push('/premium') },
+              { kind: 'link', id: 'howto', title: 'How to play', detail: 'Every game, one hand at a time', onPress: () => router.push(`/how-to-play/${game}`) },
             ],
           },
         ]}

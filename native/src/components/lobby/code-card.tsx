@@ -12,26 +12,32 @@ import { brand, radius, ROUNDED, spacing, useColors, useLobbyTint } from '@/them
 import { haptic } from '../haptics';
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
 import { GrowingQR } from '../growing-qr';
-import { Swap } from '../swap';
+import { Icon } from '../icon';
+import { Swap, SwapIcon } from '../swap';
 import { ThemedText } from '../themed-text';
 import { Announce } from '../announce';
 
 /**
- * The first card on Play with friends: the game code friends type in Join, big, with Copy, QR and Change as plain
- * text buttons in the card's top row (no pills; the owner's reference). QR opens the code to scan under it (the same
- * QR grows, motion rule 20). Change turns the card into a field for the host's own code (six letters or numbers, in
- * any mix) with Cancel and Done; Done asks the server for it and stays open with the server's sentence when it's
- * taken. `onChange` answers null when the code is the table's now, a sentence when it isn't, or '' to just close.
- * While the table is still opening (`code` null) the buttons wait, and a failure says Start game will try again.
+ * The first card on Play with friends: the game code friends type in Join, big. The top row (19 Nov 2026: four
+ * text buttons of the same weight were too many) has Copy and QR as small round icons and Share as the one text
+ * button, the thing a host came to do. QR opens the code to scan under it (the same QR grows, motion rule 20). The
+ * host changes the code by tapping it (a small pencil beside it says so): the card turns into a field for their own
+ * code (six letters or numbers, in any mix) with Cancel and Done; Done asks the server for it and stays open with the
+ * server's sentence when it's taken. `onChange` answers null when the code is the table's now, a sentence when it
+ * isn't, or '' to just close. `hint` is a line under the code (how friends join). While the table is still opening
+ * (`code` null) the buttons wait, and a failure says Start game will try again.
  */
 export function CodeCard({
   code,
   failed,
   share,
   onChange,
+  hint,
 }: {
   code: string | null;
   failed?: boolean;
+  /** A line under the code, such as how friends join. */
+  hint?: string;
   /** What Share sends (who's hosting, the game, the code and the link). */
   share?: { message: string; url: string };
   /** Missing: the code can't be changed (a player who isn't the host). */
@@ -92,7 +98,7 @@ export function CodeCard({
     setEditing(false);
   };
 
-  const helper = error || (editing ? `${TABLE_CODE_LENGTH} letters or numbers, in any mix. Friends type this to join.` : '');
+  const helper = error || (editing ? `${TABLE_CODE_LENGTH} letters or numbers, in any mix. Friends type this to join.` : code ? (hint ?? '') : '');
   const wait = !code;
 
   return (
@@ -119,10 +125,21 @@ export function CodeCard({
             <TextButton title={busy ? 'Saving' : 'Done'} bold onPress={() => void done()} />
           </>
         ) : (
-          <View style={{ flexDirection: 'row', gap: spacing.md, opacity: wait ? 0.4 : 1 }}>
-            <TextButton title={copied ? 'Copied' : 'Copy'} onPress={copy} label={code ? `Copy the game code ${code}` : 'Copy'} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, opacity: wait ? 0.4 : 1 }}>
+            <RoundIcon name={copied ? 'checkmark' : 'doc.on.doc'} label={copied ? 'Copied' : code ? `Copy the game code ${code}` : 'Copy'} onPress={copy} />
+            <RoundIcon
+              name="qrcode"
+              on={qr}
+              label={qr ? 'Hide the QR code' : 'Show the QR code'}
+              onPress={() => {
+                if (!code) return;
+                haptic.select();
+                setQr(!qr);
+              }}
+            />
             <TextButton
               title="Share"
+              bold
               onPress={() => {
                 if (!code || !share) return;
                 haptic.tap();
@@ -130,16 +147,6 @@ export function CodeCard({
               }}
               label="Share the game code"
             />
-            <TextButton
-              title="QR"
-              onPress={() => {
-                if (!code) return;
-                haptic.select();
-                setQr(!qr);
-              }}
-              label={qr ? 'Hide the QR code' : 'Show the QR code'}
-            />
-            {onChange && <TextButton title="Change" onPress={start} label="Change the game code" />}
           </View>
         )}
       </View>
@@ -186,9 +193,9 @@ export function CodeCard({
           onPress={start}
           accessibilityRole={onChange ? 'button' : undefined}
           accessibilityHint={onChange ? 'Change the game code' : undefined}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, opacity: pressed ? 0.6 : 1 })}
         >
-        <Swap id={code} kind="text" style={{ alignItems: 'flex-start' }}>
+        <Swap id={code} kind="text" style={{ alignItems: 'flex-start', flexShrink: 1 }}>
           <Text
             accessibilityLabel={`Game code ${code.split('').join(' ')}`}
             maxFontSizeMultiplier={1}
@@ -199,6 +206,7 @@ export function CodeCard({
             {code}
           </Text>
         </Swap>
+        {onChange && <Icon name="pencil" size={18} weight="semibold" color={colors.tertiaryLabel as string} />}
         </Pressable>
       ) : (
         <View style={{ height: 56, justifyContent: 'center' }}>
@@ -210,7 +218,7 @@ export function CodeCard({
 
       <Announce text={error ? helper : null} />
       {helper ? (
-        <ThemedText variant="footnote" tone={error ? 'red' : 'tertiaryLabel'} accessibilityLiveRegion="polite">
+        <ThemedText variant="footnote" tone={error ? 'red' : editing ? 'tertiaryLabel' : 'secondaryLabel'} accessibilityLiveRegion="polite">
           {helper}
         </ThemedText>
       ) : null}
@@ -231,7 +239,32 @@ export function CodeCard({
   );
 }
 
-/** A plain text button in a card's top row: blue, semibold, a dim on press. */
+/** A small round icon button in the code card's top row (Copy, QR): the page's tint on a faint fill, 36pt with room round it to make 44. */
+function RoundIcon({ name, label, on, onPress }: { name: 'doc.on.doc' | 'checkmark' | 'qrcode'; label: string; on?: boolean; onPress: () => void }) {
+  const tint = useLobbyTint();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={on === undefined ? undefined : { selected: on }}
+      hitSlop={4}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: on ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)',
+        opacity: pressed ? 0.5 : 1,
+      })}
+    >
+      <SwapIcon name={name} size={16} weight="semibold" color={tint.link} />
+    </Pressable>
+  );
+}
+
+/** A plain text button in a card's top row: the page's tint, semibold, a dim on press. */
 export function TextButton({
   title,
   onPress,

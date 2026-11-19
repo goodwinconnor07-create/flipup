@@ -29,7 +29,7 @@ const START_BOTS = 4;
 /**
  * Play with bots: the same page as Play with friends (the lobby's pieces, always dark, in the game's colour) with
  * no game code, and the bots up top where the code card sits. Top to bottom:
- *  1. `BotsCard`: At the table, everyone floating in a small group (`FloatTable`: Add pops a bot in, hold a bot to take it off)
+ *  1. `BotsCard`: At the table, everyone floating in a small group (`FloatTable`: Add pops a bot in, a tap on a bot opens Remove and Swap)
  *  2. `GameCard`: the game, Change opens the `lobby-game` list, then How it plays
  *  3. `HouseRules`: the table's numbers and switches, without the online ones
  * and Start game pinned at the bottom, which deals at once with exactly these bots.
@@ -113,6 +113,11 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
             setBots((have) => have.filter((x) => x.key !== b.key));
             offerUndo(`${b.name} removed`, () => setBots((have) => (have.some((x) => x.key === b.key) ? have : insertAt(have, b, at))));
           }}
+          onSwap={(b) => {
+            // Another random bot in the same seat (a Bot Lab bot is swapped for a random one too).
+            const next = randomBot(bots, profile.name || undefined, premium);
+            if (next) setBots((have) => have.map((x) => (x.key === b.key ? { ...next, greet: undefined } : x)));
+          }}
         />
 
         <GameCard variant={variant} host />
@@ -142,7 +147,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
 /**
  * The page's main card, where Play with friends has its game code: who's at the table, said plainly for someone
  * new: everyone floating in a small group (`FloatTable`) with a same-sized Add button at its end. A new bot pops in,
- * and holding one pops it back out. No stepper and no Fill the table row (the owner's call), to keep it short. No BOT pills, nothing
+ * and a tap or long press on one opens its menu (Remove, Swap for another bot). No stepper and no Fill the table row (the owner's call), to keep it short. No BOT pills, nothing
  * to guess, and no hello lines: bots talk at the table.
  */
 function BotsCard({
@@ -151,12 +156,14 @@ function BotsCard({
   onAdd,
   onAddLab,
   onRemove,
+  onSwap,
 }: {
   bots: RowBot[];
   room: number;
   onAdd: () => void;
   onAddLab: (b: LabBot) => void;
   onRemove: (b: RowBot) => void;
+  onSwap: (b: RowBot) => void;
 }) {
   const panel = usePanel();
   const profile = useProfile();
@@ -186,7 +193,7 @@ function BotsCard({
           overflow: 'hidden',
         }}
       >
-        <View style={{ paddingHorizontal: spacing.sm, paddingTop: spacing.xs, paddingBottom: spacing.sm, gap: spacing.xs }}>
+        <View style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs }}>
           <FloatTable
             seats={[
               { key: 'you', emoji: profile.emoji || '🙂', name: profile.name || 'You', you: true },
@@ -194,6 +201,10 @@ function BotsCard({
             ]}
             canRemove={staying.length > min}
             onHold={popOut}
+            onSwap={(key) => {
+              const b = bots.find((x) => x.key === key);
+              if (b) onSwap(b);
+            }}
             onAdd={room > 0 ? onAdd : undefined}
             onAddLab={room > 0 ? onAddLab : undefined}
             onGone={(key) => {
@@ -202,9 +213,6 @@ function BotsCard({
               if (b) onRemove(b);
             }}
           />
-          <ThemedText variant="footnote" tone="secondaryLabel" style={{ textAlign: 'center' }}>
-            Hold a bot to take it off
-          </ThemedText>
         </View>
       </View>
     </View>

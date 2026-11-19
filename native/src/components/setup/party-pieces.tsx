@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { PARTY_BLIND_HANDS, PARTY_FILL, PARTY_STACKS, variantInfo, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { clearPartyDraft } from '@/state/party-draft';
-import { brand, ROUNDED, spacing } from '@/theme';
+import { brand, ROUNDED, spacing, useLobbyTint } from '@/theme';
 
 import { GameThumb } from '../game-picture';
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
@@ -21,6 +21,7 @@ const chips = (n: number) => n.toLocaleString('en-US');
 /** Under the game card: the way into a party, for a night of more than one game. */
 export function StartPartyButton() {
   const panel = usePanel();
+  const tint = useLobbyTint();
   // A party plays a playlist of mini games, and all of those are Premium: without it the button opens the offer.
   const premium = usePremium();
   return (
@@ -35,8 +36,9 @@ export function StartPartyButton() {
       }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: PANEL_RADIUS, borderCurve: 'continuous', borderWidth: 1, borderColor: panel.edge, backgroundColor: panel.fill }}
     >
-      <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet }}>
-        <Icon name="party.popper.fill" size={20} color="#ffffff" />
+      {/* A quiet badge in the page's tint: it's the lobby's last row, another way to play, not the main thing. */}
+      <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' }}>
+        <Icon name="party.popper.fill" size={20} color={tint.link} />
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, lineHeight: 20, color: 'rgba(255,255,255,0.75)' }}>

@@ -36,15 +36,15 @@ import { NavRow } from './setup-header';
 import { choose } from '@/components/choose';
 
 /**
- * Play with friends, laid out after the owner's reference video in FlipUp's own look (the deep blue moving field,
- * always dark). The online table opens in the background as the page opens, so its code is real from the start, and
- * the host deals from here; there's no separate lobby for the host. Top to bottom:
- *  1. `CodeCard`: the game code with Copy, QR and Change (the host's own code, `changeTableCode()`)
- *  2. `GameCard`: the game (Texas Hold'em unless one was passed), Change opens the `lobby-game` list, then How it plays
- *  3. "Want to play more than one game? Start a party." (`StartPartyButton`)
+ * Play with friends, laid out after the owner's reference video in FlipUp's own look (the game's colour, always
+ * dark). The online table opens in the background as the page opens, so its code is real from the start, and the host
+ * deals from here; there's no separate lobby for the host. Top to bottom (reordered 19 Nov 2026: who's here first):
+ *  1. `CodeCard`: the game code with Copy, QR and Share, a tap on the code changes it (`changeTableCode()`), and how friends join
+ *  2. `Players`: you, anyone who sat down with the code, the bots you added, and Add a bot
+ *  3. `GameCard`: the game (Texas Hold'em unless one was passed), Change opens the `lobby-game` list, How it plays
  *  4. `HouseRules`: each number with its − + stepper, then the switches
- *  5. `Players`: you, anyone who sat down with the code, the bots you added, and Add a bot
- * and Start game pinned at the bottom. Friends join with the code.
+ *  5. "Want to play more than one game? Start a party." (`StartPartyButton`)
+ * and Start game pinned at the bottom on its bar. Friends join with the code.
  *
  * Once a party's playlist is saved (state/party-draft.ts) the page is still this same lobby, with a party in it: the
  * party is made at that moment (so its game code is real), the playlist card takes the game card's place, the party's
@@ -236,7 +236,8 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
   };
 
   const inNow = 1 + others.length + bots.length;
-  const line = [`${inNow} in`, variantInfo(variant).name].join(' · ');
+  // Who's in is counted next to Players, so the button only names the game.
+  const line = variantInfo(variant).name;
 
   // The host's own code: the table moves to it (settings and seated bots come along) and the old one ends.
   const changeCode = async (code: string): Promise<string | null> => {
@@ -265,6 +266,10 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
     );
   };
 
+  const swapBot = (b: RowBot) => {
+    const next = randomBot(bots, profile.name || undefined, premium);
+    if (next) setBots((have) => have.map((x) => (x.key === b.key ? next : x)));
+  };
   const removeBot = (b: RowBot) => {
     const at = bots.findIndex((x) => x.key === b.key);
     setBots((have) => have.filter((x) => x.key !== b.key));
@@ -297,6 +302,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
       emoji: b.emoji,
       line: 'Bot',
       onRemove: () => removeBot(b),
+      onSwap: () => swapBot(b),
     })),
   ];
 
@@ -358,14 +364,13 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
                   : undefined
               }
               onChange={changeCode}
+              hint={others.length ? undefined : 'Friends join from Join on the Play tab with this code. Bots fill in until they do.'}
             />
 
-            <View style={{ gap: spacing.md }}>
-              <GameCard variant={variant} host />
-              <StartPartyButton />
-            </View>
-
+            {/* Who's here first (the host's main question), then the game, the rules, and a party last: another way to play. */}
             <Players rows={rows} onAdd={addBot} onAddLab={(b) => !full && setBots((have) => [...have, labRowBot(b)])} />
+
+            <GameCard variant={variant} host />
 
             <HouseRules
               settings={s}
@@ -373,6 +378,8 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
               online
               bots={bots.filter((b) => !b.lab).length}
             />
+
+            <StartPartyButton />
           </>
         )}
       </ScrollView>

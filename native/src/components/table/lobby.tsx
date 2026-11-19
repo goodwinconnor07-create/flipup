@@ -125,19 +125,21 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
             code={game.code}
             share={{ message: tableShareMessage({ host: hostName, game: variantInfo(variant).name, code: game.code }), url: joinLink(game.code) }}
             onChange={host ? changeCode : undefined}
+            hint={host && game.players.every((p) => p.bot || p.deviceId === game.hostDeviceId) ? 'Friends join from Join on the Play tab with this code.' : undefined}
           />
         )}
 
-        <GameCard variant={variant} host={host} table />
-
+        {/* Who's here first, then the game (the same order as Play with friends). */}
         <Players rows={rows} onAdd={host ? () => dispatch({ type: 'addBot' }) : undefined} onAddLab={host ? (b) => dispatch({ type: 'addBot', lab: labSpec(b) }) : undefined} />
+
+        <GameCard variant={variant} host={host} table />
 
         <HouseRules settings={s} onChange={host ? (next) => dispatch({ type: 'settings', settings: next }) : undefined} online={online} bots={game.players.filter((p) => p.bot && !p.labBot).length} />
       </ScrollView>
       {host && (
         <OpenTableButton
           title="Start game"
-          line={game.players.length < 2 ? 'Add a bot or wait for a friend' : `${game.players.length} in · ${variantInfo(variant).name}`}
+          line={game.players.length < 2 ? 'Add a bot or wait for a friend' : variantInfo(variant).name}
           disabled={game.players.length < 2}
           onPress={start}
         />

@@ -15,8 +15,8 @@
 > game card stays on screen; new bots pop in, and a bot's menu (tap or long press) takes it out. The online lobbies' Players section is the same group, with an "Add Bot" button; a tap on a person opens their menu. People come first and wear a solid white ring (you, gold); bots follow with a faint ring. The LIVE tag on Rejoin has a pulsing dot.
 
 > **Home and the Hands tab (owner, 2026-11-19, from a mock-up).** Three tabs: Play, Hands, Train. Home is the game
-> swiper a little bigger, the game's name, hook and a quiet "How it plays ›" link, then Host <game> (the game's name
-> on the big white button), with Play bots and Join a game under it. No "Tap me" hint pill, no page dots and no row of
+> swiper a little bigger, the game's name, hook and a quiet "How it plays ›" link, then Play with friends on the big
+> white button (it was Host <game> until the same day: the name was said twice), with Play bots and Join a game under it. No "Tap me" hint pill, no page dots and no row of
 > round shortcuts. The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
 > of leaving a gap under the link. Hands holds your poker (the passport card with All / Hold'em / Mini games and All
 > stats) and your first three Saved hands with See all, each half with an empty state. The profile keeps Settings,
@@ -29,6 +29,36 @@
 > Copy, "How … plays" and Add Bot in a pale version of the game's light tone, the Start game words in its band colour
 > darkened, the fade under the button in the page's darkest colour. Gold stays for you; panels stay see-through white.
 > A party's lobby (several games) keeps the blue field. Texas Hold'em's lobby is green, as Home is.
+>
+> **19 Nov 2026 (owner): which pages wear a game's colour.** One rule: **a page about one game wears that game's
+> colour; a page about the app, or about several games, stays on the blue field.** Game colour: Home (the game in the
+> middle), the game sheet (`game/[id]`, `GameBackdrop` as a layer inside its scroll content), Play with bots, Play
+> with friends and the table lobby. Blue: the party's lobby, playlist and party room (several games), Hands, Saved
+> hands, Share, Premium, the welcome, Bot Lab and Settings; Train keeps its own darker blue. A party's break shows the
+> next game as an **Up next** card in that game's colour (`UpNext` in `components/party/panel.tsx`: its picture, name,
+> hook and the countdown), a card and not the page, because the break is mostly seen on the table's finish screen.
+> The table page itself is never tinted: the felt already carries the game, and a coloured page would fight it and the
+> cards. A replay keeps the blue page with the game's felt.
+>
+> **19 Nov 2026 (owner): buttons don't repeat the game.** The game's name is said once per screen, by the title or
+> the game card. Home's big button is **Play with friends** ("Host a table · share the code"), the same on the game
+> sheet, beside Play bots. A lobby's Start game (and Start party) has no second line when it's ready, since the game
+> card names the game and Players counts who's in; its line only says what's missing ("Add a bot first", "Add a bot
+> or wait for a friend").
+>
+> **19 Nov 2026 (owner, from a mock-up): the Train tab has one thing to do.** Titled Train, like its tab. Today's
+> hand is a wide card at the top (`DailyCard` in `components/range/train-home.tsx`): the date, "Your first hand" on a
+> first visit or "One spot. Your call.", and Play with your streak beside it; once played, how you did (a gold tick
+> for the best play), when the next hand comes, Your answer and Share, and along its bottom the offer "Remind me
+> tomorrow at 6 pm?" (the switch itself is in Settings). How it works shows for your first three hands. Under it,
+> "Keep training": Endless, Sets and Gaps in one row (`ModeTiles`), under the same blurred lock as Home's Host button without Premium (`LockVeil`, "Unlock Premium to train"); Gaps is blue, not gold,
+> and waits, dimmed, until you've missed something. Work on (Premium, once there's something), then your numbers
+> (best plays, best run, hands played) only once you've played, then the library. No empty zeros, no footnote.
+>
+> **19 Nov 2026 (owner): no neutral grey boxes on a coloured page.** House rules' values are bold text under their
+> name, with no box (`NumberRow`): the opaque system grey was the one dead colour on a game's page and read as a field
+> you could type in beside its stepper. Lobbies scroll in `LobbyScroll`, which fades in a blur tinted with the page's
+> darkest colour under the status bar once the page moves, matching Start game's bar at the bottom.
 >
 > **19 Nov 2026 (owner): lobby layout.** Code, Players, the game (How it plays inside its card), house rules, then
 > Start a party last. The code card has Copy and QR as small round icons and Share as its one text button; a tap on

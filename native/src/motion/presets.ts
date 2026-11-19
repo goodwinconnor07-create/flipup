@@ -79,20 +79,28 @@ const iconOut: EntryExitAnimationFunction = () => {
     animations: { opacity: withTiming(0, OUT), transform: [{ scale: withTiming(SWAP_SCALE, OUT) }], filter: [{ blur: withTiming(SWAP_BLUR, OUT) }] },
   } as never;
 };
-const textIn: EntryExitAnimationFunction = () => {
-  'worklet';
-  return {
-    initialValues: { opacity: 0, transform: [{ translateY: SWAP_SLIDE }] },
-    animations: { opacity: withTiming(1, IN), transform: [{ translateY: withTiming(0, IN) }] },
-  } as never;
-};
-const textOut: EntryExitAnimationFunction = () => {
-  'worklet';
-  return {
-    initialValues: { opacity: 1, transform: [{ translateY: 0 }] },
-    animations: { opacity: withTiming(0, OUT), transform: [{ translateY: withTiming(-SWAP_SLIDE, OUT) }] },
-  } as never;
-};
+// Text slides by `slide` points: a few for a label, about half the line for a big title, so the old word has left
+// the mask by the time the new one lands instead of the two printing over each other.
+function textIn(slide: number): EntryExitAnimationFunction {
+  return () => {
+    'worklet';
+    return {
+      initialValues: { opacity: 0, transform: [{ translateY: slide }] },
+      animations: { opacity: withTiming(1, IN), transform: [{ translateY: withTiming(0, IN) }] },
+    } as never;
+  };
+}
+function textOut(slide: number): EntryExitAnimationFunction {
+  return () => {
+    'worklet';
+    return {
+      initialValues: { opacity: 1, transform: [{ translateY: 0 }] },
+      animations: { opacity: withTiming(0, OUT), transform: [{ translateY: withTiming(-slide, OUT) }] },
+    } as never;
+  };
+}
+const labelIn = textIn(SWAP_SLIDE);
+const labelOut = textOut(SWAP_SLIDE);
 
 // A panel that opens from the bottom, where its trigger is (rules 11 and 12): it rises 40pt from 95%, anchored at its
 // bottom edge, and sinks back the same way, 20% quicker. Its parts settle one after another (`detail`).
@@ -127,11 +135,11 @@ export function detail(i: number, reduce: boolean) {
 }
 
 /** What arrives when one thing replaces another (see `Swap`). Under Reduce Motion it's a short fade. */
-export function swapIn(kind: 'icon' | 'text', reduce: boolean) {
-  return reduce ? FadeIn.duration(motion.exit) : kind === 'icon' ? iconIn : textIn;
+export function swapIn(kind: 'icon' | 'text', reduce: boolean, slide = SWAP_SLIDE) {
+  return reduce ? FadeIn.duration(motion.exit) : kind === 'icon' ? iconIn : slide === SWAP_SLIDE ? labelIn : textIn(slide);
 }
 
 /** What leaves while the new one arrives. */
-export function swapOut(kind: 'icon' | 'text', reduce: boolean) {
-  return reduce ? FadeOut.duration(motion.exit) : kind === 'icon' ? iconOut : textOut;
+export function swapOut(kind: 'icon' | 'text', reduce: boolean, slide = SWAP_SLIDE) {
+  return reduce ? FadeOut.duration(motion.exit) : kind === 'icon' ? iconOut : slide === SWAP_SLIDE ? labelOut : textOut(slide);
 }

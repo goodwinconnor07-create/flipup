@@ -3,17 +3,24 @@ import { userMessage } from '@/state/user-error';
 import { router, useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+
+import { gameLook } from '@design/gameArt';
 
 import { PARTY_BREAK_SECONDS, partyStandings, variantInfo, type PartyView, type Variant } from '@/engine';
 import { partyLink } from '@/state/api';
 import { readParty, skipBreak, startParty, leaveParty } from '@/state/party';
 import { useProfile } from '@/state/profile';
 import { joinOnlineTable, leaveTable, useTable } from '@/state/session';
-import { spacing, usePlainColors } from '@/theme';
+import { enter } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { ForceScheme, ROUNDED, spacing, usePlainColors } from '@/theme';
 
 import { Button } from '../button';
 import { GameThumb } from '../game-picture';
 import { haptic } from '../haptics';
+import { GameBackdrop } from '../home/game-backdrop';
+import { PANEL_RADIUS } from '../grouped-list';
 import { CodeCard } from '../lobby/code-card';
 import { Players, type PlayerLine } from '../lobby/players';
 import { PartyCard, PartyRules } from '../setup/party-pieces';
@@ -194,7 +201,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
 
       {view.status === 'between' && (
         <>
-          <GameHeader eyebrow={`Up next · game ${view.round + 2} of ${total}`} variant={next} line={`Game ${view.round + 1} is done. The next one starts in ${seconds ?? PARTY_BREAK_SECONDS}s.`} />
+          {next && <UpNext variant={next} eyebrow={`Up next · game ${view.round + 2} of ${total}`} line={`Game ${view.round + 1} is done. Starts in ${seconds ?? PARTY_BREAK_SECONDS}s.`} />}
           <PartyBoard rows={rows} you={view.you} running={false} code={code} />
           {host && <Button variant="party" tint="blue" size="lg" title="Start next game now" loading={busy} onPress={() => void act(() => skipBreak(view.code))} />}
         </>
@@ -222,6 +229,41 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
         </ThemedText>
       )}
     </View>
+  );
+}
+
+/**
+ * The break between games: the next game on a card in its own colour (Home's `GameBackdrop`), with its picture, name
+ * and hook. The one moment in a party about a single game, so it's the one place a party wears a game's colour (the
+ * rule in docs/DESIGN.md). A card, not the page: the break is mostly seen on the table's finish screen, whose page is
+ * the table's own.
+ */
+function UpNext({ variant, eyebrow, line }: { variant: Variant; eyebrow: string; line: string }) {
+  const reduce = useReduceMotion();
+  const info = variantInfo(variant);
+  const look = gameLook(variant);
+  return (
+    <Animated.View key={variant} entering={enter(reduce)} style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', boxShadow: '0 10px 28px rgba(0, 0, 0, 0.3)' }}>
+      <ForceScheme scheme="dark">
+        <GameBackdrop variant={variant} style={{ flex: 0, borderRadius: PANEL_RADIUS, borderCurve: 'continuous' }}>
+          <View accessible accessibilityRole="header" accessibilityLabel={`${eyebrow}. ${info.name}. ${look.hook}. ${line}`} style={{ padding: spacing.lg, alignItems: 'center', gap: spacing.xs }}>
+            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.8)' }}>
+              {eyebrow}
+            </Text>
+            <GameThumb variant={variant} size={88} />
+            <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontFamily: ROUNDED, fontSize: 32, fontWeight: '900', letterSpacing: -0.4, color: '#ffffff', textAlign: 'center' }}>
+              {info.name}
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '500', color: 'rgba(255, 255, 255, 0.85)', textAlign: 'center' }}>
+              {look.hook}
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '600', color: 'rgba(255, 255, 255, 0.8)', textAlign: 'center', fontVariant: ['tabular-nums'] }}>
+              {line}
+            </Text>
+          </View>
+        </GameBackdrop>
+      </ForceScheme>
+    </Animated.View>
   );
 }
 

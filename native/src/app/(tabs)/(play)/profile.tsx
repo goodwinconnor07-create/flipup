@@ -24,7 +24,7 @@ const PIC = 150;
 
 /**
  * Your profile, as on the web: your emoji (tap it to pick another) and your name, which everyone at the table sees;
- * then Settings, How to play (for the game Home shows) and FlipUp Premium. Your stats are the Hands tab. The name is
+ * then Settings, How to play (for the game Home shows) and FlipUp Premium. Your stats are Home's Stats shortcut. The name is
  * saved with Save; the emoji as you pick it.
  */
 export default function ProfileScreen() {

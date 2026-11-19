@@ -170,7 +170,7 @@ export default function Home() {
           {/* The shortcuts, then the main buttons. */}
           <Animated.View entering={arrive(2)} style={[pad, { gap: spacing.sm, marginTop: GAP }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xl, paddingBottom: spacing.xxs }}>
-              <Shortcut icon="chart.bar.xaxis" label="Stats" onPress={go('/your-stats')} />
+              <Shortcut icon="chart.bar.xaxis" label="Stats" onPress={go('/stats')} />
               <Shortcut icon="film.stack.fill" label="Saved hands" onPress={go('/replays')} />
               <Shortcut icon="square.and.arrow.up" label="Share cards" onPress={go('/share')} />
             </View>

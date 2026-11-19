@@ -14,15 +14,14 @@
 > evenly spaced on equal columns, a same-sized dashed Add button at the end), not a list and not a drawn table, so the
 > game card stays on screen; new bots pop in, and a bot's menu (tap or long press) takes it out. The online lobbies' Players section is the same group, with an "Add Bot" button; a tap on a person opens their menu. People come first and wear a solid white ring (you, gold); bots follow with a faint ring. The LIVE tag on Rejoin has a pulsing dot.
 
-> **Home and the Hands tab (owner, 2026-11-19, from a mock-up).** Three tabs: Play, Hands, Train. Home is the game
+> **Home (owner, 2026-11-19, from a mock-up).** Two tabs: Play and Train (a Hands tab came and went the same day: once
+> Home had its shortcuts the owner had it removed). Home is the game
 > swiper a little bigger, the game's name, hook and a quiet "How it plays ›" link, then Play with friends on the big
 > white button (it was Host <game> until the same day: the name was said twice), with Play bots and Join a game under
 > it. No "Tap me" hint pill and no page dots. Later the same day the owner brought back a row of round shortcuts over
 > the big button: Stats, Saved hands and Share cards (the game card a touch smaller to make room; the big name and
 > buttons stay). The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
-> of leaving a gap under the link. Hands holds your poker (the passport card with All / Hold'em / Mini games and All
-> stats) and your first three Saved hands with See all, each half with an empty state. The profile keeps Settings,
-> Premium and How to play.
+> of leaving a gap under the link. The profile keeps Settings, Premium and How to play.
 
 > **19 Nov 2026 (owner, from a mock-up): lobbies in the game's colour.** Play with bots, Play with friends and the
 > table lobby use Home's `GameBackdrop` (`LobbyBackdrop` in `components/lobby/lobby-backdrop.tsx`): a dark shade of

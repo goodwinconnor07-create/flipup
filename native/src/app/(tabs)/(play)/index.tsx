@@ -13,7 +13,7 @@ import { LiveButton } from '@/components/home/live-button';
 import { PlayButton } from '@/components/home/play-button';
 import { LockVeil } from '@/components/premium/lock-veil';
 import { SmallButton } from '@/components/home/small-button';
-import { Icon } from '@/components/icon';
+import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { AVATAR } from '@/components/profile-menu';
 import { Swap } from '@/components/swap';
@@ -36,8 +36,11 @@ import { ForceScheme, ROUNDED, spacing } from '@/theme';
 
 /** The tab bar's height over the bottom safe area. */
 const TAB_BAR = 49;
-/** The space between How it plays and Host <game>. */
-const GAP = 28;
+/** The space between How it plays and the shortcuts. */
+const GAP = 20;
+/** The round shortcuts' see-through fill and edge. */
+const GLASS = 'rgba(255, 255, 255, 0.12)';
+const EDGE = 'rgba(255, 255, 255, 0.14)';
 /** The game shown in the middle, kept between launches. */
 const PICK = 'flipup.homegame';
 
@@ -45,9 +48,9 @@ const PICK = 'flipup.homegame';
  * Home as a game lobby. The page takes the colour of the chosen game (`GameBackdrop`). "Play" top left and your face
  * top right (a tap opens your profile, which holds Premium, How to play and Settings); the games as a line of cards
  * across the whole screen, locked on one at a time (`GameSwiper`), a little bigger than before; the chosen one's
- * name, hook and a quiet "How it plays" link under it; then Host <game> (`PlayButton`), with Play bots and Join a game
- * under it. Stats and Saved hands are the Hands tab (owner, 19 Nov 2026: no row of round shortcuts, no hint pill, no
- * dots). The leftover height sits mostly above the game, so the buttons ride a little above the tab bar rather than
+ * name, hook and a quiet "How it plays" link under it; a row of three round shortcuts (Stats, Saved hands, Share
+ * cards; the owner brought them back on 19 Nov 2026 and kept the big game and buttons); then Host <game>
+ * (`PlayButton`), with Play bots and Join a game under it. No hint pill, no dots. The leftover height sits mostly above the game, so the buttons ride a little above the tab bar rather than
  * leaving a gap under the link. Nothing scrolls.
  */
 export default function Home() {
@@ -86,7 +89,7 @@ export default function Home() {
   // At 320pt wide (an SE with Display Zoom) there's no room for the hook line and a full-size card: the card shrinks
   // and the hook goes, so the page dots never sit on the shortcuts.
   const narrow = width < 350;
-  const hero = Math.round(Math.max(narrow ? 110 : 130, Math.min(narrow ? 210 : 264, height * (narrow ? 0.21 : 0.3))));
+  const hero = Math.round(Math.max(narrow ? 110 : 130, Math.min(narrow ? 190 : 248, height * (narrow ? 0.19 : 0.27))));
   const card = Math.min(hero, width - spacing.md * 2 - 80);
 
   // PLAY opens the page straight away; no colour fills the screen. A Premium game without Premium opens its sheet
@@ -157,8 +160,13 @@ export default function Home() {
             </PressableScale>
           </Animated.View>
 
-          {/* The main buttons. */}
+          {/* The shortcuts, then the main buttons. */}
           <Animated.View entering={arrive(2)} style={[pad, { gap: spacing.sm, marginTop: GAP }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xl, paddingBottom: spacing.xxs }}>
+              <Shortcut icon="chart.bar.xaxis" label="Stats" onPress={go('/your-stats')} />
+              <Shortcut icon="film.stack.fill" label="Saved hands" onPress={go('/replays')} />
+              <Shortcut icon="square.and.arrow.up" label="Share cards" onPress={go('/share')} />
+            </View>
             {/* A Premium game without Premium: the game sheet's lock (blur, lock, its words) over Host <game>; a tap opens the offer for this game. */}
             <View style={{ borderRadius: 26, borderCurve: 'continuous', overflow: 'hidden' }}>
               <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}>
@@ -177,6 +185,20 @@ export default function Home() {
         </View>
       </GameBackdrop>
     </ForceScheme>
+  );
+}
+
+/** A shortcut over Host <game>: a round see-through button with its name under it. */
+function Shortcut({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  return (
+    <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} haptics={false} style={{ alignItems: 'center', gap: 5, minWidth: 72 }}>
+      <View style={{ width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE }}>
+        <Icon name={icon} size={23} color="#ffffff" />
+      </View>
+      <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ fontSize: 12, fontWeight: '600', color: 'rgba(255, 255, 255, 0.85)' }}>
+        {label}
+      </Text>
+    </PressableScale>
   );
 }
 

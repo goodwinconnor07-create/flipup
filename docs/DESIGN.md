@@ -16,8 +16,9 @@
 
 > **Home and the Hands tab (owner, 2026-11-19, from a mock-up).** Three tabs: Play, Hands, Train. Home is the game
 > swiper a little bigger, the game's name, hook and a quiet "How it plays ›" link, then Host <game> (the game's name
-> on the big white button), with Play bots and Join a game under it. No "Tap me" hint pill, no page dots and no row of
-> round shortcuts. The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
+> on the big white button), with Play bots and Join a game under it. No "Tap me" hint pill and no page dots. Later the
+> same day the owner brought back a row of round shortcuts over Host <game>: Stats, Saved hands and Share cards (the
+> game card a touch smaller to make room; the big name and buttons stay). The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
 > of leaving a gap under the link. Hands holds your poker (the passport card with All / Hold'em / Mini games and All
 > stats) and your first three Saved hands with See all, each half with an empty state. The profile keeps Settings,
 > Premium and How to play.

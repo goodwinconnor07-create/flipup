@@ -227,9 +227,8 @@ function cardPrims({ x, y, r = 0, rank = '', suit = '♠', s = 1, back, backFill
       const wide = rank.length > 1;
       const left = wide ? -17 : -15.5;
       kids.push({ tag: 'text', x: left, y: -9.5, text: rank, size: 19, weight: 900, fill: colour, anchor: 'start', spacing: wide ? -1.5 : 0 });
-      // The corner index's small suit under the rank, as on a real card, then the big suit.
-      kids.push({ tag: 'path', d: SUIT_PATH[suit] ?? SUIT_PATH['♠'], fill: colour, t: `translate(${wide ? -11.2 : -10.2} -1.6) scale(0.4)` });
-      kids.push({ tag: 'path', d: SUIT_PATH[suit] ?? SUIT_PATH['♠'], fill: colour, t: 'translate(4.2 12.4) scale(1.3)' });
+      // One big suit only (the owner, 19 Nov 2026: no small second suit under the rank).
+      kids.push({ tag: 'path', d: SUIT_PATH[suit] ?? SUIT_PATH['♠'], fill: colour, t: 'translate(3.5 11) scale(1.42)' });
     }
   }
   return { tag: 'g', t: `translate(${x} ${y}) rotate(${r}) scale(${s})`, opacity: faded ? 0.5 : undefined, deal, kids };

@@ -1,16 +1,18 @@
-// Mistake review (FlipUp Premium, 19 Nov 2026): one finished Texas Hold'em hand, looked at decision by decision.
-// The hand is rebuilt through the real engine (same seats, button, blinds, house rules, cards and moves), and before
-// each of your moves your chance of winning is worked out against the hands each opponent's play so far points to:
-// the same range model the bots think with (`botRange.ts`), from public moves only, never their real cards. That
-// chance is held against the price of a call, or used to say whether a bet or a check left value behind.
+// Hand review (FlipUp Premium, 19 Nov 2026): one finished Texas Hold'em hand, your moves one by one, with facts only.
 //
-// It's a coach's rule of thumb, not a solver: it can't see fold equity or what later streets will cost. So folds and
-// calls are graded (the price is plain arithmetic), a missed river value bet is pointed out, and bets and raises
-// are described rather than marked wrong. Pure: no clock, no phone, seeded dice.
+// The owner's rule, after measuring a range-model version against 144 published hands (it agreed with the experts only
+// 56% of the time, docs/BOTS.md "Hand review"): nothing here is an estimate.
+//   - At a bots-only table every bot's cards are known once the hand is over, so each move shows your exact chance to
+//     win against the real hands still in at that moment, next to the pot odds.
+//   - Online, the same only when everyone still in at that moment showed their cards; otherwise the move shows facts:
+//     what the call cost, the share of the pot it needed, the bet's size and the hand you had.
+// The chance to win is the cards counted out (every board to come from the flop on; before the flop, 6,000 seeded
+// boards, so it says "about" with more than one opponent). It's a hindsight number: true given their cards, which you
+// couldn't see. So it never calls a move a mistake. Pure: no clock, no phone.
 
-import { boardCards, equityOf, imagine, opponentsOf, preflopRange, riverRange, type Card2 } from '../game/botRange';
-import { toInt } from '../game/botEval';
-import { hashString, seededRng, fullDeck, type Card } from '../game/cards';
+import { equity } from '../game/equity';
+import { describeHand } from '../game/evaluate';
+import { fullDeck, seededRng, type Card } from '../game/cards';
 import { dealNextStreet, makeMove, potTotal, startHand } from '../game/holdem';
 import { createTable, DEFAULT_SETTINGS } from '../game/reducer';
 import type { HandAction, Move, Street } from '../game/types';
@@ -28,60 +30,63 @@ export interface ReviewHand {
   players: { id: string; stack: number }[];
   actions: HandAction[];
   board: Card[];
+  /** Your cards, and every other hand that's known: all of them at a bots-only table, those shown online. */
   holes: Record<string, Card[]>;
   /** House rules the hand was dealt with. */
   house?: { ante?: number; straddle?: boolean; bomb?: boolean };
-  /** A tournament's big blind ante, in chips: dead money from the big blind before the deal. */
-  bbAnte?: number;
 }
 
-/** good: the right call. close: fine either way, or a small leak. mistake: it cost you. fine: nothing to grade. */
-export type Verdict = 'good' | 'close' | 'mistake' | 'fine';
+/** exact: every hand still in was known, so `equity` is real. facts: someone's cards were never seen. */
+export type ReviewKind = 'exact' | 'facts';
 
 export interface ReviewedMove {
   /** Which move of the hand this is, counted from 1 (the replay's step). */
   step: number;
   street: Street;
   move: Move;
+  kind: ReviewKind;
   /** Chips to call when you moved (0 if nobody had bet). */
   toCall: number;
   /** The pot before your move, bets on this street included. */
   pot: number;
-  /** Share of the final pot a call costs (null with nothing to call). */
+  /** The share of the final pot a call needed (null with nothing to call). */
   price: number | null;
-  /** Your chance of winning against their likely hands, 0 to 1. */
-  equity: number;
-  verdict: Verdict;
-  /** A few words: "Fold was too tight". */
+  /** Exact only: your share of the pot against their real cards, 0 to 1 (a tie counts half). */
+  equity: number | null;
+  /** Exact, facing a bet: what calling won or lost on average against their cards if nobody bet again, in big blinds. */
+  callBb: number | null;
+  /** The hand you had at that moment ("Two pair, kings and fives", or your two cards before the flop). */
+  holding: string;
+  /** A few words: "62% to win · needed 25%", "Needed 25% to call". */
   title: string;
-  /** One or two plain sentences with the numbers. */
+  /** One or two plain sentences, facts only. */
   line: string;
-  /** About how many big blinds the move gave up, on average (mistakes and close ones only). */
-  costBb?: number;
 }
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
-const bbs = (x: number) => (x >= 10 ? Math.round(x) : Math.round(x * 10) / 10);
+const n0 = (x: number) => Math.round(x).toLocaleString('en-US');
+const bbs = (x: number) => (Math.abs(x) >= 10 ? Math.round(x) : Math.round(x * 10) / 10);
+const lower = (s: string) => (/^[2-9TJQKA][shdc] /.test(s) ? s : s.charAt(0).toLowerCase() + s.slice(1));
 
 /** Which saved hands can be reviewed: Texas Hold'em, with your own two cards, where you made a move. */
 export function canReview(h: Pick<ReviewHand, 'variant' | 'holes' | 'me' | 'actions'>): boolean {
   return h.variant === 'holdem' && h.holes[h.me]?.length === 2 && h.actions.some((a) => a.playerId === h.me && !a.outOfTurn);
 }
 
-/** Every move you made in the hand, graded. Null if the hand can't be reviewed (see `canReview`) or won't rebuild. */
-export function reviewHand(saved: ReviewHand, samples = 2000): ReviewedMove[] | null {
+/** Every move you made in the hand, with its facts. Null if the hand can't be reviewed or won't rebuild. */
+export function reviewHand(saved: ReviewHand): ReviewedMove[] | null {
   if (!canReview(saved)) return null;
   try {
-    return review(saved, samples);
+    return review(saved);
   } catch {
     // A hand that doesn't rebuild the same way (a very old save) has no review rather than a wrong one.
     return null;
   }
 }
 
-function review(saved: ReviewHand, samples: number): ReviewedMove[] {
+function review(saved: ReviewHand): ReviewedMove[] {
   const n = saved.players.length;
-  const rng = seededRng(hashString(`review:${saved.buttonId}:${saved.actions.length}:${saved.holes[saved.me].join('')}`));
+  const rng = seededRng(7);
   const ctx = { now: 0, deviceId: 'review', rng };
   const house = saved.house ?? {};
   const game = createTable({
@@ -119,14 +124,6 @@ function review(saved: ReviewHand, samples: number): ReviewedMove[] {
   startHand(game, ctx);
   const h = game.hand!;
   if (h.buttonId !== saved.buttonId || h.bbId !== saved.bbId) throw new Error('The rebuilt hand put the blinds in different seats.');
-  if (saved.bbAnte) {
-    const bb = h.seats.find((x) => x.playerId === h.bbId)!;
-    const p = game.players.find((x) => x.id === h.bbId)!;
-    const chips = Math.min(saved.bbAnte, p.stack);
-    p.stack -= chips;
-    bb.total += chips;
-  }
-  // Your cards, and anyone else's that were seen; the rest get unused cards (the review never looks at them).
   const known = new Set([...saved.board, ...Object.values(saved.holes).flat()]);
   const spare = fullDeck().filter((c) => !known.has(c));
   for (const seat of h.seats) seat.cards = saved.holes[seat.playerId]?.length === 2 ? [...saved.holes[seat.playerId]] : spare.splice(0, 2);
@@ -141,97 +138,60 @@ function review(saved: ReviewHand, samples: number): ReviewedMove[] {
       dealNextStreet(game, ctx);
     }
     if (h.toAct !== action.playerId) throw new Error('The rebuilt hand expected someone else to act.');
-    if (action.playerId === saved.me) out.push(grade(i + 1, action.move));
+    if (action.playerId === saved.me) out.push(facts(i + 1, action.move));
     const error = makeMove(game, action.move, action.move === 'bet' || action.move === 'raise' ? action.to : undefined, ctx);
     if (error) throw new Error(error);
   });
   return out;
 
-  /** Your move at this point of the rebuilt hand, against the ranges their moves so far point to. */
-  function grade(step: number, move: Move): ReviewedMove {
+  /** Your move at this point of the rebuilt hand. */
+  function facts(step: number, move: Move): ReviewedMove {
     const seat = h.seats.find((s) => s.playerId === saved.me)!;
     const stack = game.players.find((p) => p.id === saved.me)!.stack;
-    const opps = opponentsOf(game, h, seat);
-    const ranges = opps.map((o) => preflopRange(game, h, o.id, o.story, o.read));
-    const hole = seat.cards.map(toInt) as Card2;
-    const board = boardCards(h);
-    // Heads-up on the river every hand they could hold is counted, weighted by how well it fits their moves (no
-    // sampling, so no noise); anywhere else a few thousand deals are sampled (about ±1 to 2 points).
-    const exact = h.street === 'river' && opps.length === 1;
-    const im = exact ? riverRange(hole, board, opps[0], ranges[0]) : imagine(hole, board, h.street, opps, ranges, seededRng(hashString(`${step}:${h.board.join('')}`)), samples);
-    const equity = equityOf(im);
+    const board = h.board.slice(0, { preflop: 0, flop: 3, turn: 4, river: 5 }[h.street]);
     const toCall = Math.min(Math.max(0, h.currentBet - seat.bet), stack);
     const pot = potTotal(h);
     const price = toCall > 0 ? toCall / (pot + toCall) : null;
-    const base = { step, street: h.street, move, toCall, pot, price, equity };
-    // All in for no more than the call is a call.
-    const judged = move === 'allin' && toCall > 0 && stack <= h.currentBet - seat.bet ? 'call' : move;
-    // Their moves fit almost none of the hands the model expects (a very odd line): too little to grade on.
-    if (!exact && im.quality < 0.05)
-      return { ...base, verdict: 'fine', title: 'Hard to read', line: "Their betting doesn't fit a usual range, so this move isn't graded." };
-    return { ...base, ...judge(judged, equity, price, toCall, pot, h.street, saved.bigBlind, opps.some((o) => o.allIn)) };
-  }
-}
-
-/** The verdict and words for one move. Exported for the tests. */
-export function judge(
-  move: Move,
-  equity: number,
-  price: number | null,
-  toCall: number,
-  pot: number,
-  street: Street,
-  bigBlind: number,
-  facingAllIn: boolean,
-): Pick<ReviewedMove, 'verdict' | 'title' | 'line' | 'costBb'> {
-  const E = pct(equity);
-  const river = street === 'river';
-  // Calling all in, or on the river, the price is all there is. Earlier a call also buys the next cards, so it gets
-  // some room (draws are worth a little more than their equity when they hit and get paid).
-  const plain = river || facingAllIn;
-  // What a call wins or loses on average if nobody bets again: your share of the final pot less the call.
-  const callEv = (equity * (pot + toCall) - toCall) / bigBlind;
-
-  if (price !== null && (move === 'fold' || move === 'call')) {
-    const P = pct(price);
-    const edge = equity - price;
-    if (move === 'fold') {
-      if (edge > (plain ? 0.06 : 0.1))
-        return { verdict: 'mistake', title: 'Fold was too tight', line: `You had about ${E} (our estimate), and the call needed ${P} (pot odds).`, costBb: bbs(callEv) };
-      if (edge > 0.02) return { verdict: 'close', title: 'Close fold', line: `About ${E} (our estimate), and the call needed ${P} (pot odds). Calling was a little better.`, costBb: bbs(callEv) };
-      if (preflopNoPressure(street, facingAllIn)) return { verdict: 'fine', title: 'Folded', line: `About ${E} to win (our estimate).` };
-      return { verdict: 'good', title: 'Good fold', line: `About ${E} (our estimate), and the call needed ${P} (pot odds).` };
+    const holding = board.length >= 3 ? describeHand([...seat.cards, ...board]).detail : seat.cards.join(' ');
+    // Exact only when every hand still in is known (all of them at a bots-only table; online, those shown).
+    const others = h.seats.filter((s) => s.playerId !== saved.me && !s.folded).map((s) => saved.holes[s.playerId]);
+    const exact = others.length > 0 && others.every((c) => c?.length === 2);
+    let share: number | null = null;
+    if (exact) {
+      const e = equity([seat.cards, ...(others as Card[][])], board);
+      share = e.win[0] + e.tie[0] / 2;
     }
-    // A call.
-    if (edge < (plain ? -0.08 : -0.15))
-      return { verdict: 'mistake', title: 'Call was too loose', line: `You had about ${E} (our estimate), and the call needed ${P} (pot odds).`, costBb: bbs(-callEv) };
-    if (edge < (plain ? -0.02 : -0.05))
-      return { verdict: 'close', title: 'Thin call', line: `About ${E} (our estimate), and the call needed ${P} (pot odds).${plain ? '' : ' Your outs make up some of it.'}`, costBb: bbs(-callEv) };
-    if (preflopNoPressure(street, facingAllIn)) return { verdict: 'fine', title: 'Called', line: `About ${E} to win (our estimate).` };
-    if (river && equity > 0.75) return { verdict: 'good', title: 'Good call', line: `About ${E} (our estimate). A raise could have won more.` };
-    return { verdict: 'good', title: 'Good call', line: `About ${E} (our estimate), and the call needed ${P} (pot odds).` };
+    const callBb = share !== null && toCall > 0 ? (share * (pot + toCall) - toCall) / saved.bigBlind : null;
+    const about = share !== null && board.length === 0 && others.length > 1 ? 'about ' : '';
+    const size = `${n0(toCall)} into ${n0(pot - toCall)}`;
+    let title: string;
+    let line: string;
+    if (share !== null && price !== null) {
+      title = `${pct(share)} to win · needed ${pct(price)}`;
+      const ev = callBb!;
+      const evLine = Math.abs(ev) < 0.05 ? 'Calling broke even on average.' : `On average, calling ${ev > 0 ? 'won' : 'lost'} ${bbs(Math.abs(ev))} bb against those cards.`;
+      line = `Against their cards you had ${about}${pct(share)} to win, and the call needed ${pct(price)} (${size}). ${evLine}`;
+    } else if (share !== null) {
+      title = `${pct(share)} to win`;
+      line = `Against their cards you had ${about}${pct(share)} to win, with ${n0(pot)} in the pot.`;
+    } else if (price !== null) {
+      title = `Needed ${pct(price)} to call`;
+      line = `The call was ${size}, so it needed ${pct(price)} of the pot to break even. You had ${lower(holding)}. Their cards weren't shown.`;
+    } else {
+      title = `Pot ${n0(pot)}`;
+      line = `You had ${lower(holding)}, with ${n0(pot)} in the pot. Their cards weren't shown.`;
+    }
+    return { step, street: h.street, move, kind: exact ? 'exact' : 'facts', toCall, pot, price, equity: share, callBb, holding, title, line };
   }
-
-  if (move === 'check') {
-    if (river && equity >= 0.72) return { verdict: 'close', title: 'Missed value', line: `You were ahead about ${E} of the time (our estimate). A bet would likely have been paid by worse.` };
-    return { verdict: 'fine', title: 'Checked', line: `About ${E} to win (our estimate).` };
-  }
-  // Bets, raises and all ins: whether they were for value or a bluff. Folds they'd get aren't counted, so a bluff is
-  // never marked wrong.
-  const what = move === 'bet' ? 'bet' : move === 'raise' ? 'raise' : 'all in';
-  if (equity >= 0.6) return { verdict: 'good', title: `Value ${what}`, line: `About ${E} to win (our estimate): worse hands can pay you.` };
-  if (equity <= 0.3) return { verdict: 'fine', title: `A bluff`, line: `About ${E} to win (our estimate), so this ${what} needs them to fold.` };
-  return { verdict: 'fine', title: `Thin ${what}`, line: `About ${E} to win (our estimate): about as often behind as ahead.` };
 }
 
-/** Before the flop, a fold or call of a normal raise isn't graded: ranges that early say little. */
-const preflopNoPressure = (street: Street, facingAllIn: boolean) => street === 'preflop' && !facingAllIn;
-
-/** The review in a line: how many mistakes, and what they cost. */
-export function reviewSummary(moves: ReviewedMove[]): { mistakes: number; close: number; good: number; costBb: number; worst: ReviewedMove | null } {
-  const mistakes = moves.filter((m) => m.verdict === 'mistake');
-  const close = moves.filter((m) => m.verdict === 'close');
-  const costBb = bbs([...mistakes, ...close].reduce((s, m) => s + (m.costBb ?? 0), 0));
-  const worst = [...mistakes].sort((a, b) => (b.costBb ?? 0) - (a.costBb ?? 0))[0] ?? close[0] ?? null;
-  return { mistakes: mistakes.length, close: close.length, good: moves.filter((m) => m.verdict === 'good').length, costBb, worst };
+/** The hand in numbers: moves with exact odds, and folds or calls where the cards said the other way (hindsight). */
+export function reviewSummary(moves: ReviewedMove[]): { exact: number; total: number; foldedAhead: number; calledBehind: number } {
+  const exact = moves.filter((m) => m.kind === 'exact');
+  return {
+    exact: exact.length,
+    total: moves.length,
+    foldedAhead: exact.filter((m) => m.move === 'fold' && (m.callBb ?? 0) > 0).length,
+    calledBehind: exact.filter((m) => m.move === 'call' && (m.callBb ?? 0) < 0).length,
+  };
 }

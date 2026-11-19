@@ -1,4 +1,4 @@
-// The mistake review of a saved hand (Premium), for the replay screen and the hand recap. The work is in the shared
+// The hand review of a saved hand (Premium), for the replay screen and the hand recap. The work is in the shared
 // `src/train/handReview.ts`; this turns a `Replay` into what it needs and keeps each answer, since a hand's review
 // never changes and the replay screen asks for it on every draw.
 import { useEffect, useState } from 'react';
@@ -58,13 +58,12 @@ export function useHandReview(r: Replay | undefined, on: boolean): ReviewedMove[
   return state?.key === key ? state.moves : undefined;
 }
 
-/** "1 likely mistake · about 4 bb", or "No mistakes", for a summary line. It's an estimate, so it never says more. */
+/** The hand in a line, facts only: "Folded the better hand once", "Odds at 3 moves", or "Pot odds only". */
 export function summaryLine(moves: ReviewedMove[]): string {
   const s = reviewSummary(moves);
-  if (!s.mistakes && !s.close) return 'No mistakes';
-  const parts = [];
-  if (s.mistakes) parts.push(`${s.mistakes} likely ${s.mistakes === 1 ? 'mistake' : 'mistakes'}`);
-  if (s.close) parts.push(`${s.close} close ${s.close === 1 ? 'call' : 'calls'}`);
-  if (s.costBb > 0) parts.push(`about ${s.costBb} bb`);
-  return parts.join(' · ');
+  if (!s.exact) return 'Pot odds only';
+  const times = (k: number) => (k === 1 ? 'once' : k === 2 ? 'twice' : `${k} times`);
+  if (s.foldedAhead) return `Folded the better hand ${times(s.foldedAhead)}`;
+  if (s.calledBehind) return `Called behind ${times(s.calledBehind)}`;
+  return `Odds at ${s.exact} ${s.exact === 1 ? 'move' : 'moves'}`;
 }

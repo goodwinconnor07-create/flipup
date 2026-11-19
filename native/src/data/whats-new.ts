@@ -33,7 +33,7 @@ export const RELEASES: Release[] = [
       { icon: 'film.stack.fill', title: 'Saved hands', text: 'Save any hand from the table (up to 50) and watch it back move by move. Tap the bookmark again to un-save it, or delete hands from the list. Once it’s over, you see what every bot had.' },
       { icon: 'house.fill', title: 'Home game rules', text: 'Antes, a straddle and a bomb pot every few hands, in the house rules of any table you host.' },
       { icon: 'flame.fill', title: 'Run it twice', text: 'When players are all in at a Texas Hold’em table, everyone in the hand can agree to deal the rest twice and split the pot.' },
-      { icon: 'lightbulb.fill', title: 'Mistake review', text: 'Open a Texas Hold’em hand in Saved hands and see each of your moves next to the pot odds and our estimate of your chance to win, with the likely mistakes. Part of Premium.' },
+      { icon: 'lightbulb.fill', title: 'Hand review', text: 'Open a Texas Hold’em hand in Saved hands and see your odds at every move. Against bots it counts their real cards; online, it does when everyone showed. Part of Premium.' },
       { icon: 'arrow.counterclockwise', title: 'Review after every hand', text: 'Turn it on in the house rules for a blue Review button and a 10 second countdown to the next hand. Review pauses the clock and lets you replay the hand.' },
       { icon: 'chart.bar.xaxis', title: 'Hold’em or mini games', text: 'Switch your stats between all your poker, Texas Hold’em alone and the mini games alone. The two halves count from this update.' },
       { icon: 'chart.line.uptrend.xyaxis', title: 'Stats in big blinds', text: 'Your stats count in big blinds, so a bigger stack or a rebuy never changes them.' },

@@ -25,7 +25,7 @@ import { trySaveHand } from '@/components/table/hand-tools';
 import { netOf, putIn, toggleStar, useLastHand, useReplays, useStars, winnersOf, type Replay } from '@/state/replays';
 import { brand, ForceScheme, gradient, radius, ROUNDED, spacing } from '@/theme';
 import { Announce } from '@/components/announce';
-import { CoachLine, CoachLocked, ReviewCard, ReviewLocked, VerdictMark } from '@/components/replay/review';
+import { CoachLine, CoachLocked, ReviewCard, ReviewLocked, ReviewMark } from '@/components/replay/review';
 import { reviewable, useHandReview, type ReviewedMove } from '@/state/hand-review';
 import { usePremium } from '@/state/premium';
 
@@ -121,7 +121,7 @@ function Viewer() {
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(!reduce);
   const last = r ? r.actions.length + 1 : 0;
-  // The mistake review (Premium): your moves graded, worked out once the screen is open.
+  // The hand review (Premium): your odds or the facts at each of your moves, worked out once the screen is open.
   const premium = usePremium();
   const canReview = !!r && reviewable(r);
   const review = useHandReview(r, premium);
@@ -407,7 +407,7 @@ function HandLog({ r, step, last, onJump, nameOf, winners, review }: { r: Replay
               )}
             </View>
             {s.moves.map((m) => (
-              <LogLine key={m.step} text={`${nameOf(m.action.playerId)} · ${moveText(m.action)}`} at={m.step} step={step} onJump={onJump} fold={m.action.move === 'fold'} mark={review.get(m.step)?.verdict} />
+              <LogLine key={m.step} text={`${nameOf(m.action.playerId)} · ${moveText(m.action)}`} at={m.step} step={step} onJump={onJump} fold={m.action.move === 'fold'} mark={review.get(m.step)?.kind} />
             ))}
           </View>
         ))}
@@ -431,7 +431,7 @@ function HandLog({ r, step, last, onJump, nameOf, winners, review }: { r: Replay
   );
 }
 
-function LogLine({ text, at, step, onJump, quiet, fold, gold, mark }: { text: string; at: number; step: number; onJump: (to: number) => void; quiet?: boolean; fold?: boolean; gold?: boolean; mark?: ReviewedMove['verdict'] }) {
+function LogLine({ text, at, step, onJump, quiet, fold, gold, mark }: { text: string; at: number; step: number; onJump: (to: number) => void; quiet?: boolean; fold?: boolean; gold?: boolean; mark?: ReviewedMove['kind'] }) {
   const now = at === step;
   const future = at > step;
   return (
@@ -453,7 +453,7 @@ function LogLine({ text, at, step, onJump, quiet, fold, gold, mark }: { text: st
       >
         {text}
       </ThemedText>
-      {mark && <VerdictMark verdict={mark} />}
+      {mark && <ReviewMark kind={mark} />}
     </PressableScale>
   );
 }

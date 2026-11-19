@@ -28,7 +28,7 @@ export function HandRecap() {
   const hand = useLastHand();
   const reduce = useReduceMotion();
   const solid = useReduceTransparency();
-  // With Premium, the mistake review in a line ("1 mistake · about 3 bb"); a tap opens the replay where it's laid out.
+  // With Premium, the hand review in a line ("Folded the better hand once"); a tap opens the replay where it's laid out.
   const premium = usePremium();
   const review = useHandReview(hand ?? undefined, premium && !!t.review && hand?.id === t.recap);
   // Only after Review is tapped in the action row (that also stops the countdown).
@@ -105,13 +105,13 @@ export function HandRecap() {
         {review !== null && (
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel={`Review: ${review ? summaryLine(review) : 'looking at your moves'}. Opens the replay.`}
+            accessibilityLabel={`Review: ${review ? summaryLine(review) : 'counting the odds'}. Opens the replay.`}
             onPress={replay}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.08)' }}
           >
             <Icon name="lightbulb.fill" size={14} color={brand.gold} />
             <ThemedText variant="footnote" style={{ color: '#ffffff', fontWeight: '700' }}>
-              {review ? summaryLine(review) : 'Looking at your moves…'}
+              {review ? summaryLine(review) : 'Counting the odds…'}
             </ThemedText>
           </PressableScale>
         )}

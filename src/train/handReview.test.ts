@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { applyAction, createTable, DEFAULT_SETTINGS, seededRng, type Action, type Game, type Settings } from '../game';
-import { canReview, judge, reviewHand, reviewSummary, type ReviewHand } from './handReview';
+import { canReview, reviewHand, reviewSummary, type ReviewHand } from './handReview';
 
 const HOST = 'device-host';
 let clock = 9_000_000;
@@ -36,14 +36,17 @@ function act(g: Game, move: 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin
   return next;
 }
 
-/** Heads-up with fixed cards, checked to the river, where the rival bets `bet` and you answer with `answer`. */
-function riverSpot(mine: string, theirs: string, board: string, bet: number, answer: 'fold' | 'call', settings: Partial<Settings> = {}): ReviewHand {
+/**
+ * Heads-up with fixed cards, checked to the river, where the rival bets `bet` and you answer with `answer`. `known`:
+ * the rival's cards are in the saved hand (a bots-only table, or they showed).
+ */
+function riverSpot(mine: string, theirs: string, board: string, bet: number, answer: 'fold' | 'call', settings: Partial<Settings> = {}, known = true): ReviewHand {
   let g = table(settings);
   const me = hostId(g);
   for (const s of g.hand!.seats) s.cards = h(s.playerId === me ? mine : theirs);
   const b = h(board);
   g.hand!.deck = ['2c', b[0], b[1], b[2], '2s', b[3], '2h', b[4], ...g.hand!.deck.filter((c) => !b.includes(c) && !['2c', '2s', '2h'].includes(c))];
-  g = act(g, g.hand!.currentBet > (g.hand!.seats.find((s) => s.playerId === g.hand!.toAct)!.bet) ? 'call' : 'check');
+  g = act(g, g.hand!.currentBet > g.hand!.seats.find((s) => s.playerId === g.hand!.toAct)!.bet ? 'call' : 'check');
   g = act(g, 'check');
   for (const street of ['flop', 'turn'])
     while (g.hand!.street === street) g = act(g, 'check');
@@ -61,63 +64,58 @@ function riverSpot(mine: string, theirs: string, board: string, bet: number, ans
     players: hand.seats.map((s) => ({ id: s.playerId, stack: hand.startStacks![s.playerId] })),
     actions: hand.actions!,
     board: hand.board,
-    holes: { [me]: hand.seats.find((s) => s.playerId === me)!.cards },
+    holes: Object.fromEntries(hand.seats.filter((s) => known || s.playerId === me).map((s) => [s.playerId, s.cards])),
     house: { ante: settings.ante, straddle: settings.straddle },
   };
 }
 
-describe('mistake review', () => {
-  it('flags folding the nuts to a small river bet', () => {
-    const spot = riverSpot('Ah Ad', '7c 6d', 'As Kd 8h 3c 2d', 10, 'fold');
-    const moves = reviewHand(spot)!;
-    expect(moves).not.toBeNull();
+describe('hand review', () => {
+  it('with their cards known, shows your exact chance and what calling was worth', () => {
+    const moves = reviewHand(riverSpot('Ah Ad', '7c 6d', 'As Kd 8h 3c 2d', 10, 'fold'))!;
     const fold = moves.at(-1)!;
     expect(fold.move).toBe('fold');
-    expect(fold.street).toBe('river');
+    expect(fold.kind).toBe('exact');
+    expect(fold.equity).toBe(1);
     expect(fold.price).toBeCloseTo(10 / 40, 2);
-    expect(fold.equity).toBeGreaterThan(0.9);
-    expect(fold.verdict).toBe('mistake');
-    expect(fold.title).toBe('Fold was too tight');
-    expect(fold.costBb).toBeGreaterThan(2);
-    expect(reviewSummary(moves).mistakes).toBe(1);
+    expect(fold.title).toBe('100% to win · needed 25%');
+    expect(fold.callBb).toBeCloseTo(3, 5);
+    expect(reviewSummary(moves).foldedAhead).toBe(1);
   });
 
-  it('flags calling a pot-size river bet with nothing', () => {
-    const spot = riverSpot('7c 2d', 'Ah Kd', 'As Kh 9s 8s 4h', 20, 'call');
-    const call = reviewHand(spot)!.at(-1)!;
-    expect(call.move).toBe('call');
-    expect(call.equity).toBeLessThan(0.15);
-    expect(call.verdict).toBe('mistake');
-    expect(call.title).toBe('Call was too loose');
+  it('a call against better cards shows what it lost', () => {
+    const call = reviewHand(riverSpot('7c 2d', 'Ah Kd', 'As Kh 9s 8s 4h', 20, 'call'))!.at(-1)!;
+    expect(call.equity).toBe(0);
+    expect(call.callBb).toBeCloseTo(-2, 5);
+    expect(call.line).toContain('lost 2 bb');
   });
 
-  it('calls a good fold good', () => {
-    const spot = riverSpot('7c 2d', 'Ah Kd', 'As Kh 9s 8s 4h', 20, 'fold');
-    expect(reviewHand(spot)!.at(-1)!.verdict).toBe('good');
+  it('with their cards unseen, shows only facts', () => {
+    const moves = reviewHand(riverSpot('Ah Ad', '7c 6d', 'As Kd 8h 3c 2d', 10, 'fold', {}, false))!;
+    for (const m of moves) {
+      expect(m.kind).toBe('facts');
+      expect(m.equity).toBeNull();
+      expect(m.callBb).toBeNull();
+    }
+    const fold = moves.at(-1)!;
+    expect(fold.title).toBe('Needed 25% to call');
+    expect(fold.line).toContain("Their cards weren't shown");
+    expect(fold.line).toContain('You had three aces');
+    expect(reviewSummary(moves).exact).toBe(0);
+  });
+
+  it('never grades a move or claims more than it knows', () => {
+    for (const spot of [riverSpot('Ah Ad', '7c 6d', 'As Kd 8h 3c 2d', 10, 'fold'), riverSpot('7c 2d', 'Ah Kd', 'As Kh 9s 8s 4h', 20, 'call', {}, false)])
+      for (const m of reviewHand(spot)!) expect(`${m.title} ${m.line}`).not.toMatch(/mistake|estimate|GTO|should|likely/i);
   });
 
   it('rebuilds hands dealt with antes and a straddle', () => {
-    const spot = riverSpot('Ah Ad', '7c 6d', 'As Kd 8h 3c 2d', 10, 'fold', { ante: 50 });
-    expect(reviewHand(spot)).not.toBeNull();
+    expect(reviewHand(riverSpot('Ah Ad', '7c 6d', 'As Kd 8h 3c 2d', 10, 'fold', { ante: 50 }))).not.toBeNull();
   });
 
-  it('reviews Texas Hold\'em hands with your cards only', () => {
+  it("reviews Texas Hold'em hands with your cards only", () => {
     const spot = riverSpot('Ah Ad', '7c 6d', 'As Kd 8h 3c 2d', 10, 'fold');
     expect(canReview({ ...spot, variant: 'deuces' })).toBe(false);
     expect(reviewHand({ ...spot, variant: 'deuces' })).toBeNull();
     expect(canReview({ ...spot, holes: {} })).toBe(false);
-  });
-
-  it('points out a river check that left value behind, and never marks a bluff wrong', () => {
-    expect(judge('check', 0.9, null, 0, 100, 'river', 10, false).title).toBe('Missed value');
-    expect(judge('check', 0.9, null, 0, 100, 'flop', 10, false).verdict).toBe('fine');
-    expect(judge('bet', 0.1, null, 0, 100, 'river', 10, false).verdict).toBe('fine');
-    expect(judge('raise', 0.8, 0.3, 50, 100, 'turn', 10, false).verdict).toBe('good');
-  });
-
-  it('gives a call room for the cards still to come', () => {
-    // 22% against a price of 33%: too loose on the river, only thin on the flop.
-    expect(judge('call', 0.22, 0.33, 50, 100, 'river', 10, false).verdict).toBe('mistake');
-    expect(judge('call', 0.22, 0.33, 50, 100, 'flop', 10, false).verdict).toBe('close');
   });
 });

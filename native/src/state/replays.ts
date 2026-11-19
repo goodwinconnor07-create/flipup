@@ -76,7 +76,7 @@ export interface Replay {
   bomb?: boolean;
   /** Who straddled, and for how much. */
   straddle?: { id: string; amount: number };
-  /** The table's ante (percent of the big blind), so the mistake review can deal the hand again the same way. */
+  /** The table's ante (percent of the big blind), so the hand review can deal the hand again the same way. */
   ante?: number;
   /** Run it twice: the first run's board (`board` is the second). */
   firstBoard?: Card[];

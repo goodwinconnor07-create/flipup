@@ -22,7 +22,8 @@ import { detail, EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { variantNeedsPremium, isVariant, VARIANTS, variantInfo, type Variant } from '@/engine';
 import { askForName } from '@/state/ask-name';
-import { usePartyRef } from '@/state/party';
+import { usePartyView } from '@/components/party/panel';
+import { forgetParty, usePartyRef } from '@/state/party';
 import { usePremium } from '@/state/premium';
 import { unlockToHost } from '@/state/unlock';
 import { useProfile } from '@/state/profile';
@@ -215,8 +216,13 @@ function JoinOrLive({ join }: { join: ReactNode }) {
   const t = useTable();
   const game = t.game;
   const partyRef = usePartyRef();
-  const atTable = !!t.mode && !(game && game.status === 'ended' && !game.party);
-  const key = atTable ? `table:${game?.id ?? ''}` : partyRef ? 'party' : '';
+  // A table counts only once the server (or the phone, for a bots-only one) has shown it to us, and not once it's over.
+  const atTable = !!t.mode && !!game && !(game.status === 'ended' && !game.party);
+  // A party that has closed or finished is checked for while Home is on screen, so its button goes and Join a game returns.
+  const focused = useIsFocused();
+  const [partyView] = usePartyView(partyRef?.code ?? '', forgetParty, focused && !!partyRef && !atTable);
+  const partyOver = !!partyRef && partyView?.status === 'done';
+  const key = atTable ? `table:${game?.id ?? ''}` : partyRef && !partyOver ? 'party' : '';
   const [away, setAway] = useState('');
   if (!key || away === key) return <>{join}</>;
   // Everything about it in one line that slides past: who's hosting, the game, how many are in, and whose turn it is.

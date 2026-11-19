@@ -46,6 +46,15 @@
 > card names the game and Players counts who's in; its line only says what's missing ("Add a bot first", "Add a bot
 > or wait for a friend").
 >
+> **19 Nov 2026 (owner, from a mock-up): the Train tab has one thing to do.** Titled Train, like its tab. Today's
+> hand is a wide card at the top (`DailyCard` in `components/range/train-home.tsx`): the date, "Your first hand" on a
+> first visit or "One spot. Your call.", and Play with your streak beside it; once played, how you did (a gold tick
+> for the best play), when the next hand comes, Your answer and Share, and along its bottom the offer "Remind me
+> tomorrow at 6 pm?" (the switch itself is in Settings). How it works shows for your first three hands. Under it,
+> "Keep training": Endless, Sets and Gaps in one row (`ModeTiles`), crowned without Premium; Gaps is blue, not gold,
+> and waits, dimmed, until you've missed something. Work on (Premium, once there's something), then your numbers
+> (best plays, best run, hands played) only once you've played, then the library. No empty zeros, no footnote.
+>
 > **19 Nov 2026 (owner): no neutral grey boxes on a coloured page.** House rules' values are bold text under their
 > name, with no box (`NumberRow`): the opaque system grey was the one dead colour on a game's page and read as a field
 > you could type in beside its stepper. Lobbies scroll in `LobbyScroll`, which fades in a blur tinted with the page's

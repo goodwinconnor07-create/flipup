@@ -10,12 +10,14 @@ import { Alert, Linking, Platform, Share } from 'react-native';
 import { haptic } from '@/components/haptics';
 import { NativeMenu } from '@/components/native-menu';
 import type { MenuGroup } from '@/components/native-menu.types';
+import { toggleReminder } from '@/components/range/reminder-switch';
 import { useYouGroups } from '@/components/you-settings';
 import { deleteMyData } from '@/state/account';
 import { useBlocked } from '@/state/blocks';
 import { useLabBots } from '@/state/bot-lab';
 import { usePremium } from '@/state/premium';
 import { manageSubscription, ON_SALE, restorePremium, storeError, useStore, type StoreState } from '@/state/purchase';
+import { useReminder } from '@/state/reminder';
 
 import { APP_INFO } from '../../../../appInfo';
 
@@ -32,6 +34,7 @@ export default function SettingsScreen() {
   const labCount = useLabBots().length;
   const store = useStore();
   const you = useYouGroups({});
+  const reminder = useReminder();
   const restore = async () => {
     if (await restorePremium()) {
       haptic.success();
@@ -107,6 +110,17 @@ export default function SettingsScreen() {
           : { kind: 'link', id: 'botlab', title: 'Bot Lab', symbol: 'flask.fill', trailingCrown: true, onPress: () => router.push({ pathname: '/premium', params: { reason: 'botlab' } }) },
       ],
     },
+    // The daily hand's reminder (also offered on the Train tab once you've played today's hand). No local
+    // notifications on the web build.
+    ...(Platform.OS === 'web'
+      ? []
+      : [
+          {
+            id: 'reminder',
+            footer: 'One notification a day at 6 pm when the new hand is ready. Nothing else.',
+            items: [{ kind: 'toggle' as const, id: 'reminder', title: 'Daily reminder', symbol: 'bell.fill', value: reminder.on, onChange: toggleReminder }],
+          },
+        ]),
     {
       id: 'blocked',
       footer: 'To report or block someone, tap their seat at a table or their row on a party board.',

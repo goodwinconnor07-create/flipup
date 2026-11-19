@@ -77,8 +77,11 @@
 > **Changed 17 Nov 2026 (owner):** a full page, not a pull-up sheet, closed by the round X; the app's own moving blue
 > field and type (no bright gradient to black); each perk shown like an App Store screenshot, its title and line over
 > an iPhone showing the app, cut off by the plan cards. Plan cards are solid dark panels at the panel radius.
-> The owner said to build it without a mockup. Share cards come in five designs that are pictures, not app screens, so
-> they keep their own looks (felt, gold foil, receipt, poster) whatever this box says.
+> **Share cards (owner, 2026-11-19, from a mock-up):** drawn like the game icons, the sticker system of `gameArt.ts`:
+> the game's flat colour, the real sticker cards and scenes with one ink outline and a hard flat shadow, the big
+> number outlined like a sticker (gold for a win), white capsules for labels, the darker band for your face and name.
+> Every card carries the real app icon with "Free on the App Store" and the game's icon in the corner. All free: a
+> card is advertising, never a paywall. One style, no design picker; a hand can be drawn as Hand, Showdown or Odds.
 
 > **Premium carousel (owner, 2026-11-17, after Flighty Pro's page):** one perk at a time, a big rounded title and a
 > line over an iPhone running down under the plan cards. No pop-outs over the phone (tried and dropped the same day).

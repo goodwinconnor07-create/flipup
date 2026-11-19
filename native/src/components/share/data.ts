@@ -1,6 +1,6 @@
 // What a share card says, whatever it looks like: one shape of data that every design (designs.tsx) draws. Built
 // from your poker record, a recorded hand (state/replays.ts), a finished game or your streak.
-import { variantInfo, type Card } from '@/engine';
+import { variantInfo, type Card, type Variant } from '@/engine';
 import { handName, mainOpponent, momentOf, oddsByStreet, type HandMoment, type StreetOdds } from '@/state/hand-moments';
 import type { GameLine, PokerRecord } from '@/state/record';
 import { bbLabel } from '@/state/record-stats';
@@ -22,26 +22,28 @@ export interface ShareSide {
 }
 
 export interface ShareData {
-  kind: 'stats' | 'hand' | 'game' | 'streak';
-  /** The small capitals over the headline ("BIGGEST WIN", "MY POKER"). */
+  kind: 'stats' | 'hand' | 'game';
+  /** The game the card is about: it sets the card's colours and the game icon in its corner. None for your stats. */
+  variant?: Variant;
+  /** Your stats: the games you play most, most first, as small icons on the band. */
+  games?: Variant[];
+  /** The label on the white capsule ("BIGGEST WIN", "MY POKER"). */
   eyebrow: string;
   /** The big thing: "+1,240", "62%", "1st", "14 days". */
   headline: string;
-  /** Green for a win, red-free grey for a loss: the designs pick their own colours for each. */
+  /** Gold for a win; a loss stays white, never red. */
   tone: 'win' | 'loss' | 'plain';
   /** One line under it: "Full house, kings over fives". */
   subline?: string;
   hole?: Card[];
   board?: Card[];
-  /** Up to four small numbers. */
+  /** Up to three small numbers. */
   stats?: { label: string; value: string }[];
   /** The game's name ("Texas Hold'em"). */
   game?: string;
   /** When ("12 Nov 2026"). */
   date?: string;
   who: ShareWho;
-  /** For the receipt: what happened, a line at a time ("Raise 40", "Call", "Flop A♠ K♦ 4♣"). */
-  lines?: { left: string; right?: string }[];
   /** A hand's moment, the line worth sending ("Called with 7-2. Hit a boat."), from `momentOf()`. */
   moment?: HandMoment;
   /** Your win chance as each street was dealt, only when every hand still in was known. */
@@ -58,51 +60,39 @@ const pct = (part: number, whole: number) => (whole ? Math.round((part / whole) 
 export const day = (at: number): string => new Date(at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 const place = (p: number): string => `${p}${p % 10 === 1 && p % 100 !== 11 ? 'st' : p % 10 === 2 && p % 100 !== 12 ? 'nd' : p % 10 === 3 && p % 100 !== 13 ? 'rd' : 'th'}`;
 
-const SUIT: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
-export const cardText = (c: Card): string => `${c[0] === 'T' ? '10' : c[0]}${SUIT[c[1]] ?? ''}`;
-
-export function statsData(record: Omit<PokerRecord, 'more' | 'modes'>, streak: number, who: ShareWho): ShareData {
+export function statsData(record: Omit<PokerRecord, 'more' | 'modes'>, who: ShareWho): ShareData {
   return {
     kind: 'stats',
     eyebrow: 'MY POKER',
     headline: `${pct(record.won, record.hands)}%`,
     tone: 'plain',
     subline: `of ${n(record.hands)} hands won`,
-    hole: record.best?.cards,
     stats: [
-      { label: 'HANDS', value: n(record.hands) },
       { label: 'POTS WON', value: n(record.won) },
       { label: 'BIGGEST POT', value: bbLabel(record.biggestPot) },
-      streak > 0 ? { label: 'STREAK', value: `${streak}d` } : { label: 'GAMES', value: n(record.games.length) },
+      { label: 'GAMES', value: n(record.games.length) },
     ],
+    games: mostPlayed(record.games),
     ...(record.best ? { game: `Best hand · ${record.best.name}` } : {}),
     who,
-    lines: [
-      { left: 'Hands played', right: n(record.hands) },
-      { left: 'Pots won', right: n(record.won) },
-      { left: 'Win rate', right: `${pct(record.won, record.hands)}%` },
-      { left: 'Biggest pot', right: bbLabel(record.biggestPot) },
-      { left: 'Games', right: n(record.games.length) },
-      ...(streak > 0 ? [{ left: 'Streak', right: `${streak} days` }] : []),
-      ...(record.best ? [{ left: 'Best hand', right: record.best.name }] : []),
-    ],
   };
 }
 
-/** A recorded hand: what you won or lost, your cards and the board, and the hand as receipt lines. */
+/** What a hand won or lost, in big blinds like every chip figure in your stats: "+38 bb", or Even. */
+function bbHeadline(r: Replay): string {
+  const bb = Math.round(r.net / r.bigBlind);
+  return bb === 0 ? 'Even' : `${signed(bb)} bb`;
+}
+
+/** The games you've finished most, most first (up to four). */
+function mostPlayed(games: GameLine[]): Variant[] {
+  const count = new Map<Variant, number>();
+  for (const g of games) count.set(g.variant, (count.get(g.variant) ?? 0) + 1);
+  return [...count].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([v]) => v);
+}
+
+/** A recorded hand: what you won or lost, your cards and the board, its moment and odds, and who you were up against. */
 export function handData(r: Replay, title: string, who: ShareWho): ShareData {
-  const name = (id: string) => (id === r.me ? 'You' : (r.players.find((p) => p.id === id)?.name ?? '?'));
-  const lines: ShareData['lines'] = [{ left: `Blinds ${n(r.smallBlind)}/${n(r.bigBlind)}` }];
-  let street = 'preflop';
-  for (const a of r.actions) {
-    if (a.street !== street) {
-      street = a.street;
-      const upTo = a.street === 'flop' ? r.streets.flop : a.street === 'turn' ? r.streets.turn : r.streets.river;
-      lines.push({ left: `— ${a.street.toUpperCase()} ${r.board.slice(0, upTo).map(cardText).join(' ')}` });
-    }
-    lines.push({ left: `${name(a.playerId)} ${a.move}`, right: a.move === 'bet' || a.move === 'raise' || a.move === 'allin' ? n(a.to) : undefined });
-  }
-  lines.push({ left: 'Pot', right: n(r.pot) });
   const moment = momentOf(r);
   const odds = oddsByStreet(r);
   const side = (id: string): ShareSide => {
@@ -116,20 +106,15 @@ export function handData(r: Replay, title: string, who: ShareWho): ShareData {
   return {
     kind: 'hand',
     eyebrow: title.toUpperCase(),
-    headline: signed(r.net),
+    headline: bbHeadline(r),
     tone: r.net > 0 ? 'win' : r.net < 0 ? 'loss' : 'plain',
     subline: r.myHand ?? (r.showdown ? 'Showdown' : r.net > 0 ? 'Everyone folded' : 'Folded'),
     hole: r.holes[r.me],
     board: r.board.slice(0, Math.min(r.board.length, 5)),
-    stats: [
-      { label: 'POT', value: n(r.pot) },
-      { label: 'BIG BLINDS', value: signed(r.net / r.bigBlind) },
-      { label: 'PLAYERS', value: String(r.players.length) },
-    ],
-    game: `${variantInfo(r.variant).name} · Hand ${r.number}`,
+    variant: r.variant,
+    game: variantInfo(r.variant).name,
     date: day(r.at),
     who,
-    lines,
     ...(moment ? { moment } : {}),
     ...(odds.length >= 2 ? { odds } : {}),
     ...swingOf(r, odds),
@@ -165,88 +150,16 @@ export function gameData(g: GameLine, who: ShareWho): ShareData {
       { label: 'PLACE', value: place(g.place) },
       { label: 'PLAYERS', value: String(g.players) },
     ],
+    variant: g.variant,
     game: variantInfo(g.variant).name,
     date: day(g.at),
     who,
-    lines: [
-      { left: variantInfo(g.variant).name },
-      { left: 'Finished', right: place(g.place) },
-      { left: 'Players', right: String(g.players) },
-    ],
-  };
-}
-
-export function streakData(days: number, longest: number, who: ShareWho): ShareData {
-  return {
-    kind: 'streak',
-    eyebrow: 'DAILY STREAK',
-    headline: `${days}`,
-    tone: 'win',
-    subline: days === 1 ? 'day in a row' : 'days in a row',
-    stats: [
-      { label: 'NOW', value: `${days}d` },
-      { label: 'LONGEST', value: `${longest}d` },
-    ],
-    who,
-    lines: [
-      { left: 'Days in a row', right: String(days) },
-      { left: 'Longest', right: String(longest) },
-    ],
   };
 }
 
 /** The words that go with the picture in the share sheet. */
 export function shareText(d: ShareData): string {
-  if (d.moment) return `${d.moment.headline} ${d.headline} chips on FlipUp${d.game ? ` (${d.game})` : ''}.`;
-  const what = d.kind === 'hand' ? `${d.headline} chips${d.subline ? ` with ${d.subline}` : ''}` : `${d.eyebrow.toLowerCase()}: ${d.headline}${d.subline ? ` ${d.subline}` : ''}`;
+  if (d.moment) return `${d.moment.headline} ${d.headline} on FlipUp${d.game ? ` (${d.game})` : ''}.`;
+  const what = d.kind === 'hand' ? `${d.headline}${d.subline ? ` with ${d.subline}` : ''}` : `${d.eyebrow.toLowerCase()}: ${d.headline}${d.subline ? ` ${d.subline}` : ''}`;
   return `${what} on FlipUp${d.game ? ` (${d.game})` : ''}.`;
-}
-
-/**
- * A made-up hand for showing off the designs on the Premium pages: 7-2 off called from the big blind against
- * ace-king, behind on the flop, a full house on the river.
- */
-export function sampleHandData(who: ShareWho): ShareData {
-  const act = (street: Replay['actions'][number]['street'], playerId: string, move: Replay['actions'][number]['move'], to = 0) => ({ street, playerId, move, to });
-  const r: Replay = {
-    id: 'sample/42',
-    tableId: 'sample',
-    at: Date.UTC(2026, 10, 12),
-    mode: 'bots',
-    variant: 'holdem',
-    number: 42,
-    smallBlind: 10,
-    bigBlind: 20,
-    buttonId: 'b',
-    sbId: 'c',
-    bbId: 'a',
-    me: 'a',
-    players: [
-      { id: 'a', name: who.name, emoji: who.emoji, stack: 2000 },
-      { id: 'b', name: 'Rook', emoji: '🦉', stack: 2000, bot: true },
-      { id: 'c', name: 'Moss', emoji: '🐢', stack: 2000, bot: true },
-    ],
-    actions: [
-      act('preflop', 'b', 'raise', 60),
-      act('preflop', 'c', 'fold', 10),
-      act('preflop', 'a', 'call', 60),
-      act('flop', 'a', 'check'),
-      act('flop', 'b', 'bet', 80),
-      act('flop', 'a', 'call', 80),
-      act('turn', 'a', 'check'),
-      act('turn', 'b', 'bet', 200),
-      act('turn', 'a', 'call', 200),
-      act('river', 'a', 'bet', 400),
-      act('river', 'b', 'call', 400),
-    ],
-    board: ['Kc', '7h', '4s', '2h', '7d'],
-    streets: { flop: 3, turn: 4, river: 5 },
-    holes: { a: ['7c', '2d'], b: ['Ad', 'Kd'] },
-    won: { a: 1490 },
-    names: {},
-    showdown: true,
-    net: 750,
-    pot: 1490,
-  };
-  return handData(r, 'Big win', who);
 }

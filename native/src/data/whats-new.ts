@@ -34,7 +34,7 @@ export const RELEASES: Release[] = [
       { icon: 'arrow.counterclockwise', title: 'Review after every hand', text: 'Turn it on in the house rules for a blue Review button and a 10 second countdown to the next hand. Review pauses the clock and lets you replay the hand.' },
       { icon: 'chart.bar.xaxis', title: 'Hold’em or mini games', text: 'Switch your stats between all your poker, Texas Hold’em alone and the mini games alone. The two halves count from this update.' },
       { icon: 'chart.line.uptrend.xyaxis', title: 'Stats in big blinds', text: 'Your stats count in big blinds, so a bigger stack or a rebuy never changes them.' },
-      { icon: 'square.and.arrow.up', title: 'Share cards', text: 'Turn a big hand or your stats into a picture worth sending.' },
+      { icon: 'square.and.arrow.up', title: 'Share cards', text: 'Turn a big hand, a game or your stats into a picture worth sending, drawn in the colours of the game you played. Every card is free.' },
       { icon: 'questionmark.circle.fill', title: 'Rules when you need them', text: 'The first time you play a game, a short card sums up its rules before the first hand.' },
       { icon: 'eye.fill', title: 'Easy to read', text: 'VoiceOver reads out your turn, the result of each hand and How to Play. FlipUp follows Reduce Motion, Reduce Transparency, Increase Contrast and your text size, and a Haptics switch in Settings turns the buzzes off without muting the sounds.' },
       { icon: 'arrow.uturn.backward', title: 'Undo', text: 'Removed a bot, a game from the playlist or a saved hand by mistake? Tap Undo for a few seconds.' },

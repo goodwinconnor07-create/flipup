@@ -336,7 +336,7 @@ the iPad release.
 app has. Suggested order: 1. a Crucifix or Pittsburgh table mid-hand (the cross or three rivers on the felt), 2.
 Die on the River's roll, 3. Home's game swiper on a mini game, 4. the Play with friends lobby with the game code, 5.
 a Haunted Pot showdown, 6. the Range training daily quiz, 7. Texas Hold'em with bots talking, 8. Saved hands and a
-share card (Premium). Every one from the real native build (2.3.3).
+share card (free). Every one from the real native build (2.3.3).
 
 ### App icon
 

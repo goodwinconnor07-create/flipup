@@ -9,8 +9,6 @@ import { Text, View } from 'react-native';
 import { DialSlider } from '@/components/bot-lab/dial-slider';
 import { Face } from '@/components/bot-lab/face';
 import { GameThumb } from '@/components/game-picture';
-import { sampleHandData } from '@/components/share/data';
-import { CARD_H, CARD_W, ShareCard } from '@/components/share/designs';
 import { FloatTable } from '@/components/setup/float-table';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
@@ -61,8 +59,6 @@ export function PerkScreen({ id }: { id: PerkId }) {
       return <BotLabScreen />;
     case 'range':
       return <RangeScreen />;
-    case 'share':
-      return <ShareScreen />;
     case 'gold':
       return <GoldScreen />;
     case 'packs':
@@ -228,30 +224,6 @@ function RangeScreen() {
     </Page>
   );
 }
-
-/** The share card composer with a Premium design. */
-function ShareScreen() {
-  const k = 0.88;
-  return (
-    <Page title="Share card">
-      <View style={{ alignItems: 'center' }}>
-        <View style={{ width: CARD_W * k, height: CARD_H * k, borderRadius: 18, overflow: 'hidden', boxShadow: '0 16px 30px rgba(0,0,0,0.5)' }}>
-          <View style={{ width: CARD_W, height: CARD_H, transform: [{ scale: k }], transformOrigin: 'top left' }}>
-            <ShareCard design="broadcast" data={SAMPLE_HAND} />
-          </View>
-        </View>
-      </View>
-      <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
-        {['Felt', 'Gold Foil', 'Broadcast', 'Odds'].map((n) => (
-          <View key={n} style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: n === 'Broadcast' ? brand.violet : PANEL }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#ffffff' }}>{n}</Text>
-          </View>
-        ))}
-      </View>
-    </Page>
-  );
-}
-const SAMPLE_HAND = sampleHandData({ name: 'You', emoji: '😎' });
 
 /** Card backs, as the Card backs sheet lists them. */
 function PacksScreen() {

@@ -10,8 +10,8 @@ import type { MenuGroup } from './native-menu.types';
 
 /**
  * How this phone looks and sounds, the same rows in Settings and in the table's menu (the web's `useYouRows()`):
- * appearance, sound, animations, the bots' talk and fast bot games, then card packs, the table theme and hand
- * rankings, then Premium's Gold name and Share cards. Returned as groups for `NativeMenu`.
+ * appearance, sound, animations, the bots' talk and fast bot games, then saved hands, share cards, card packs, the
+ * table theme and hand rankings, then Premium's Gold name. Returned as groups for `NativeMenu`.
  */
 export function useYouGroups({ header, online = false }: { header?: string; online?: boolean }): MenuGroup[] {
   const muted = useMuted();
@@ -65,6 +65,7 @@ export function useYouGroups({ header, online = false }: { header?: string; onli
       id: 'looks',
       items: [
         { kind: 'link', id: 'saved', title: 'Saved hands', detail: bank ? String(bank) : undefined, onPress: () => router.push('/replays') },
+        !online && { kind: 'link', id: 'share', title: 'Share cards', onPress: () => router.push('/share') },
         { kind: 'link', id: 'packs', title: 'Card packs', detail: pack, onPress: () => router.push('/card-packs') },
         { kind: 'link', id: 'theme', title: 'Table theme', onPress: () => router.push('/table-theme') },
         { kind: 'link', id: 'rankings', title: 'Hand rankings', onPress: () => router.push('/hand-rankings') },
@@ -77,7 +78,6 @@ export function useYouGroups({ header, online = false }: { header?: string; onli
         premium
           ? { kind: 'toggle', id: 'gold', title: 'Gold name', value: gold, onChange: setGoldName }
           : { kind: 'link', id: 'gold', title: 'Gold name', trailingCrown: true, onPress: () => router.push({ pathname: '/premium', params: { reason: 'gold' } }) },
-        !online && { kind: 'link', id: 'share', title: 'Share cards', onPress: () => router.push('/share') },
       ],
     },
   ];

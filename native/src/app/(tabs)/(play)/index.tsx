@@ -1,7 +1,7 @@
 import { router, Stack, useIsFocused } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { gameLook } from '@design/gameArt';
@@ -32,10 +32,8 @@ import { usePokerRecord } from '@/state/record';
 import { maybeAskForReview } from '@/state/review';
 import { me as myDevice, useTable } from '@/state/session';
 import { save, useStored } from '@/state/storage';
-import { brand, ForceScheme, ROUNDED, spacing } from '@/theme';
+import { ForceScheme, ROUNDED, spacing } from '@/theme';
 
-const GLASS = 'rgba(255, 255, 255, 0.11)';
-const EDGE = 'rgba(255, 255, 255, 0.12)';
 /** The tab bar's height over the bottom safe area. */
 const TAB_BAR = 49;
 /** The space between How it plays and Host <game>. */

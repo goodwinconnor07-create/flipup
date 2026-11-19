@@ -245,7 +245,7 @@ function ReviewScreen() {
           ))}
         </View>
       </View>
-      <CoachLine move={SAMPLE_REVIEW[2]} />
+      <CoachLine move={SAMPLE_REVIEW[2]} still />
       <ReviewCard moves={SAMPLE_REVIEW} step={9} onJump={noop} />
     </Page>
   );

@@ -37,14 +37,15 @@ export function VerdictMark({ verdict }: { verdict: Verdict }) {
   );
 }
 
-/** Under the felt, while the replay stands on one of your moves: the verdict, its title and the line with the numbers. */
-export function CoachLine({ move }: { move: ReviewedMove }) {
+/** Under the felt, while the replay stands on one of your moves: the verdict, its title and the line with the numbers.
+ * `still` draws it without its entrance (the Premium page's picture of it). */
+export function CoachLine({ move, still }: { move: ReviewedMove; still?: boolean }) {
   const reduce = useReduceMotion();
   const look = LOOK[move.verdict];
   return (
     <Animated.View
       key={move.step}
-      entering={enter(reduce)}
+      entering={still ? undefined : enter(reduce)}
       accessible
       accessibilityLabel={`Review: ${move.title}. ${move.line}`}
       style={{ flexDirection: 'row', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: 'rgba(255,255,255,0.09)', borderWidth: 1, borderColor: move.verdict === 'mistake' ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.1)' }}

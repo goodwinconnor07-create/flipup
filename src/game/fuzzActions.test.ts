@@ -21,7 +21,7 @@ function junk(g: Game, rnd: () => number): unknown {
   const cards = [...(hand?.seats.flatMap((s) => s.cards) ?? []), ...(hand?.board ?? []), 'As', 'Zz', '', '2'];
   const num = () => pick(JUNK_NUMBERS);
   const h = rnd() < 0.8 ? (hand?.number ?? 1) : num();
-  switch (Math.floor(rnd() * 16)) {
+  switch (Math.floor(rnd() * 18)) {
     case 0: return { type: 'act', hand: h, seq: rnd() < 0.7 ? hand?.seq : num(), move: pick(MOVES), to: num() };
     case 1: return { type: 'next', hand: h };
     case 2: return { type: 'hit', hand: h, seq: hand?.seq ?? num() };
@@ -37,6 +37,8 @@ function junk(g: Game, rnd: () => number): unknown {
     case 12: return { type: 'settings', settings: { bigBlind: num(), smallBlind: num(), startingStack: num(), turnSeconds: num(), variant: pick(['holdem', 'ghost', '__proto__', 5, null]) } };
     case 13: return { type: 'addBot', name: pick(['Ace', '', 5, '__proto__']) };
     case 14: return { type: 'playAgain', off: rnd() < 0.5 };
+    case 15: return { type: 'runTwice', hand: h, yes: pick([true, false, 'yes', null]) };
+    case 16: return { type: 'settings', settings: { ante: pick([0, 25, 100, 33, num()]), straddle: pick([true, false, 1]), bombEvery: pick([0, 5, 7, num()]), runTwice: pick([true, false, 'x']) } };
     default: return { type: pick(['tick', 'presence', 'end', 'start', 'join', 'setLook', 'x', 5]), name: 'Zed', emoji: '🙂', online: [HOST] };
   }
 }

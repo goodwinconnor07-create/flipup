@@ -70,7 +70,19 @@ export interface Replay {
   myHand?: string;
   /** Its strength, to rank your best hands. */
   myScore?: number;
+  /** House rules: chips each player put in as dead money before the deal (antes, or a bomb pot's buy-in). */
+  dead?: Record<string, number>;
+  /** A bomb pot: no blinds were posted. */
+  bomb?: boolean;
+  /** Who straddled, and for how much. */
+  straddle?: { id: string; amount: number };
+  /** The table's ante (percent of the big blind), so the mistake review can deal the hand again the same way. */
+  ante?: number;
+  /** Run it twice: the first run's board (`board` is the second). */
+  firstBoard?: Card[];
 }
+
+type PutFields = Pick<Replay, 'actions' | 'sbId' | 'bbId' | 'smallBlind' | 'bigBlind'> & Partial<Pick<Replay, 'dead' | 'bomb' | 'straddle'>>;
 
 const clean = (v: unknown): Replay[] => (Array.isArray(v) ? v.filter((r): r is Replay => !!r && typeof r === 'object' && typeof (r as Replay).id === 'string') : []);
 
@@ -79,7 +91,7 @@ export const allReplays = (): Replay[] => clean(read<Replay[] | null>(KEY, null)
 export const replayById = (id: string | undefined): Replay | undefined => (id ? allReplays().find((r) => r.id === id) : undefined);
 
 /** Who took chips home: every pot's winners, in pot order, without repeats (falls back to `won` on older hands). */
-export function winnersOf(r: Pick<Replay, 'pots' | 'won' | 'actions' | 'sbId' | 'bbId' | 'smallBlind' | 'bigBlind'>): string[] {
+export function winnersOf(r: Pick<Replay, 'pots' | 'won'> & PutFields): string[] {
   if (r.pots?.length) return [...new Set(r.pots.flatMap((p) => p.winners))];
   // Older hands: anyone who got back more than they put in.
   const put = putIn(r);
@@ -92,7 +104,7 @@ export function winnersOf(r: Pick<Replay, 'pots' | 'won' | 'actions' | 'sbId' | 
  * What a player won or lost in the hand: their chips after it less their chips before. Older hands without `after`
  * fall back to what they got back less what they put in, which misses an uncalled bet that came back.
  */
-export function netOf(r: Pick<Replay, 'after' | 'players' | 'won' | 'actions' | 'sbId' | 'bbId' | 'smallBlind' | 'bigBlind'>, id: string): number {
+export function netOf(r: Pick<Replay, 'after' | 'players' | 'won'> & PutFields, id: string): number {
   const start = r.players.find((p) => p.id === id)?.stack;
   if (r.after && r.after[id] !== undefined && start !== undefined) return r.after[id] - start;
   return (r.won[id] ?? 0) - (putIn(r)[id] ?? 0);
@@ -172,13 +184,18 @@ export function useLastSaved(): boolean {
   return !!hand && bank.some((r) => r.id === hand.id);
 }
 
-/** What each player put in over the hand: the most they had in on each street (blinds included). */
-export function putIn(r: Pick<Replay, 'actions' | 'sbId' | 'bbId' | 'smallBlind' | 'bigBlind'>, upTo = r.actions.length): Record<string, number> {
+/** What each player put in over the hand: the most they had in on each street (blinds, a straddle and antes included). */
+export function putIn(r: PutFields, upTo = r.actions.length): Record<string, number> {
   const street: Record<string, Record<string, number>> = {};
   const blinds: Record<string, number> = {};
-  if (r.sbId) blinds[r.sbId] = r.smallBlind;
-  blinds[r.bbId] = r.bigBlind;
+  // A bomb pot has no blinds: everyone's buy-in is in `dead`.
+  if (!r.bomb) {
+    if (r.sbId) blinds[r.sbId] = r.smallBlind;
+    blinds[r.bbId] = r.bigBlind;
+    if (r.straddle) blinds[r.straddle.id] = r.straddle.amount;
+  }
   street.preflop = { ...blinds };
+  street.dead = { ...r.dead };
   for (const a of r.actions.slice(0, upTo)) {
     const s = (street[a.street] ??= {});
     s[a.playerId] = Math.max(s[a.playerId] ?? 0, a.to);
@@ -231,7 +248,16 @@ export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' |
       ...(p.bot ? { bot: true } : {}),
       ...(p.gold ? { gold: true } : {}),
     }));
-  const base = { actions: hand.actions.map((a) => ({ ...a })), sbId: hand.sbId, bbId: hand.bbId, smallBlind: game.settings.smallBlind, bigBlind: game.settings.bigBlind };
+  const base = {
+    actions: hand.actions.map((a) => ({ ...a })),
+    sbId: hand.sbId,
+    bbId: hand.bbId,
+    smallBlind: game.settings.smallBlind,
+    bigBlind: game.settings.bigBlind,
+    ...(hand.dead ? { dead: { ...hand.dead } } : {}),
+    ...(hand.bomb ? { bomb: true } : {}),
+    ...(hand.straddle ? { straddle: { ...hand.straddle } } : {}),
+  };
   const put = putIn(base);
   const pot = result.pots.reduce((sum, p) => sum + p.amount, 0);
   let myHand: string | undefined;
@@ -270,6 +296,8 @@ export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' |
     net: hand.startStacks?.[mine.id] !== undefined ? mine.stack - hand.startStacks[mine.id] : (result.won[mine.id] ?? 0) - (put[mine.id] ?? 0),
     pot,
     ...(myHand ? { myHand, myScore } : {}),
+    ...(game.settings.ante && hand.dead && !hand.bomb ? { ante: game.settings.ante } : {}),
+    ...(hand.twice?.first ? { firstBoard: [...hand.twice.first] } : {}),
   };
   if (again && last) {
     // Someone showed after the hand: keep when it was first seen, and bring a saved copy up to date.

@@ -7,6 +7,15 @@
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
+> **19 Nov 2026 (owner): home game rules and the mistake review.** House rules get a third panel (Ante and Bomb pot as
+> number rows, Straddle and Run it twice as switches); the table settings sheet gets the same as a "Home game" group.
+> Run it twice asks in the action area (Once in grey, Twice in the Call blue with a draining bar) and shows both boards
+> on the felt, the first small over the second, each with a round run number. The review lives in the replay, not a new
+> screen: a Review card at the top of the list, a coach line under the felt on each of your moves, a mark beside your
+> moves in the hand log, and one line on the hand recap. Verdicts follow the palette: gold for good, the app's blue for a
+> close one, plain white with a warning sign for a mistake (red stays for Fold), grey for a note. Without Premium the
+> card and the coach line are locked (a crown) and open the offer at `?reason=review`.
+>
 > **12 Nov 2026 (owner): consistency between Play and Train, and a lighter bots lobby.** Range training's ways to train
 > (Daily hand, Endless, Sets, Gaps) are tiles in exactly the style of Play's game tiles: a flat field, a sticker picture
 > from gameArt's shapes (`src/design/trainArt.ts`), the name in white rounded capitals on a darker band, the same crown.

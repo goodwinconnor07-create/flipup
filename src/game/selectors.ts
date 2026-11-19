@@ -123,6 +123,10 @@ export function moveLabel(last: NonNullable<Seat['last']>): string {
       return `All in ${n}`;
     case 'sb':
       return `SB ${n}`;
+    case 'straddle':
+      return `Straddle ${n}`;
+    case 'bomb':
+      return `Bomb ${n}`;
     default:
       return `BB ${n}`;
   }

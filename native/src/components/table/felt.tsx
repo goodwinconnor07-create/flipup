@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Pressable, Text, useColorScheme, useWindowDimensions, View, type ViewStyle } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -364,6 +364,33 @@ function Board({
       </View>
     );
   }
+  // Run it twice: the first run stays up, small, over the second as it's dealt (Texas Hold'em only).
+  const first = hand?.twice?.first;
+  if (first) {
+    const room2 = width - spacing.md * 2 - 22 - spacing.lg * 2 - 22;
+    const w2 = Math.min(38, Math.floor((room2 - 4 * 4) / 5));
+    const runRow = (n: number, cards: ReactNode[]) => (
+      <View key={n} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <View accessibilityLabel={`Run ${n}`} style={{ width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)' }}>
+          <Text maxFontSizeMultiplier={1} style={{ color: '#ffffff', fontSize: 11, fontWeight: '800' }}>
+            {n}
+          </Text>
+        </View>
+        {cards}
+      </View>
+    );
+    return (
+      <View accessibilityLabel={`Run it twice. First run: ${first.map(short).join(', ')}`} style={{ gap: 4 }}>
+        {runRow(
+          1,
+          first.map((c) => (
+            <PlayingCard key={`r1-${c}`} card={c} width={w2} dim={!!hand?.result && dim(c)} pack={pack} />
+          )),
+        )}
+        {runRow(2, Array.from({ length: 5 }, (_, i) => card(i, w2)))}
+      </View>
+    );
+  }
   const wide = slots > 5;
   const perRow = Math.min(slots, 7);
   const gap = wide ? 4 : 6;
@@ -523,6 +550,13 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
     title = both ? `${name(poker[0])} ${poker[0] === me?.id ? 'win' : 'wins'} both halves` : `Hand: ${poker.map(name).join(' & ')} · 21: ${count.map(name).join(' & ')}`;
     how = `${result.names[poker[0]] ?? ''} · closest to 21: ${result.blackjack.counts[count[0]] ?? '?'}`;
     face = game.players.find((p) => p.id === (poker[0] ?? count[0]))?.emoji ?? '♠️';
+  } else if (result.runs && winners.length && result.runs.some((r) => (r.winners[0] ?? []).join() !== (result.runs![0].winners[0] ?? []).join())) {
+    // Run it twice, and the runs went different ways: who took each half of the main pot.
+    const name = (id: string) => (id === me?.id ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
+    const [one, two] = result.runs.map((r) => r.winners[0] ?? []);
+    title = `Run 1: ${one.map(name).join(' & ')} · Run 2: ${two.map(name).join(' & ')}`;
+    how = `${shortName(result.runs[0].names[one[0]])} · ${shortName(result.runs[1].names[two[0]])}`;
+    face = winners[0].p!.emoji;
   } else if (!winners.length) {
     if (!result.ghost?.kept) return null;
     title = `The ghost keeps ${chips(result.ghost.kept)}`;

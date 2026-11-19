@@ -3,7 +3,7 @@
 import type { IconName } from '@/components/icon';
 import { CARD_PACKS, FREE_BOT_NAMES, FREE_VARIANTS, MAX_LAB_BOTS, VARIANTS } from '@/engine';
 
-export type PerkId = 'games' | 'range' | 'botlab' | 'gold' | 'packs';
+export type PerkId = 'games' | 'review' | 'range' | 'botlab' | 'gold' | 'packs';
 
 export interface Perk {
   id: PerkId;
@@ -19,6 +19,7 @@ const games = VARIANTS.length - FREE_VARIANTS;
 const packs = CARD_PACKS.length;
 
 export const PERKS: Perk[] = [
+  { id: 'review', icon: 'lightbulb.fill', title: 'Mistake review', short: 'See where chips went', about: 'Open any Texas Hold\'em hand in Saved hands and see each of your moves graded: your chance to win against the hands their betting points to, against what the call cost, and about how many big blinds a mistake gave up.' },
   { id: 'range', icon: 'chart.line.uptrend.xyaxis', title: 'Every range hand', short: 'Free: 1 hand a day', about: 'Free gets one hand a day. Premium opens every hand: Endless, as many sets as you like, and Gaps, practice on the spots you miss.' },
   // Bot Lab took the roster's place in the list (the owner, 17 Nov 2026); every other bot is still Premium and said here.
   { id: 'botlab', icon: 'flask.fill', title: 'Bot Lab', short: 'Make your own bots', about: `Make up to ${MAX_LAB_BOTS} bots of your own: a name, a face and dials for how they play and talk. Seat them at any table you host. Premium also opens every other bot (free tables get the original ${FREE_BOT_NAMES.length}).` },
@@ -30,6 +31,6 @@ export const PERKS: Perk[] = [
 export const perkById = (id: string | undefined): Perk | undefined => PERKS.find((p) => p.id === id);
 
 /** What a locked tap opens the page with, and the perk it puts first. */
-export type Reason = 'game' | 'training' | 'bots' | 'botlab' | 'pack' | 'gold';
-export const REASON_PERK: Record<Reason, PerkId> = { game: 'games', training: 'range', bots: 'botlab', botlab: 'botlab', pack: 'packs', gold: 'gold' };
+export type Reason = 'game' | 'training' | 'bots' | 'botlab' | 'pack' | 'gold' | 'review';
+export const REASON_PERK: Record<Reason, PerkId> = { game: 'games', training: 'range', bots: 'botlab', botlab: 'botlab', pack: 'packs', gold: 'gold', review: 'review' };
 export const isReason = (v: unknown): v is Reason => typeof v === 'string' && v in REASON_PERK;

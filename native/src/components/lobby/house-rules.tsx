@@ -5,9 +5,13 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
 
 import {
+  ANTE_CHOICES,
+  anteChips,
+  BOMB_CHOICES,
   BLIND_CAP_CHOICES,
   BLIND_MINUTE_MAX,
   blindsLabel,
+  houseRuleWords,
   levelsFor,
   STACK_CHOICES,
   TIMER_CHOICES,
@@ -158,8 +162,42 @@ export function HouseRules({ settings: s, onChange, online, bots = 0, started = 
     <RulesFold summary={rulesSummary(s, online)}>
       <Card>{numbers}</Card>
       <Card>{switches}</Card>
+      <Card>{homeGameRows(s, edit ? set : undefined)}</Card>
     </RulesFold>
   );
+}
+
+/**
+ * Home game rules (19 Nov 2026, the owner's ask): the ante, a bomb pot every so many hands, the straddle and run it
+ * twice (Texas Hold'em only, so it's left out of the other games). Off unless the host turns them on.
+ */
+function homeGameRows(s: Settings, set?: (patch: Partial<Settings>) => void): ReactNode[] {
+  const anteIndex = Math.max(0, ANTE_CHOICES.indexOf(s.ante ?? 0));
+  const bombIndex = Math.max(0, BOMB_CHOICES.indexOf(s.bombEvery ?? 0));
+  return [
+    <NumberRow key="ante" label="Ante" value={s.ante ? `${chips(anteChips(s))} each` : 'None'}>
+      {set && <Stepper label="Ante" value={anteIndex} min={0} max={ANTE_CHOICES.length - 1} onChange={(i) => set({ ante: ANTE_CHOICES[i] })} />}
+    </NumberRow>,
+    <NumberRow key="bomb" label="Bomb pot" value={s.bombEvery ? `Every ${s.bombEvery} hands` : 'Never'}>
+      {set && <Stepper label="Bomb pot" value={bombIndex} min={0} max={BOMB_CHOICES.length - 1} onChange={(i) => set({ bombEvery: BOMB_CHOICES[i] })} />}
+    </NumberRow>,
+    <SwitchRow
+      key="straddle"
+      label="Straddle"
+      line="The player after the big blind puts in two big blinds"
+      value={!!s.straddle}
+      onChange={set ? (straddle) => set({ straddle }) : undefined}
+    />,
+    (s.variant ?? 'holdem') === 'holdem' && (
+      <SwitchRow
+        key="twice"
+        label="Run it twice"
+        line="When players are all in, they can deal the rest twice and split the pot"
+        value={!!s.runTwice}
+        onChange={set ? (runTwice) => set({ runTwice }) : undefined}
+      />
+    ),
+  ].filter(Boolean);
 }
 
 /** The rules in one line, for the folded House rules: "1,500 chips · Blinds 10/20 · 30s to act · No rebuys". */
@@ -167,6 +205,7 @@ export function rulesSummary(s: Settings, online: boolean): string {
   const parts = [`${chips(s.startingStack)} chips`, `Blinds ${blindsLabel([s.smallBlind, s.bigBlind])}`];
   if (online) parts.push(s.turnSeconds === 0 ? 'No clock' : `${timerLabel(s.turnSeconds)} to act`);
   parts.push(s.rebuys ? 'Rebuys' : 'No rebuys');
+  parts.push(...houseRuleWords(s));
   return parts.join(' · ');
 }
 

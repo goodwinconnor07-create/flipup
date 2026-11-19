@@ -26,7 +26,7 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
     if (!isBotDifficulty(r.botDifficulty)) return null;
     out.botDifficulty = r.botDifficulty;
   }
-  for (const key of ['startingStack', 'smallBlind', 'bigBlind', 'turnSeconds', 'blindMinutes', 'blindCap', 'blindHands'] as const) {
+  for (const key of ['startingStack', 'smallBlind', 'bigBlind', 'turnSeconds', 'blindMinutes', 'blindCap', 'blindHands', 'ante', 'bombEvery'] as const) {
     if (r[key] === undefined) continue;
     if (!isInt(r[key])) return null;
     out[key] = r[key];
@@ -42,6 +42,11 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
   if (r.showToBusted !== undefined) {
     if (typeof r.showToBusted !== 'boolean') return null;
     out.showToBusted = r.showToBusted;
+  }
+  for (const key of ['straddle', 'runTwice'] as const) {
+    if (r[key] === undefined) continue;
+    if (typeof r[key] !== 'boolean') return null;
+    out[key] = r[key];
   }
   if (r.replayEachHand !== undefined) {
     if (typeof r.replayEachHand !== 'boolean') return null;
@@ -122,6 +127,8 @@ export function parseAction(raw: unknown): Action | null {
         : null;
     case 'show':
       return isInt(a.hand) ? { type: a.type, hand: a.hand } : null;
+    case 'runTwice':
+      return isInt(a.hand) && typeof a.yes === 'boolean' ? { type: 'runTwice', hand: a.hand, yes: a.yes } : null;
     case 'discard':
       return isInt(a.hand) && isCard(a.card) ? { type: 'discard', hand: a.hand, card: a.card } : null;
     case 'react':

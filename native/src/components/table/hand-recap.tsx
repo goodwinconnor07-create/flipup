@@ -9,6 +9,8 @@ import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { summaryLine, useHandReview } from '@/state/hand-review';
+import { usePremium } from '@/state/premium';
 import { useLastHand, winnersOf } from '@/state/replays';
 import { closeReview, releaseRecap, useTable } from '@/state/session';
 import { brand, motion, radius, ROUNDED, spacing, useReduceTransparency } from '@/theme';
@@ -26,6 +28,9 @@ export function HandRecap() {
   const hand = useLastHand();
   const reduce = useReduceMotion();
   const solid = useReduceTransparency();
+  // With Premium, the mistake review in a line ("1 mistake · about 3 bb"); a tap opens the replay where it's laid out.
+  const premium = usePremium();
+  const review = useHandReview(hand ?? undefined, premium && !!t.review && hand?.id === t.recap);
   // Only after Review is tapped in the action row (that also stops the countdown).
   if (!t.recap || !t.review || !hand || hand.id !== t.recap) return null;
   const winners = winnersOf(hand)
@@ -95,6 +100,20 @@ export function HandRecap() {
               </View>
             ))}
           </View>
+        )}
+
+        {review !== null && (
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={`Review: ${review ? summaryLine(review) : 'looking at your moves'}. Opens the replay.`}
+            onPress={replay}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.08)' }}
+          >
+            <Icon name="lightbulb.fill" size={14} color={brand.gold} />
+            <ThemedText variant="footnote" style={{ color: '#ffffff', fontWeight: '700' }}>
+              {review ? summaryLine(review) : 'Looking at your moves…'}
+            </ThemedText>
+          </PressableScale>
         )}
 
         <View style={{ flexDirection: 'row', gap: spacing.sm, alignSelf: 'stretch' }}>

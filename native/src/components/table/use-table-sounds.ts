@@ -24,7 +24,7 @@ function moveSound(move: NonNullable<Seat['last']>['move'], amount: number, bb: 
   if (move === 'fold') return 'fold';
   if (move === 'check') return 'check';
   if (move === 'allin') return 'allin';
-  if (move === 'sb' || move === 'bb') return 'chip';
+  if (move === 'sb' || move === 'bb' || move === 'straddle' || move === 'bomb') return 'chip';
   return amount >= bb * 8 ? 'chips' : 'chip';
 }
 

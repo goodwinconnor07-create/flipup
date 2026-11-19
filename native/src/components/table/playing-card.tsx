@@ -38,7 +38,6 @@ function useCardLook() {
     shadow: dark
       ? '0 1px 2px rgba(0,0,0,0.4), 0 6px 16px -8px rgba(0,0,0,0.7)'
       : '0 1px 2px rgba(18,18,40,0.08), 0 6px 16px -8px rgba(18,18,40,0.28)',
-    dimBg: dark ? '#565868' : (c.cellPressed as string),
     dark,
     c,
   };
@@ -123,8 +122,8 @@ const frame = (w: number, small?: boolean): ViewStyle => ({
 });
 
 /**
- * `back` shows it face down. `flip` turns it over as it lands (after `delay` ms). `dim` greys a card that isn't part
- * of the hand that matters; `glow` lifts a winning card and rings it in gold. `pack` is the back it flips from.
+ * `back` shows it face down. `flip` turns it over as it lands (after `delay` ms). `dim` shades a card that isn't part
+ * of the hand that matters (white face and colours kept, under a dark shade); `glow` lifts a winning card and rings it in gold. `pack` is the back it flips from.
  */
 export function PlayingCard({
   card,
@@ -167,9 +166,8 @@ export function PlayingCard({
 }
 
 function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boolean; dim: boolean; glow: boolean }) {
-  const { edge, shadow, dimBg, dark } = useCardLook();
+  const { edge, shadow, dark } = useCardLook();
   const suit = suitOf(card);
-  const fade = dim ? (dark ? 0.75 : 1) : 1;
   // A wild deuce: gold with a shine sweeping across it, a gold glow round it, so a 2 can't be missed.
   const wild = useContext(WildDeuces) && card[0] === '2' && !dim;
   const ink = wild ? GOLD_INK : INK[suit];
@@ -180,9 +178,8 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
       style={[
         frame(w, small),
         {
-          backgroundColor: dim ? dimBg : wild ? '#f7c948' : '#ffffff',
+          backgroundColor: wild ? '#f7c948' : '#ffffff',
           ...(wild ? gradient('linear-gradient(145deg, #fff3b0 0%, #f7c948 38%, #e39a12 70%, #ffd75e 100%)') : null),
-          opacity: dim && !dark ? 0.55 : 1,
           paddingTop: small ? 3 : w * 0.1,
           paddingHorizontal: small ? 4 : w * 0.16,
           paddingBottom: small ? 3 : w * 0.14,
@@ -206,7 +203,6 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
         maxFontSizeMultiplier={1}
         style={{
           color: ink,
-          opacity: fade,
           fontSize: small ? 14 : w * 0.54,
           lineHeight: small ? 15 : w * 0.56,
           fontWeight: small ? '600' : '500',
@@ -217,10 +213,18 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
       </Text>
       <Text
         maxFontSizeMultiplier={1}
-        style={{ color: ink, opacity: fade, fontSize: small ? 11 : w * 0.4, lineHeight: small ? 12 : w * 0.42 }}
+        style={{ color: ink, fontSize: small ? 11 : w * 0.4, lineHeight: small ? 12 : w * 0.42 }}
       >
         {SYMBOL[suit]}
       </Text>
+      {/* A card that isn't part of the hand that matters keeps its white face and its colours, under a shade (as the
+          big poker apps do), so it steps back but stays readable. Grey faces with faded ink were hard to read. */}
+      {dim && (
+        <View
+          pointerEvents="none"
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: small ? 4 : w * 0.2 - 1, backgroundColor: dark ? 'rgba(8,10,22,0.42)' : 'rgba(18,18,40,0.26)' }}
+        />
+      )}
     </View>
   );
 }

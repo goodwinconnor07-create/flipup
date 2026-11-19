@@ -651,3 +651,22 @@ Full output of the latest run:
 | Soft styles lose, but not absurdly (≥ -250 bb/100) | 100 |
 
 _Ran in 544s._
+
+
+## Mistake review
+
+The Premium mistake review (`src/train/handReview.ts`) uses the bots' range model to guess what each opponent holds from
+their public moves, then compares your chance to win with the pot odds. `src/train/handReviewCheck.test.ts` deals the
+144 fold-or-call Range training hands (published breakdowns with the expert's answer and ranges) through the engine and
+asks the review about the expert's answer and the other one. Measured 19 Nov 2026:
+
+- Agreement (the expert's answer let stand, the other flagged): 80 of 144, 56%.
+- The expert's own answer flagged as a mistake: 49 of 144.
+- Chance to win against the experts' ranges: off by 24 points on average, median 20; within 10 points in 28% of hands.
+- Precision of a flag by how far the estimate is from the price: 60% at 6 points, 70% at 20, 76% at 40 (21 flags).
+- The same pot-odds rule with the experts' ranges: 144 of 144.
+
+So the arithmetic is right and the range guess is the weak part. The experts read each opponent's type (a loose player
+bluffs more, a passive one who suddenly raises rarely is); the model starts from a typical player. These are hand-picked
+hard spots, so everyday hands should go better, but the review can't be called correct on this evidence. The test's
+floors (53%, 37%, 26 points) only stop it getting worse.

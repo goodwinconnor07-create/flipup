@@ -7,6 +7,11 @@
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
+> **19 Nov 2026 (owner): shaded, not grey.** A card that isn't part of the hand that matters (a showdown's other cards,
+> your folded cards, a folded player's in a replay) keeps its white face and full-colour ink under a dark shade
+> (`dim` in `playing-card.tsx`), as the big poker apps do; the winning five lift with a gold ring. Grey faces with faded
+> ink were hard to read.
+>
 > **19 Nov 2026 (owner): home game rules and the mistake review.** The home game rules sit in the same box as Rebuys,
 > each an on/off switch; turning the ante or bomb pots on adds a row of pills under it (the size, how often), the picked
 > one in the app's blue. The table settings sheet has the same as toggles with a segmented control under them.

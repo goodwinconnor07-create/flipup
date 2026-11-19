@@ -31,6 +31,8 @@ export interface ReviewHand {
   holes: Record<string, Card[]>;
   /** House rules the hand was dealt with. */
   house?: { ante?: number; straddle?: boolean; bomb?: boolean };
+  /** A tournament's big blind ante, in chips: dead money from the big blind before the deal. */
+  bbAnte?: number;
 }
 
 /** good: the right call. close: fine either way, or a small leak. mistake: it cost you. fine: nothing to grade. */
@@ -117,6 +119,13 @@ function review(saved: ReviewHand, samples: number): ReviewedMove[] {
   startHand(game, ctx);
   const h = game.hand!;
   if (h.buttonId !== saved.buttonId || h.bbId !== saved.bbId) throw new Error('The rebuilt hand put the blinds in different seats.');
+  if (saved.bbAnte) {
+    const bb = h.seats.find((x) => x.playerId === h.bbId)!;
+    const p = game.players.find((x) => x.id === h.bbId)!;
+    const chips = Math.min(saved.bbAnte, p.stack);
+    p.stack -= chips;
+    bb.total += chips;
+  }
   // Your cards, and anyone else's that were seen; the rest get unused cards (the review never looks at them).
   const known = new Set([...saved.board, ...Object.values(saved.holes).flat()]);
   const spare = fullDeck().filter((c) => !known.has(c));

@@ -83,7 +83,7 @@ function TableScreenInner() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <Lobby game={game} online={online} conn={t.conn} />
         {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
-        <DealWipe />
+        <DealWipe variant={game ? (game.settings.variant ?? 'holdem') : undefined} />
       </View>
     );
   }
@@ -101,7 +101,7 @@ function TableScreenInner() {
       <HandRecap />
       {t.rules && <RulesCard variant={t.rules} onDone={releaseRules} />}
       {game?.status === 'playing' && !!game.code && <OnlineRules game={game} />}
-      <DealWipe />
+      <DealWipe variant={game ? (game.settings.variant ?? 'holdem') : undefined} />
       {!game && lost ? (
         <ConnectionLost variant="page" onRetry={retryConnection} onLeave={leave} />
       ) : !game ? (

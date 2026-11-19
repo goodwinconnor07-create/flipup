@@ -1,6 +1,7 @@
 import { Host } from '@expo/ui';
 import { Button, DisclosureGroup, Form, HStack, Image, Picker, Section, Spacer, Stepper, Text, Toggle, VStack } from '@expo/ui/swift-ui';
 import { buttonStyle, contentShape, controlSize, fixedSize, font, frame, foregroundStyle, labelsHidden, padding, pickerStyle, scrollContentBackground, shapes, tag, tint } from '@expo/ui/swift-ui/modifiers';
+import { Color } from 'expo-router';
 import { Fragment } from 'react';
 import { View } from 'react-native';
 
@@ -22,11 +23,13 @@ const sf = (name: string | undefined) => name as never;
  * The web build has no SwiftUI; `native-menu.tsx` draws the same data with React Native.
  */
 export function NativeMenu({ groups, top, transparent }: NativeMenuProps) {
+  // The Form's own page is hidden and painted here instead: in an iOS 26 sheet SwiftUI leaves it clear, so the table
+  // or lobby behind showed through the rows as a coloured smear. Solid grouped grey unless the page asks to show through.
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: transparent ? undefined : Color.ios.systemGroupedBackground }}>
       {top}
       <Host style={{ flex: 1 }}>
-        <Form modifiers={[tint(brand.violet), ...(transparent ? [scrollContentBackground('hidden')] : [])]}>
+        <Form modifiers={[tint(brand.violet), scrollContentBackground('hidden')]}>
           {groups.map((g) => {
             const items = g.items.filter((i): i is MenuItem => !!i);
             if (items.length === 0) return null;

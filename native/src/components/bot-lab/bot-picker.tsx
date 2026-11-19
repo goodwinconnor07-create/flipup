@@ -14,7 +14,7 @@ import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useLabBots, type LabBot } from '@/state/bot-lab';
 import { usePremium } from '@/state/premium';
-import { brand, motion, ROUNDED, spacing } from '@/theme';
+import { brand, motion, ROUNDED, spacing, useLobbyTint } from '@/theme';
 
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
@@ -52,6 +52,8 @@ export function BotPicker({
     onClose();
     if (toLab) router.push(has ? '/bot-lab' : { pathname: '/premium', params: { reason: 'botlab' } });
   };
+  // The lobby's own colour (the game's on a game-coloured lobby, the blue on the party's), so the card belongs to the page.
+  const tint = useLobbyTint();
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -107,8 +109,8 @@ export function BotPicker({
     </Pressable>
   );
   const round = (icon: 'dice.fill' | 'flask.fill') => (
-    <View style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(91,139,255,0.18)' }}>
-      <Icon name={icon} size={18} color={brand.violetDark} />
+    <View style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' }}>
+      <Icon name={icon} size={18} color={tint.link} />
     </View>
   );
 
@@ -129,7 +131,7 @@ export function BotPicker({
             transformOrigin: `${originX}px ${below ? 0 : '100%'}`,
             borderRadius: 22,
             borderCurve: 'continuous',
-            backgroundColor: '#18234a',
+            backgroundColor: tint.surface,
             borderWidth: 1,
             borderColor: 'rgba(255,255,255,0.12)',
             boxShadow: '0 18px 40px rgba(0,0,0,0.5)',

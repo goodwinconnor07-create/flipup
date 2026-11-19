@@ -138,15 +138,20 @@ export default function Home() {
           <Animated.View entering={arrive(1)} style={{ alignItems: 'center', gap: spacing.xs }}>
             <GameSwiper variant={variant} onChange={(v) => save(PICK, v)} size={card} width={Math.min(width, 560 + spacing.md * 2)} />
             <View style={[pad, { alignItems: 'center', gap: 2 }]}>
-              <Swap id={variant} kind="text">
+              {/* The name and hook change with the game. Both boxes run the full width, so a longer old name isn't cut
+                  to the new one's width as it leaves, and the name rolls by half its line so the two never print over
+                  each other. */}
+              <Swap id={variant} kind="text" slide={narrow ? 18 : 22} style={{ alignSelf: 'stretch' }}>
                 <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontFamily: ROUNDED, fontSize: narrow ? 32 : 38, fontWeight: '900', letterSpacing: -0.5, color: '#ffffff', textAlign: 'center' }}>
                   {info.name}
                 </Text>
               </Swap>
               {!narrow && (
-                <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 17, lineHeight: 22, fontWeight: '500', color: 'rgba(255, 255, 255, 0.8)', textAlign: 'center' }}>
-                  {look.hook}
-                </Text>
+                <Swap id={variant} kind="text" style={{ alignSelf: 'stretch' }}>
+                  <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 17, lineHeight: 22, fontWeight: '500', color: 'rgba(255, 255, 255, 0.8)', textAlign: 'center' }}>
+                    {look.hook}
+                  </Text>
+                </Swap>
               )}
             </View>
             <PressableScale accessibilityRole="button" accessibilityLabel={`How ${info.name} plays`} onPress={go(`/how-to-play/${variant}`)} haptics={false} style={{ minHeight: 36, paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 4 }}>

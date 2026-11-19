@@ -229,7 +229,7 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
           <Row title="Retry your misses" detail={`${missed.length} hand${missed.length === 1 ? '' : 's'} to try again`} icon={{ symbol: 'arrow.counterclockwise', color: brand.violet }} trailing={crown} onPress={premium ? () => startSet(missed.map((m) => `id:${m.id}`)) : locked} />
         )}
         {!premium && st.weakest.length === 0 && missed.length === 0 && (
-          <Row title="Practise the spots you miss" detail="After a few quizzes" icon={{ symbol: 'lightbulb.fill', color: brand.violet }} trailing={crown} onPress={locked} />
+          <Row title="Practise the spots you miss" detail="After a few hands" icon={{ symbol: 'lightbulb.fill', color: brand.violet }} trailing={crown} onPress={locked} />
         )}
       </Section>
     </View>
@@ -238,7 +238,7 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
   // Optional, off until turned on: a nudge at six each evening, so a streak survives its first week.
   const remind =
     Platform.OS === 'web' ? null : (
-      <Section footer="One notification a day at 6 pm when the new quiz is ready. Nothing else.">
+      <Section footer="One notification a day at 6 pm when the new hand is ready. Nothing else.">
         <Row
           title="Daily reminder"
           icon={{ symbol: 'bell.fill', color: brand.violet }}

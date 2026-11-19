@@ -112,7 +112,8 @@ export default function Home() {
   const pad = { paddingHorizontal: spacing.md };
   return (
     <ForceScheme scheme="dark">
-      <Stack.Screen options={{ title: 'Play', headerShown: false }} />
+      {/* Always dark, so the clock and battery are white whatever the phone's own look. */}
+      <Stack.Screen options={{ title: 'Play', headerShown: false, statusBarStyle: 'light' }} />
       <GameBackdrop variant={variant} style={{ flex: 1 }}>
         <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.sm }}>
           {/* Top bar: the page's name on the left, you on the right. */}

@@ -25,7 +25,8 @@ export default function TrainTab() {
   return (
     <ForceScheme scheme="dark">
       <TrainBackground mood={daily.finished ? 'done' : 'idle'}>
-        <Stack.Screen options={{ title: 'Range training', headerShown: false }} />
+        {/* Always dark, so the clock and battery are white whatever the phone's own look. */}
+        <Stack.Screen options={{ title: 'Range training', headerShown: false, statusBarStyle: 'light' }} />
         <TabScreen title="Range training" accessory={<ProfileMenu />} scrollRef={scroll}>
           <TrainHome history={history} grades={grades} />
         </TabScreen>

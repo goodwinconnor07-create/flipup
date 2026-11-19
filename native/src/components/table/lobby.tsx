@@ -1,6 +1,8 @@
 import { userMessage } from '@/state/user-error';
 import { router } from 'expo-router';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
+
+import { LobbyScroll } from '../lobby/lobby-scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { variantInfo, type Game } from '@/engine';
@@ -96,8 +98,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
 
   return (
     <LobbyBackdrop variant={variant}>
-      <ScrollView
-        contentInsetAdjustmentBehavior="never"
+      <LobbyScroll
         contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: insets.top + spacing.xs, paddingBottom: (host ? OPEN_BUTTON_ROOM : spacing.xxxl) + insets.bottom, gap: spacing.lg }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -135,7 +136,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
         <GameCard variant={variant} host={host} table />
 
         <HouseRules settings={s} onChange={host ? (next) => dispatch({ type: 'settings', settings: next }) : undefined} online={online} bots={game.players.filter((p) => p.bot && !p.labBot).length} />
-      </ScrollView>
+      </LobbyScroll>
       {host && (
         <OpenTableButton
           title="Start game"

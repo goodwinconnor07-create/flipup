@@ -18,7 +18,7 @@ import {
 } from '@/engine';
 import { EASE_OUT, enter, exit } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { motion, radius, ROUNDED, spacing, useColors } from '@/theme';
+import { motion, ROUNDED, spacing, useColors } from '@/theme';
 
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
@@ -243,9 +243,12 @@ export function Card({ children }: { children: ReactNode[] }) {
   );
 }
 
-/** A number: its name small and grey over the value in a little box of its own, and the stepper on the right. */
+/**
+ * A number: its name small and grey over the value in bold, and the stepper on the right. No box round the value
+ * (19 Nov 2026): an opaque grey box was the one dead neutral on a game-coloured page, and next to a stepper it read as
+ * a field you could type in. The stepper is the control.
+ */
 export function NumberRow({ label, value, children }: { label: string; value: string; children?: ReactNode }) {
-  const colors = useColors();
   return (
     <View
       accessible={!children}
@@ -256,19 +259,9 @@ export function NumberRow({ label, value, children }: { label: string; value: st
         <ThemedText variant="subhead" tone="secondaryLabel">
           {label}
         </ThemedText>
-        <View
-          style={{
-            paddingHorizontal: spacing.xs,
-            paddingVertical: 4,
-            borderRadius: radius.sm,
-            borderCurve: 'continuous',
-            backgroundColor: colors.cellPressed,
-          }}
-        >
-          <ThemedText variant="headline" style={{ fontWeight: '700', fontVariant: ['tabular-nums'] }}>
-            {value}
-          </ThemedText>
-        </View>
+        <ThemedText variant="title2" style={{ fontWeight: '700', fontVariant: ['tabular-nums'] }}>
+          {value}
+        </ThemedText>
       </View>
       {children}
     </View>

@@ -46,6 +46,11 @@
 > card names the game and Players counts who's in; its line only says what's missing ("Add a bot first", "Add a bot
 > or wait for a friend").
 >
+> **19 Nov 2026 (owner): no neutral grey boxes on a coloured page.** House rules' values are bold text under their
+> name, with no box (`NumberRow`): the opaque system grey was the one dead colour on a game's page and read as a field
+> you could type in beside its stepper. Lobbies scroll in `LobbyScroll`, which fades in a blur tinted with the page's
+> darkest colour under the status bar once the page moves, matching Start game's bar at the bottom.
+>
 > **19 Nov 2026 (owner): lobby layout.** Code, Players, the game (How it plays inside its card), house rules, then
 > Start a party last. The code card has Copy and QR as small round icons and Share as its one text button; a tap on
 > the code changes it. Start game sits on a blurred bar tinted with the page's darkest colour, so nothing reads

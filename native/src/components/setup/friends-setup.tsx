@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
+
+import { LobbyScroll } from '../lobby/lobby-scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type PartySettings, type Settings } from '@/engine';
@@ -316,8 +318,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
   return (
     // In the game's colour; a party (several games) keeps the blue field.
     <LobbyBackdrop variant={partyDraft ? null : variant}>
-      <ScrollView
-        contentInsetAdjustmentBehavior="never"
+      <LobbyScroll
         contentContainerStyle={{
           paddingHorizontal: spacing.md,
           paddingTop: insets.top + spacing.xs,
@@ -382,7 +383,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
             <StartPartyButton />
           </>
         )}
-      </ScrollView>
+      </LobbyScroll>
       <OpenTableButton
         title={partyDraft ? 'Start party' : 'Start game'}
         line={

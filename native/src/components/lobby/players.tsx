@@ -21,15 +21,17 @@ export interface PlayerLine {
   gold?: boolean;
   /** A tap on a person: their menu (Report, Block, and the host's Remove). */
   onMore?: () => void;
-  /** A bot the host may take off: holding it pops it out, then this runs. */
+  /** A bot the host may take off: its menu's Remove pops it out, then this runs. */
   onRemove?: () => void;
+  /** Swaps this bot for another random one (offered in its menu while set). */
+  onSwap?: () => void;
 }
 
 /**
  * Who's at the table, as the same small floating group as Play with bots (12 Nov 2026, the owner's ask): every face
  * in a filled circle with its name, evenly spaced, drifting softly, with an Add Bot button the same size at the end
- * for the host. People come first and wear a solid white ring (you, gold); bots follow with a faint one. A tap on a
- * person opens their menu; holding a bot pops it off. Friends come in with the game code.
+ * for the host. People come first and wear a solid white ring (you, gold); bots follow with a faint one. A tap or a
+ * long press opens a person's menu, or a bot's (Remove, and Swap where the page can). Friends come in with the game code.
  */
 export function Players({ rows, onAdd, onAddLab }: { rows: PlayerLine[]; onAdd?: () => void; /** Seats a Bot Lab bot; the Add button then opens the add menu. */ onAddLab?: (bot: LabBot) => void }) {
   const panel = usePanel();
@@ -39,7 +41,6 @@ export function Players({ rows, onAdd, onAddLab }: { rows: PlayerLine[]; onAdd?:
   const people = rows.filter((r) => r.line !== 'Bot').length;
   const bots = rows.length - people;
   const room = MAX_SEATS - rows.length;
-  const canHold = rows.some((r) => r.onRemove);
   // People always come first (you at the front), then the bots, each group in the order they sat down.
   const rank = (r: PlayerLine) => (r.you ? 0 : r.line === 'Bot' ? 2 : 1);
   const ordered = rows.map((r, i) => ({ r, i })).sort((a, b) => rank(a.r) - rank(b.r) || a.i - b.i).map((x) => x.r);
@@ -68,8 +69,7 @@ export function Players({ rows, onAdd, onAddLab }: { rows: PlayerLine[]; onAdd?:
             overflow: 'hidden',
             paddingHorizontal: spacing.sm,
             paddingTop: spacing.xs,
-            paddingBottom: canHold ? spacing.sm : spacing.xs,
-            gap: spacing.xs,
+            paddingBottom: spacing.xs,
           }}
         >
           <FloatTable
@@ -90,21 +90,12 @@ export function Players({ rows, onAdd, onAddLab }: { rows: PlayerLine[]; onAdd?:
               setLeaving((l) => l.filter((k) => k !== key));
               rows.find((r) => r.key === key)?.onRemove?.();
             }}
+            onSwap={rows.some((r) => r.onSwap) ? (key) => rows.find((r) => r.key === key)?.onSwap?.() : undefined}
             onAdd={onAdd && room > 0 ? onAdd : undefined}
             onAddLab={onAdd && room > 0 ? onAddLab : undefined}
           />
-          {canHold && (
-            <ThemedText variant="footnote" tone="secondaryLabel" style={{ textAlign: 'center' }}>
-              Hold a bot to take it off
-            </ThemedText>
-          )}
         </View>
       </View>
-      {people === 1 && onAdd && (
-        <ThemedText variant="footnote" tone="secondaryLabel" style={{ paddingHorizontal: spacing.xxs }}>
-          Friends join from Join on the Play tab with the game code. Bots fill in until they do.
-        </ThemedText>
-      )}
     </View>
   );
 }

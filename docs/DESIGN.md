@@ -12,8 +12,30 @@
 > from gameArt's shapes (`src/design/trainArt.ts`), the name in white rounded capitals on a darker band, the same crown.
 > Play with bots shows who's at the table as a small group of faces floating softly (filled circles, names under them,
 > evenly spaced on equal columns, a same-sized dashed Add button at the end), not a list and not a drawn table, so the
-> game card stays on screen; new bots pop in, holding one pops it out. The online lobbies' Players section is the same group, with an "Add Bot" button; a tap on a person opens their menu. People come first and wear a solid white ring (you, gold); bots follow with a faint ring. The LIVE tag on Rejoin has a pulsing dot.
+> game card stays on screen; new bots pop in, and a bot's menu (tap or long press) takes it out. The online lobbies' Players section is the same group, with an "Add Bot" button; a tap on a person opens their menu. People come first and wear a solid white ring (you, gold); bots follow with a faint ring. The LIVE tag on Rejoin has a pulsing dot.
 
+> **Home and the Hands tab (owner, 2026-11-19, from a mock-up).** Three tabs: Play, Hands, Train. Home is the game
+> swiper a little bigger, the game's name, hook and a quiet "How it plays ›" link, then Host <game> (the game's name
+> on the big white button), with Play bots and Join a game under it. No "Tap me" hint pill, no page dots and no row of
+> round shortcuts. The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
+> of leaving a gap under the link. Hands holds your poker (the passport card with All / Hold'em / Mini games and All
+> stats) and your first three Saved hands with See all, each half with an empty state. The profile keeps Settings,
+> Premium and How to play.
+
+> **19 Nov 2026 (owner, from a mock-up): lobbies in the game's colour.** Play with bots, Play with friends and the
+> table lobby use Home's `GameBackdrop` (`LobbyBackdrop` in `components/lobby/lobby-backdrop.tsx`): a dark shade of
+> the chosen game's colour with its lights, fading to the next game's when Change picks another. The lobby's blue
+> accents take the game's tint (`gameTint()`/`useLobbyTint()` in `native/src/theme/lobby-tint.tsx`): Back, Change,
+> Copy, "How … plays" and Add Bot in a pale version of the game's light tone, the Start game words in its band colour
+> darkened, the fade under the button in the page's darkest colour. Gold stays for you; panels stay see-through white.
+> A party's lobby (several games) keeps the blue field. Texas Hold'em's lobby is green, as Home is.
+>
+> **19 Nov 2026 (owner): lobby layout.** Code, Players, the game (How it plays inside its card), house rules, then
+> Start a party last. The code card has Copy and QR as small round icons and Share as its one text button; a tap on
+> the code changes it. Start game sits on a blurred bar tinted with the page's darkest colour, so nothing reads
+> through round it. A tap or long press on a bot opens its menu (Swap for another bot, Remove from table, then Undo);
+> the hold ring and its caption are gone.
+>
 > **Minimal Home, a test on a branch (owner, 2026-11-10, from a reference with a big greeting; not merged until the
 > owner has seen it on TestFlight).** Play is one page on a livelier moving field of its own (`LivelyBackground`: five brighter lights on 4.5 to 10s clocks over the same dark base, always dark):
 > FlipUp in SF Pro Rounded heavy and your face, "Hi, <name>." at up to 92pt rounded heavy (by screen height), one line under it, then down by the tab bar (the

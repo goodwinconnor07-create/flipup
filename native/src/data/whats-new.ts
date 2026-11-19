@@ -24,10 +24,12 @@ export const RELEASES: Release[] = [
     items: [
       { icon: 'suit.spade.fill', title: 'Poker night on your phones', text: 'Host a table and your friends join on their own phones with a six-character game code or a QR code. Bots fill any empty seats.' },
       { icon: 'cpu.fill', title: 'Play bots anywhere', text: 'Play against bots on your own, even with no signal. Every bot has a style of its own and plenty to say about the hand.' },
+      { icon: 'person.2.fill', title: 'A lobby for every game', text: 'Your lobby takes the colour of the game you pick. Tap a bot to swap it for another or take it off the table.' },
       { icon: 'sparkles', title: '12 mini games', text: 'Texas Hold’em plus games with a twist, like Haunted Pot, Crazy Pineapple, Die on the River and Power Cards. Each has its own table and a short How to Play.' },
       { icon: 'flask.fill', title: 'Bot Lab', text: 'Make up to 25 bots of your own in Settings: a name, a face and dials for how they play and talk. Seat them from + Add Bot in any lobby you host. Part of Premium.' },
       { icon: 'party.popper.fill', title: 'Party nights', text: 'Line up 4 to 12 games, play a short table of each, and see who tops the board at the end.' },
       { icon: 'graduationcap.fill', title: 'Range training', text: 'A free hand every day. Pick your play, then see why it’s best.' },
+      { icon: 'chart.bar.xaxis', title: 'A Hands tab', text: 'Your stats and your first few saved hands sit on their own tab, between Play and Train.' },
       { icon: 'film.stack.fill', title: 'Saved hands', text: 'Save any hand from the table (up to 50) and watch it back move by move. Tap the bookmark again to un-save it, or delete hands from the list. Once it’s over, you see what every bot had.' },
       { icon: 'arrow.counterclockwise', title: 'Review after every hand', text: 'Turn it on in the house rules for a blue Review button and a 10 second countdown to the next hand. Review pauses the clock and lets you replay the hand.' },
       { icon: 'chart.bar.xaxis', title: 'Hold’em or mini games', text: 'Switch your stats between all your poker, Texas Hold’em alone and the mini games alone. The two halves count from this update.' },

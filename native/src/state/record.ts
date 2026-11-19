@@ -75,11 +75,6 @@ function clean(r: Partial<PokerRecord> | null): PokerRecord {
   };
 }
 
-/** Whether you've played this game before: a hand dealt in it, a finished game or your best hand. */
-export function hasPlayed(r: PokerRecord, variant: Variant): boolean {
-  return r.played.includes(variant) || r.games.some((g) => g.variant === variant) || r.best?.variant === variant;
-}
-
 export const usePokerRecord = (): PokerRecord => clean(useStored<Partial<PokerRecord> | null>(KEY, null));
 
 function update(fn: (r: PokerRecord) => PokerRecord | null): void {

@@ -45,7 +45,7 @@ const PICK = 'flipup.homegame';
  * Home as a game lobby. The page takes the colour of the chosen game (`GameBackdrop`). "Play" top left and your face
  * top right (a tap opens your profile, which holds Premium, How to play and Settings); the games as a line of cards
  * across the whole screen, locked on one at a time (`GameSwiper`), a little bigger than before; the chosen one's
- * name, hook and a quiet "How it plays" link under it; then Host <game> (`PlayButton`), with Play bots and Join a game
+ * name, hook and a quiet "How it plays" link under it; then Play with friends (`PlayButton`), with Play bots and Join a game
  * under it. Stats and Saved hands are the Hands tab (owner, 19 Nov 2026: no row of round shortcuts, no hint pill, no
  * dots). The leftover height sits mostly above the game, so the buttons ride a little above the tab bar rather than
  * leaving a gap under the link. Nothing scrolls.
@@ -167,7 +167,7 @@ export default function Home() {
             {/* A Premium game without Premium: the game sheet's lock (blur, lock, its words) over Host <game>; a tap opens the offer for this game. */}
             <View style={{ borderRadius: 26, borderCurve: 'continuous', overflow: 'hidden' }}>
               <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}>
-                <PlayButton label={`Host ${info.name}`} line="with friends · share a code" ink={shade(look.band, 0.35)} onPress={start(`/play-friends?variant=${variant}`)} />
+                <PlayButton label="Play with friends" line="Host a table · share the code" ink={shade(look.band, 0.35)} onPress={start(`/play-friends?variant=${variant}`)} />
               </View>
               {locked && <LockVeil compact game={info.name} onPress={() => unlockToHost([variant], premium)} />}
             </View>

@@ -114,8 +114,9 @@ export default function RootLayout() {
         {/* No swipe back here: a finger that just misses a slider and drifts sideways used to pull the whole page away (iOS 26 swipes back from anywhere). The page has its own Back, Save and Delete. */}
         <Stack.Screen name="bot-lab-edit" options={{ headerShown: false, gestureEnabled: false, title: 'Bot', statusBarStyle: 'light' }} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
-        {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. */}
-        <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />
+        {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. In the game's
+            colour (drawn by the page), so it keeps a dark fill of its own rather than the glass. */}
+        <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false, contentStyle: { backgroundColor: '#05070f' } }} />
         {/* Play with friends' Change on the game card: every game in a list, Premium under a gold line. */}
         <Stack.Screen name="lobby-game" options={{ ...sheet, sheetAllowedDetents: [0.6, 1], headerShown: false, title: 'Change the game' }} />
         {/* How to Play: a story on black in a sheet at full height (a black page, so it keeps its own fill); the X closes it. */}

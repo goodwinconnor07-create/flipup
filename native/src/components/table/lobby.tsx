@@ -139,7 +139,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
       {host && (
         <OpenTableButton
           title="Start game"
-          line={game.players.length < 2 ? 'Add a bot or wait for a friend' : variantInfo(variant).name}
+          line={game.players.length < 2 ? 'Add a bot or wait for a friend' : undefined}
           disabled={game.players.length < 2}
           onPress={start}
         />

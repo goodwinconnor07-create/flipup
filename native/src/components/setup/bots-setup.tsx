@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MAX_SEATS, variantInfo, type Settings } from '@/engine';
+import { MAX_SEATS, type Settings } from '@/engine';
 import type { LabBot } from '@/state/bot-lab';
 import { usePremium } from '@/state/premium';
 import { insertAt, offerUndo } from '@/state/undo';
@@ -131,11 +131,8 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
       </ScrollView>
       <OpenTableButton
         title="Start game"
-        line={
-          bots.length
-            ? `You and ${bots.length} ${bots.length === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}`
-            : 'Add a bot first'
-        }
+        // The game card names the game and the table counts the seats, so its line only says what's missing.
+        line={bots.length ? undefined : 'Add a bot first'}
         busy={busy}
         disabled={!bots.length}
         onPress={deal}

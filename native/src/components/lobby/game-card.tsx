@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { gameLook } from '@design/gameArt';
 import { variantInfo, type Variant } from '@/engine';
-import { brand, ROUNDED, spacing } from '@/theme';
+import { ROUNDED, spacing, useLobbyTint } from '@/theme';
 
 import { GameThumb } from '../game-picture';
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
@@ -18,6 +18,7 @@ import { TextButton } from './code-card';
  */
 export function GameCard({ variant, host, table = false }: { variant: Variant; host: boolean; /** Change sets the open table's game, not the setup draft. */ table?: boolean }) {
   const panel = usePanel();
+  const tint = useLobbyTint();
   const info = variantInfo(variant);
   const change = () => {
     haptic.tap();
@@ -80,10 +81,10 @@ export function GameCard({ variant, host, table = false }: { variant: Variant; h
           opacity: pressed ? 0.5 : 1,
         })}
       >
-        <ThemedText variant="callout" style={{ fontWeight: '600', color: brand.violetDark }}>
+        <ThemedText variant="callout" style={{ fontWeight: '600', color: tint.link }}>
           How {info.name} plays
         </ThemedText>
-        <Icon name="chevron.right" size={13} color={brand.violetDark} weight="semibold" />
+        <Icon name="chevron.right" size={13} color={tint.link} weight="semibold" />
       </Pressable>
     </View>
   );

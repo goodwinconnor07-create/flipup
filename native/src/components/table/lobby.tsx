@@ -11,7 +11,7 @@ import { tableShareMessage } from '@/state/table-share';
 import { changeTableCode, dispatch, me as myDevice, type TableState } from '@/state/session';
 import { ForceScheme, spacing } from '@/theme';
 
-import { GrainBackground } from '../grain-background';
+import { LobbyBackdrop } from '../lobby/lobby-backdrop';
 import { haptic } from '../haptics';
 import { CodeCard } from '../lobby/code-card';
 import { GameCard } from '../lobby/game-card';
@@ -95,7 +95,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
   const line = online && conn === 'offline' ? 'Reconnecting…' : host ? null : 'Waiting for the host to deal.';
 
   return (
-    <GrainBackground>
+    <LobbyBackdrop variant={variant}>
       <ScrollView
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: insets.top + spacing.xs, paddingBottom: (host ? OPEN_BUTTON_ROOM : spacing.xxxl) + insets.bottom, gap: spacing.lg }}
@@ -142,6 +142,6 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
           onPress={start}
         />
       )}
-    </GrainBackground>
+    </LobbyBackdrop>
   );
 }

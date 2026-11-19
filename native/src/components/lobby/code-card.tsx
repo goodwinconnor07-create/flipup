@@ -7,7 +7,7 @@ import { normalizeTableCode, TABLE_CODE_LENGTH, tableCodeProblem } from '@/engin
 import { EASE_IN_OUT, enter, exit } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { joinLink } from '@/state/api';
-import { brand, radius, ROUNDED, spacing, useColors } from '@/theme';
+import { brand, radius, ROUNDED, spacing, useColors, useLobbyTint } from '@/theme';
 
 import { haptic } from '../haptics';
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
@@ -246,6 +246,7 @@ export function TextButton({
   bold?: boolean;
 }) {
   const colors = useColors();
+  const tint = useLobbyTint();
   return (
     <Pressable
       accessibilityRole="button"
@@ -257,7 +258,7 @@ export function TextButton({
       <Swap id={title} kind="text">
         <ThemedText
           variant="body"
-          style={{ fontWeight: bold ? '700' : '600', color: quiet ? (colors.secondaryLabel as string) : brand.violetDark }}
+          style={{ fontWeight: bold ? '700' : '600', color: quiet ? (colors.secondaryLabel as string) : tint.link }}
         >
           {title}
         </ThemedText>

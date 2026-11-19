@@ -1,7 +1,7 @@
 import { ActivityIndicator, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { brand, gradient, radius, ROUNDED, spacing } from '@/theme';
+import { brand, gradient, radius, ROUNDED, spacing, useLobbyTint } from '@/theme';
 
 import { GRAIN_NIGHT } from '../grain-background';
 import { PressableScale } from '../pressable-scale';
@@ -16,7 +16,8 @@ const EDGE = 4;
  */
 export function OpenTableButton({ title, line, busy, disabled, onPress }: { title: string; line?: string; busy?: boolean; disabled?: boolean; onPress: () => void }) {
   const insets = useSafeAreaInsets();
-  const night = GRAIN_NIGHT[2];
+  const tint = useLobbyTint();
+  const night = tint.night ?? GRAIN_NIGHT[2];
   return (
     <View
       pointerEvents="box-none"
@@ -45,7 +46,7 @@ export function OpenTableButton({ title, line, busy, disabled, onPress }: { titl
             borderRadius: radius.md,
             borderCurve: 'continuous',
             // Waiting: a solid dim fill, never see-through, so rows scrolling under the fade can't show in it.
-            backgroundColor: disabled ? '#1b2850' : brand.paper,
+            backgroundColor: disabled ? (tint.idle ?? '#1b2850') : brand.paper,
             borderWidth: disabled ? 1 : 0,
             borderColor: 'rgba(255,255,255,0.1)',
             alignItems: 'center',
@@ -55,12 +56,12 @@ export function OpenTableButton({ title, line, busy, disabled, onPress }: { titl
           }}
         >
           {busy ? (
-            <ActivityIndicator color={brand.violet} />
+            <ActivityIndicator color={tint.ink} />
           ) : (
             <>
               <Text
                 maxFontSizeMultiplier={1.3}
-                style={{ fontFamily: ROUNDED, fontSize: 21, lineHeight: 25, fontWeight: '800', color: disabled ? 'rgba(255,255,255,0.5)' : brand.violet }}
+                style={{ fontFamily: ROUNDED, fontSize: 21, lineHeight: 25, fontWeight: '800', color: disabled ? 'rgba(255,255,255,0.5)' : tint.ink }}
               >
                 {title}
               </Text>
@@ -68,7 +69,7 @@ export function OpenTableButton({ title, line, busy, disabled, onPress }: { titl
                 <Text
                   maxFontSizeMultiplier={1.3}
                   numberOfLines={1}
-                  style={{ fontSize: 13, lineHeight: 17, fontWeight: '600', color: disabled ? brand.violetDark : brand.violetDeep }}
+                  style={{ fontSize: 13, lineHeight: 17, fontWeight: '600', color: disabled ? 'rgba(255,255,255,0.75)' : tint.inkSoft }}
                 >
                   {line}
                 </Text>

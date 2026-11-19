@@ -14,7 +14,7 @@ import { saveSettings, setDraft } from '@/state/setup-draft';
 import { unlockToHost } from '@/state/unlock';
 import { ForceScheme, ROUNDED, spacing } from '@/theme';
 
-import { GameBackdrop } from '../home/game-backdrop';
+import { LobbyBackdrop } from '../lobby/lobby-backdrop';
 import { GameCard } from '../lobby/game-card';
 import { HouseRules } from '../lobby/house-rules';
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
@@ -27,7 +27,7 @@ import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 const START_BOTS = 4;
 
 /**
- * Play with bots: the same page as Play with friends (the lobby's pieces, always dark; on a test of the game's own colour) with
+ * Play with bots: the same page as Play with friends (the lobby's pieces, always dark, in the game's colour) with
  * no game code, and the bots up top where the code card sits. Top to bottom:
  *  1. `BotsCard`: At the table, everyone floating in a small group (`FloatTable`: Add pops a bot in, hold a bot to take it off)
  *  2. `GameCard`: the game, Change opens the `lobby-game` list, then How it plays
@@ -91,8 +91,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
   };
 
   return (
-    // A test (19 Nov 2026): the page takes the game's colour, as Home does, and fades to the new one when Change picks another.
-    <GameBackdrop variant={variant}>
+    <LobbyBackdrop variant={variant}>
       <ScrollView
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={{
@@ -136,7 +135,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
         disabled={!bots.length}
         onPress={deal}
       />
-    </GameBackdrop>
+    </LobbyBackdrop>
   );
 }
 

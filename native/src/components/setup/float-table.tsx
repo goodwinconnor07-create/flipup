@@ -22,7 +22,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { EASE_OUT, SETTLE } from '@/motion/presets';
 import { useDrift } from '@/motion/use-drift';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { brand, motion } from '@/theme';
+import { brand, motion, useLobbyTint } from '@/theme';
 
 import { type LabBot } from '@/state/bot-lab';
 
@@ -184,6 +184,7 @@ function Floater({
 }) {
   const reduce = useReduceMotion();
   const addRef = useRef<ComponentRef<typeof View>>(null);
+  const tint = useLobbyTint();
   // Each face keeps its own slow clock (4.2 to 6.6s a leg), so they never move in step.
   const { t } = useDrift(4200 + ((phase * 937) % 2400));
   const lean = (phase * 1.7) % (Math.PI * 2);
@@ -266,16 +267,16 @@ function Floater({
               borderRadius: FACE / 2,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: held ? 'rgba(91,139,255,0.28)' : 'rgba(91,139,255,0.14)',
+              backgroundColor: held ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)',
               borderWidth: 1.5,
               borderStyle: 'dashed',
-              borderColor: brand.violetDark,
+              borderColor: tint.link,
               transform: [{ scale: held ? 0.97 : 1 }],
             }}
           >
-            <Icon name="plus" size={23} color={brand.violetDark} />
+            <Icon name="plus" size={23} color={tint.link} />
           </View>
-          <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ marginTop: NAME_GAP, width: FACE + 10, textAlign: 'center', fontSize: 11, lineHeight: LABEL, fontWeight: '700', color: brand.violetDark }}>
+          <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ marginTop: NAME_GAP, width: FACE + 10, textAlign: 'center', fontSize: 11, lineHeight: LABEL, fontWeight: '700', color: tint.link }}>
             Add Bot
           </Text>
         </Pressable>

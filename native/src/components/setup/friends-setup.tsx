@@ -20,7 +20,7 @@ import { saveSettings, setDraft } from '@/state/setup-draft';
 import { unlockToHost } from '@/state/unlock';
 import { ForceScheme, spacing } from '@/theme';
 
-import { GrainBackground } from '../grain-background';
+import { LobbyBackdrop } from '../lobby/lobby-backdrop';
 import { LoadingCover } from '../launch-cover';
 import { CodeCard } from '../lobby/code-card';
 import { GameCard } from '../lobby/game-card';
@@ -308,7 +308,8 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
   const partyReady = !!partyCode && Math.max(partyPeople, partyDraft?.fill ?? 0) >= 2;
 
   return (
-    <GrainBackground>
+    // In the game's colour; a party (several games) keeps the blue field.
+    <LobbyBackdrop variant={partyDraft ? null : variant}>
       <ScrollView
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={{
@@ -394,7 +395,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
         onPress={() => void open()}
       />
       <LoadingCover variant={variant} visible={held || (!lobby && !failed)} text="Creating your lobby" />
-    </GrainBackground>
+    </LobbyBackdrop>
   );
 }
 

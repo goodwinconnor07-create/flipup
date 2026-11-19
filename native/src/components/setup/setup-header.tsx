@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { ROUNDED, spacing, useColors } from '@/theme';
+import { ROUNDED, spacing, useColors, useLobbyTintOrNull } from '@/theme';
 
 import { Icon } from '../icon';
 import { ThemedText } from '../themed-text';
@@ -50,6 +50,8 @@ export function SetupRowTitle({ title, detail, big }: { title: string; detail?: 
 /** Apple's own back control, drawn for pages with no navigation bar: a chevron and "Back" in the accent blue. */
 export function BackText({ onPress = () => router.back() }: { onPress?: () => void }) {
   const colors = useColors();
+  // On a lobby drawn in its game's colour, Back takes the game's tint.
+  const tint = useLobbyTintOrNull()?.link ?? (colors.accent as string);
   return (
     <Pressable
       accessibilityRole="button"
@@ -58,8 +60,8 @@ export function BackText({ onPress = () => router.back() }: { onPress?: () => vo
       onPress={onPress}
       style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, height: 44, marginLeft: -6, opacity: pressed ? 0.35 : 1 })}
     >
-      <Icon name="chevron.left" size={22} weight="semibold" color={colors.accent as string} />
-      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 17, color: colors.accent as string }}>
+      <Icon name="chevron.left" size={22} weight="semibold" color={tint} />
+      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 17, color: tint }}>
         Back
       </Text>
     </Pressable>

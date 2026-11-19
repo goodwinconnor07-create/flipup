@@ -159,29 +159,77 @@ export const SUIT_PATH: Record<string, string> = {
   '♥': 'M0 9.5C-13 0-11.5-9.5-5.5-9.5C-2.6-9.5-.6-7.6 0-5.4C.6-7.6 2.6-9.5 5.5-9.5C11.5-9.5 13 0 0 9.5Z',
   '♦': 'M0-10.5L8.2 0L0 10.5L-8.2 0Z',
   '♠': 'M0-10.5C9.5-2 10.5 1 10.5 3.4C10.5 7.4 5.6 8.6 1.9 5.4C2.3 7.6 3.2 9 4.6 10.5H-4.6C-3.2 9-2.3 7.6-1.9 5.4C-5.6 8.6-10.5 7.4-10.5 3.4C-10.5 1-9.5-2 0-10.5Z',
-  '♣': `${oval(0, -5.3, 4.9)}${oval(-5.4, 1.9, 4.9)}${oval(5.4, 1.9, 4.9)}M1.6 0H-1.6C-1.7 5-2.6 8-4.6 10.5H4.6C2.6 8 1.7 5 1.6 0Z`,
+  '♣': `${oval(0, -5.3, 4.9)}${oval(-5.4, 1.9, 4.9)}${oval(5.4, 1.9, 4.9)}M1.6-2.5H-1.6V0C-1.7 5-2.6 8-4.6 10.5H4.6C2.6 8 1.7 5 1.6 0Z`,
 };
 
 // ── Shapes to primitives ────────────────────────────────────────────────────
 
 const SHADOW = 0.24;
 
+/** The card's size and corner on its own 42 × 60 box. */
+const CARD_W = 42;
+const CARD_H = 60;
+const CARD_R = 6.5;
+
+/**
+ * A diamond lattice inside a rectangle: lines both ways at 45°, each cut off at the rectangle's edge (the renderers
+ * have no clipping), `gap` apart. The pattern on a card's back.
+ */
+function lattice(x: number, y: number, w: number, h: number, gap: number): string {
+  let d = '';
+  for (const dir of [1, -1]) {
+    // Lines y = dir * x + c; c runs over every line that crosses the box.
+    const cs = dir === 1 ? [y - (x + w), y + h - x] : [y + x, y + h + x + w];
+    for (let c = Math.ceil(cs[0] / gap) * gap; c <= cs[1]; c += gap) {
+      const pts: [number, number][] = [];
+      for (const px of [x, x + w]) {
+        const py = dir * px + c;
+        if (py >= y - 1e-6 && py <= y + h + 1e-6) pts.push([px, py]);
+      }
+      for (const py of [y, y + h]) {
+        const px = (py - c) * dir;
+        if (px > x + 1e-6 && px < x + w - 1e-6) pts.push([px, py]);
+      }
+      if (pts.length < 2) continue;
+      pts.sort((a, b) => a[0] - b[0]);
+      const [a, b] = [pts[0], pts[pts.length - 1]];
+      if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1) continue;
+      d += `M${n(a[0])} ${n(a[1])}L${n(b[0])} ${n(b[1])}`;
+    }
+  }
+  return d;
+}
+
 function cardPrims({ x, y, r = 0, rank = '', suit = '♠', s = 1, back, backFill = BACK, glow, faded, mini, deal }: CardShape): Prim {
   const colour = SUIT_COLOUR[suit] ?? SUIT_COLOUR['♠'];
   const sw = OUTLINE / s;
-  const body = rr(-21, -30, 42, 60, 6.5);
+  const body = rr(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H, CARD_R);
   const kids: Prim[] = [{ tag: 'path', d: body, fill: INK, opacity: SHADOW, t: `translate(0 ${n(3.4 / s)})` }];
   if (back) {
     kids.push({ tag: 'path', d: body, fill: backFill, stroke: INK, sw });
+    // A fine diamond lattice inside a white frame, and the diamond in the middle on a patch of the back's colour.
+    kids.push({ tag: 'path', d: lattice(-14, -23, 28, 46, 7), fill: 'none', stroke: WHITE, sw: 1.1, opacity: 0.22 });
     kids.push({ tag: 'path', d: rr(-14, -23, 28, 46, 3.5), fill: 'none', stroke: WHITE, sw: 2.4, opacity: 0.6 });
-    kids.push({ tag: 'path', d: SUIT_PATH['♦'], fill: WHITE, opacity: 0.6, t: 'scale(0.9)' });
+    kids.push({ tag: 'path', d: oval(0, 0, 8.6, 11), fill: backFill });
+    kids.push({ tag: 'path', d: SUIT_PATH['♦'], fill: WHITE, opacity: 0.75, t: 'scale(0.9)' });
   } else {
     kids.push({ tag: 'path', d: body, fill: WHITE, stroke: INK, sw });
-    if (glow) kids.push({ tag: 'path', d: rr(-21 + sw / 2 + 1.6, -30 + sw / 2 + 1.6, 42 - sw - 3.2, 60 - sw - 3.2, 4.6), fill: 'none', stroke: GLOW, sw: 3.2 });
+    if (glow) {
+      // The gold frame sits right against the outline's inner edge, its corners curved to match, so no white shows
+      // in the corners. It starts a hair under the outline so the two never part when drawn small.
+      const gw = 3.2;
+      const inset = sw / 2 - 0.3 + gw / 2;
+      const corner = Math.max(0.8, CARD_R - inset);
+      kids.push({ tag: 'path', d: rr(-CARD_W / 2 + inset, -CARD_H / 2 + inset, CARD_W - inset * 2, CARD_H - inset * 2, n(corner)), fill: 'none', stroke: GLOW, sw: gw });
+    }
     if (mini) kids.push({ tag: 'path', d: SUIT_PATH[suit] ?? SUIT_PATH['♠'], fill: colour, t: 'translate(0 1) scale(1.75)' });
     else {
-      kids.push({ tag: 'text', x: rank.length > 1 ? -17 : -15.5, y: -9.5, text: rank, size: 19, weight: 900, fill: colour, anchor: 'start', spacing: rank.length > 1 ? -1.5 : 0 });
-      kids.push({ tag: 'path', d: SUIT_PATH[suit] ?? SUIT_PATH['♠'], fill: colour, t: 'translate(3.5 11) scale(1.42)' });
+      const wide = rank.length > 1;
+      const left = wide ? -17 : -15.5;
+      kids.push({ tag: 'text', x: left, y: -9.5, text: rank, size: 19, weight: 900, fill: colour, anchor: 'start', spacing: wide ? -1.5 : 0 });
+      // One big suit only (the owner, 19 Nov 2026: no small second suit under the rank), centred across the card
+      // and sitting under the rank.
+      kids.push({ tag: 'path', d: SUIT_PATH[suit] ?? SUIT_PATH['♠'], fill: colour, t: 'translate(0 9) scale(1.42)' });
     }
   }
   return { tag: 'g', t: `translate(${x} ${y}) rotate(${r}) scale(${s})`, opacity: faded ? 0.5 : undefined, deal, kids };
@@ -267,6 +315,25 @@ const RED = SUIT_COLOUR['♥'];
 const POWER_CARD = '#1b2556';
 const POWER_FRAME = '#3ee0ff';
 
+/**
+ * The criss-cross on a pineapple: diagonal lines both ways across an oval, each cut off a little inside its edge.
+ * `cs` are the lines' offsets; `pull` (under 1) brings their ends further in from the edge.
+ */
+function hatchOval(cx: number, cy: number, rx: number, ry: number, cs: number[], pull = 0.8): string {
+  const chord = (c: number, dir: 1 | -1) => {
+    // Points on y - cy = dir * (x - cx) + c inside the oval, pulled in a little from the edge.
+    const A = 1 / (rx * rx) + 1 / (ry * ry);
+    const B = (2 * dir * c) / (ry * ry);
+    const C = (c * c) / (ry * ry) - pull;
+    const disc = B * B - 4 * A * C;
+    if (disc <= 0) return '';
+    const x1 = (-B - Math.sqrt(disc)) / (2 * A);
+    const x2 = (-B + Math.sqrt(disc)) / (2 * A);
+    return `M${n(cx + x1)} ${n(cy + dir * x1 + c)}L${n(cx + x2)} ${n(cy + dir * x2 + c)}`;
+  };
+  return cs.map((c) => chord(c, 1) + chord(c, -1)).join('');
+}
+
 /** Each game's subject on a 100 × 100 square, back to front. It keeps clear of the bottom 6 (the band overlaps it). */
 const SUBJECTS: Record<Variant, () => Shape[]> = {
   // The hand everyone knows, and a chip to play it with.
@@ -277,34 +344,38 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     { kind: 'path', d: oval(76, 76, 10.6), stroke: WHITE, sw: 4.2, dash: '5 6.1' },
     flat(oval(76, 76, 4.2), WHITE),
   ],
-  // A pineapple in sunglasses, and the card it's throwing away.
+  // Three cards dealt, and the third is a pineapple.
   pineapple: () => {
-    const cx = 46;
-    const cy = 61;
-    const rx = 22;
-    const ry = 26;
-    // The criss-cross on the skin: diagonal lines cut off at the edge of the fruit.
-    const chord = (c: number, dir: 1 | -1) => {
-      // Points on y - cy = dir * (x - cx) + c inside the oval, pulled in a little from the edge.
-      const A = 1 / (rx * rx) + 1 / (ry * ry);
-      const B = (2 * dir * c) / (ry * ry);
-      const C = (c * c) / (ry * ry) - 0.8;
-      const disc = B * B - 4 * A * C;
-      if (disc <= 0) return '';
-      const x1 = (-B - Math.sqrt(disc)) / (2 * A);
-      const x2 = (-B + Math.sqrt(disc)) / (2 * A);
-      return `M${n(cx + x1)} ${n(cy + dir * x1 + c)}L${n(cx + x2)} ${n(cy + dir * x2 + c)}`;
-    };
-    const hatch = [-24, -8, 8, 24].map((c) => chord(c, 1) + chord(c, -1)).join('');
+    const s = 0.84;
+    const sw = OUTLINE / s;
+    const body = rr(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H, CARD_R);
+    // The pineapple on the card, filling its face: a crown of leaves, the fruit, its criss-cross and a glint. It's a
+    // drawing on the card (like a suit), so its outline is lighter than the card's own.
+    const fine = 2.1 / s;
+    const fruit = { cx: 0, cy: 9, rx: 13, ry: 15.5 };
+    const leafAt = fruit.cy - fruit.ry + 4;
+    const LEAF = 'M-7.5 0C-7.5 -10 -3.5 -17 0 -24C3.5 -17 7.5 -10 7.5 0Z';
+    const crown = [-42, 42, -21, 21, 0].map((a) => {
+      const k = a === 0 ? 0.92 : 0.8;
+      return { a, k, t: `translate(0 ${leafAt}) rotate(${a}) scale(${k})` };
+    });
     return [
-      card({ x: 77, y: 34, r: 22, rank: '3', suit: '♠', s: 0.6, deal: 0 }),
-      ...[-34, -17, 0, 17, 34].map((a) => ink('M-6 0C-6 -12 -3 -20 0 -27C3 -20 6 -12 6 0Z', a === 0 ? GREEN : Math.abs(a) === 17 ? GREEN_DARK : GREEN, { t: `translate(${cx} ${cy - ry + 5}) rotate(${a})`, noShadow: true })),
-      ink(oval(cx, cy, rx, ry), '#ffc628'),
-      { kind: 'path', d: hatch, stroke: '#e08f0a', sw: 2.2 },
-      ink(`${rr(cx - 17, cy - 11, 15, 11, 4.5)}${rr(cx + 2, cy - 11, 15, 11, 4.5)}`, INK, { noShadow: true, sw: 1 }),
-      { kind: 'path', d: `M${cx - 3} ${cy - 7}H${cx + 3}`, stroke: INK, sw: 2.6 },
-      { kind: 'path', d: `M${cx - 13} ${cy - 8}l4 -1.5M${cx + 6} ${cy - 8}l4 -1.5`, stroke: WHITE, sw: 1.8, opacity: 0.9 },
-      { kind: 'path', d: `M${cx - 7} ${cy + 8}Q${cx} ${cy + 15} ${cx + 7} ${cy + 8}`, stroke: INK, sw: 2.6 },
+      card({ x: 27, y: 53, r: -16, rank: 'A', suit: '♥', s, deal: 0 }),
+      card({ x: 48, y: 45, r: -3, rank: '8', suit: '♣', s, deal: 1 }),
+      {
+        kind: 'group',
+        t: `translate(71 51) rotate(13) scale(${s})`,
+        shapes: [
+          flat(body, INK, { opacity: SHADOW, t: `translate(0 ${n(3.4 / s)})` }),
+          ink(body, WHITE, { noShadow: true, sw }),
+          // The crown: one outline round all the leaves, then the leaves filled over it, so no lines tangle inside.
+          ...crown.map(({ t, k }): PathShape => ({ kind: 'path', d: LEAF, fill: INK, stroke: INK, sw: n((fine * 2) / k), t })),
+          ...crown.map(({ t, a }) => flat(LEAF, Math.abs(a) === 21 ? GREEN_DARK : GREEN, { t })),
+          ink(oval(fruit.cx, fruit.cy, fruit.rx, fruit.ry), '#ffc628', { noShadow: true, sw: fine }),
+          { kind: 'path', d: hatchOval(fruit.cx, fruit.cy, fruit.rx, fruit.ry, [-15, -5, 5, 15], 0.62), stroke: '#e08f0a', sw: 1.8 },
+          { kind: 'path', d: `M${fruit.cx - 7.5} ${fruit.cy - 7}Q${fruit.cx - 10} ${fruit.cy} ${fruit.cx - 7.5} ${fruit.cy + 7}`, stroke: WHITE, sw: 2.2, opacity: 0.8 },
+        ],
+      },
     ];
   },
   // One big wild two.
@@ -315,18 +386,20 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     sparkle(83, 74, 10),
     sparkle(15, 72, 6, WHITE),
   ],
-  // The ghost and the two cards nobody sees.
+  // The ghost and the two cards nobody sees, held up over its mouth.
   ghost: () => [
-    ink('M25 86V44C25 28 36 16 50 16C64 16 75 28 75 44V86L66.7 78L58.3 86L50 78L41.7 86L33.3 78Z', '#f4f5ff'),
-    flat(`${oval(41, 40, 4, 5.6)}${oval(59, 40, 4, 5.6)}`, INK),
-    flat(oval(50, 52, 3.4, 4.2), INK),
-    card({ x: 41, y: 70, r: -12, s: 0.52, back: true, deal: 0 }),
-    card({ x: 59, y: 70, r: 12, s: 0.52, back: true, deal: 1 }),
+    // A rounded, scalloped hem (the zigzag ended in sharp notches at the corners).
+    ink('M25 84V44C25 28 36 16 50 16C64 16 75 28 75 44V83q-4.17 7 -8.33 0q-4.17 7 -8.33 0q-4.17 7 -8.33 0q-4.17 7 -8.33 0q-4.17 7 -8.33 0q-4.18 7 -8.35 0Z', '#f4f5ff'),
+    flat(`${oval(41, 37, 4, 5.6)}${oval(59, 37, 4, 5.6)}`, INK),
+    card({ x: 41, y: 64, r: -12, s: 0.52, back: true, deal: 0 }),
+    card({ x: 59, y: 64, r: 12, s: 0.52, back: true, deal: 1 }),
   ],
   // Three rivers: three last cards over the water.
   pittsburgh: () => [
-    ...line('M-4 76q6.5 -8 13 0t13 0t13 0t13 0t13 0t13 0t13 0t13 0', '#9fd4ff', 4),
-    ...line('M-10 87q6.5 -8 13 0t13 0t13 0t13 0t13 0t13 0t13 0t13 0t13 0', '#9fd4ff', 4),
+    // The water as two solid bands of waves (crossing outlined lines tangled at this size), with a few glints.
+    waves(71, '#9fd4ff', 4),
+    waves(80, '#5fa8e8'),
+    { kind: 'path', d: 'M12 90q5 -5 10 0M46 94q5 -5 10 0M76 89q5 -5 10 0', stroke: WHITE, sw: 2.2, opacity: 0.6 },
     card({ x: 22, y: 44, r: -8, rank: '9', suit: '♣', s: 0.62, deal: 0 }),
     card({ x: 78, y: 44, r: 8, rank: '7', suit: '♦', s: 0.62, deal: 2 }),
     card({ x: 50, y: 38, rank: 'K', suit: '♠', s: 0.68, glow: true, deal: 1 }),

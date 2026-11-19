@@ -321,7 +321,12 @@ describe('betting', () => {
       code: null,
       now: clock,
     });
-    // A fixed mix of styles (bots are seated at random), so every run plays the same hands.
+    // A fixed mix of styles (bots are seated at random), so every run plays the same hands. The style bots play here,
+    // not the production ones: this test is about the chips, which every move goes through `applyAction()` for
+    // whichever bot makes it. The production bots spend most of a second on some decisions, so 60 hands of them took
+    // 15s of one CPU and timed out on CI beside the other sims; fuzzActions.test.ts checks the chips after every step
+    // of production-bot play in every game.
+    game.legacyBotSimulation = true;
     const styles = ['pro', 'maniac', 'station', 'trapper', 'gambler'];
     game.players.filter((p) => p.bot).forEach((p, i) => (p.style = styles[i]));
     game = begin(game);
@@ -352,11 +357,7 @@ describe('betting', () => {
       expect(chipsInPlay(game)).toBe(total);
       for (const p of game.players) expect(p.stack).toBeGreaterThanOrEqual(0);
     }
-    expect(hands).toBeGreaterThan(5);
-    // This covers up to 60 complete hands through production bot inference.
-    // Per-decision latency is measured separately by the bot benchmarks.
-    // About 14s of one CPU, so it runs in the `sims` group with a core to itself and takes the suite's 30s limit
-    // (vitest.config.ts); its own 20s limit timed out on CI when it shared the runner with the other sims.
+    expect(hands).toBeGreaterThanOrEqual(60);
   });
 });
 

@@ -1,6 +1,6 @@
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
@@ -46,7 +46,19 @@ export function LaunchCover() {
  * The cover itself, shared by the launch and the game's deal-in (`DealWipe`): `total` is how long the icon holds
  * before it eases out (the arrival and the shimmer scale with it), `zIndex` where it sits.
  */
-export function PrintCover({ total = FIRST_MS, zIndex = 1000, launch = false }: { total?: number; zIndex?: number; /** The app's opening screen: light or dark by the phone's look, with the words and the version. */ launch?: boolean }) {
+export function PrintCover({
+  total = FIRST_MS,
+  zIndex = 1000,
+  launch = false,
+  variant,
+}: {
+  total?: number;
+  zIndex?: number;
+  /** The app's opening screen: light or dark by the phone's look, with the words and the version. */
+  launch?: boolean;
+  /** A game's deal-in: its own icon on its own colours (as Home and the lobby), not the blue field. */
+  variant?: Variant;
+}) {
   const k = total / FIRST_MS;
   const dark = useScheme() === 'dark';
   const look = launch ? (dark ? DARK : LIGHT) : null;
@@ -94,10 +106,10 @@ export function PrintCover({ total = FIRST_MS, zIndex = 1000, launch = false }: 
   if (gone) return null;
   return (
     <Animated.View pointerEvents="none" style={[{ position: 'absolute', inset: 0, zIndex }, coverStyle]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <GrainBackground style={{ alignItems: 'center', justifyContent: 'center' }} {...(look ? { colors: look.base, glow: look.glow, glow2: look.glow2 } : {})}>
+      <Field variant={launch ? undefined : variant} look={look}>
         <Animated.View style={[{ width: TILE, height: TILE, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', boxShadow: look ? look.shadow : '0 22px 44px -16px rgba(0, 0, 0, 0.7)' }, tileStyle]}>
           <View style={{ flex: 1, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
-            <IconArt size={TILE} dark={!!look && dark} />
+            {variant && !launch ? <GameThumb variant={variant} size={TILE} /> : <IconArt size={TILE} dark={!!look && dark} />}
             {!reduce && (
               <Animated.View style={[{ position: 'absolute', top: -TILE * 0.1, bottom: -TILE * 0.1, left: 0, width: TILE * 0.7 }, bandStyle]}>
                 <Svg width="100%" height="100%" preserveAspectRatio="none">
@@ -120,8 +132,19 @@ export function PrintCover({ total = FIRST_MS, zIndex = 1000, launch = false }: 
             {VERSION}
           </Text>
         )}
-      </GrainBackground>
+      </Field>
     </Animated.View>
+  );
+}
+
+/** The cover's page: the game's colours for a game's deal-in, else the moving blue field (or the launch's own look). */
+function Field({ variant, look, children }: { variant?: Variant; look: typeof LIGHT | typeof DARK | null; children: ReactNode }) {
+  const centre = { alignItems: 'center', justifyContent: 'center' } as const;
+  if (variant) return <GameBackdrop variant={variant} style={centre}>{children}</GameBackdrop>;
+  return (
+    <GrainBackground style={centre} {...(look ? { colors: look.base, glow: look.glow, glow2: look.glow2 } : {})}>
+      {children}
+    </GrainBackground>
   );
 }
 

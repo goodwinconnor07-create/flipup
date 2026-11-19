@@ -12,9 +12,8 @@ import { SheetScroll } from '@/components/sheet-scroll';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { CARD_PACKS, FAMILIAR_COUNT, FREE_BOT_NAMES, FREE_VARIANTS, LAB_DIALS, VARIANTS } from '@/engine';
-import { GLASS_SHEETS } from '@/components/sheet-material';
 import { usePremium } from '@/state/premium';
-import { brand, radius, ROUNDED, spacing, useReduceTransparency } from '@/theme';
+import { brand, radius, ROUNDED, spacing } from '@/theme';
 
 /**
  * One Premium perk shown properly, from a tile on the Premium page: what it is and a look at it (the games, every
@@ -26,12 +25,11 @@ export default function PerkSheet() {
   const perk = perkById(id);
   const has = usePremium();
   const insets = useSafeAreaInsets();
-  const solid = useReduceTransparency();
   if (!perk) return null;
   const go = GO[perk.id];
   return (
     // The scroll view is the screen itself, like every other sheet: a plain View around it left iOS drawing a blank sheet.
-    <SheetScroll style={{ backgroundColor: GLASS_SHEETS && !solid ? 'rgba(7,11,28,0.78)' : '#070b1c' }} contentContainerStyle={{ flexGrow: 1, padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md, gap: spacing.lg }}>
+    <SheetScroll style={{ backgroundColor: '#070b1c' }} contentContainerStyle={{ flexGrow: 1, padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md, gap: spacing.lg }}>
       <View style={{ gap: spacing.xs }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.gold }}>

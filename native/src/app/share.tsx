@@ -25,7 +25,7 @@ const open = (params: Record<string, string>) => {
 /**
  * Share cards: everything worth sending in one place. Your stats, the top hands from your hand bank
  * (biggest wins, best hands, bluffs that worked, coolers, starred ones), and your recent games. Each opens the
- * composer (`share-card`) with its designs to pick from. Reached from Home's passport and Settings.
+ * composer (`share-card`) with its designs to pick from. Reached from Home's Share cards shortcut and Settings.
  */
 export default function ShareHub() {
   return (

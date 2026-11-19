@@ -14,7 +14,7 @@ import { ThemedText } from './themed-text';
 /**
  * One saved hand as a row: your two cards, what you made (a star first when it's starred), the game, the hand's
  * number and day, the chips won or lost, and a play mark (a red remove button while the list is being edited).
- * Saved hands lists them all; the Hands tab shows the first few.
+ * Saved hands lists them.
  */
 export function SavedHandRow({ replay: r, starred, editing, onPress, onLongPress, onRemove }: { replay: Replay; starred: boolean; editing?: boolean; onPress: () => void; onLongPress?: () => void; onRemove?: () => void }) {
   return (

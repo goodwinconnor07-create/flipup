@@ -1,32 +1,30 @@
 // Play with bots: who's at the table as a small cluster of faces floating softly together, in place of a list (the
 // owner's ask, 12 Nov 2026: not a big drawn table, a compact section, so the game card under it stays in view without
 // scrolling; if it works it goes on the online lobby too). Each face sits in a filled circle with its name under it,
-// and the two drift together. A new bot pops into the space; holding a bot (or the Bots stepper's minus) pops it back
-// out. Faces sit in up to two loose, staggered rows, you first.
+// and the two drift together. A new bot pops into the space; a tap or a long press on a bot opens its menu (Remove,
+// and Swap where the page can), and Remove pops it back out. Faces sit in up to two loose, staggered rows, you first.
 //
 // Motion (docs/MOTION.md): the drift is transform only on the UI thread, stopped off screen, in the background and
 // under Reduce Motion (useDrift). The pop in is ease-out from 50% and never from nothing (rule 10), the pop out is a
 // short ease-out swell then away, quicker than the arrival (rule 15), and nothing overshoots (rule 13). A face that
 // changes seat glides there with SETTLE. Under Reduce Motion faces only fade.
 //
-// Holding a bot draws a ring round its face, clockwise from the top, so you can see the hold working: it starts after
-// 120ms (a tap never shows it), fills in a steady 530ms (a timer runs at an even pace, like the turn timer), and the
-// bot pops out the moment it closes. Let go early and the ring unwinds back to the top, ease-out in 200ms (rule 15),
-// with no overshoot. The ring is red, the app's colour for taking something away. It works the same under Reduce
-// Motion: it shows progress, it doesn't move anything.
+// A bot's menu (19 Nov 2026, the owner's call): it replaced holding a bot until a red ring closed, which nobody found
+// without the caption under the faces. A tap is what people try first, and a long press is the iPhone's way to a
+// menu, so both open the same action sheet, the way a person's seat opens theirs. Removing still offers Undo.
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { cancelAnimation, Easing, runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { EASE_OUT, SETTLE } from '@/motion/presets';
 import { useDrift } from '@/motion/use-drift';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { brand, motion } from '@/theme';
+import { brand, motion, useLobbyTint } from '@/theme';
 
 import { type LabBot } from '@/state/bot-lab';
 
 import { BotPicker, type Anchor } from '../bot-lab/bot-picker';
+import { choose } from '../choose';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
 
@@ -40,7 +38,7 @@ export interface FloatSeat {
   leaving?: boolean;
   /** The Add a bot button, drawn the same size as a face and floating with them. */
   add?: boolean;
-  /** False for someone who can't be held off (a person at an online table: they have `onPress` for their menu). */
+  /** False for someone who can't be taken off here (a person at an online table: they have `onPress` for their menu). */
   removable?: boolean;
   /** A tap: a person's menu (Report, Block, Remove). */
   onPress?: () => void;
@@ -61,21 +59,6 @@ const PER_ROW = 5;
 const PAD = 10;
 /** The section's height for this many faces: one row, or two. */
 export const clusterHeight = (n: number) => Math.max(1, Math.ceil(n / PER_ROW)) * ROW + PAD * 2;
-/** How long a press must last before a bot pops out: long enough to watch the ring go round, short enough not to drag. */
-const HOLD_MS = 650;
-/** The ring waits this long before it starts, so a quick tap never flashes it. */
-const RING_WAIT = 120;
-/** The hold ring: a little outside the face's own edge, so it reads as a ring round it, not a border. */
-const RING_GAP = 4;
-const RING_STROKE = 3;
-const RING = FACE + (RING_GAP + RING_STROKE) * 2;
-const RING_R = (RING - RING_STROKE) / 2;
-const RING_LENGTH = 2 * Math.PI * RING_R;
-/** From the face's inner edge (inside its 1pt border) out to the ring's. */
-const RING_OUT = RING_GAP + RING_STROKE + 1;
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-/** Apple's system red in dark mode: the colour for taking something away. */
-const HOLD_RED = '#ff453a';
 /** Where a new face starts (rule 10: from something, never from nothing). */
 const POP_FROM = 0.5;
 
@@ -96,8 +79,9 @@ export function seatSpots(n: number, width: number): { x: number; y: number }[] 
 }
 
 /**
- * Everyone in one small section. `onHold` asks for a bot to be taken off (the parent marks it `leaving`), and
- * `onGone` runs once its pop out has played. `canRemove` is false when the last bot would leave the table empty.
+ * Everyone in one small section. A bot's menu asks for it to be taken off through `onHold` (the parent marks it
+ * `leaving`), and `onGone` runs once its pop out has played. `onSwap`, where the page can, swaps it for another bot.
+ * `canRemove` is false when the last bot would leave the table empty.
  */
 export function FloatTable({
   seats: people,
@@ -106,10 +90,13 @@ export function FloatTable({
   onGone,
   onAdd,
   onAddLab,
+  onSwap,
 }: {
   seats: FloatSeat[];
   canRemove: boolean;
   onHold: (key: string) => void;
+  /** Swaps a bot for another random one, in its place. Offered in the bot's menu while set. */
+  onSwap?: (key: string) => void;
   onGone: (key: string) => void;
   /** Adds a bot; while set, an Add button floats at the end of the group. */
   onAdd?: () => void;
@@ -147,6 +134,7 @@ export function FloatTable({
             canRemove={canRemove && !s.you && !s.add && s.removable !== false}
             onAdd={s.add ? openAdd : undefined}
             onHold={() => onHold(s.key)}
+            onSwap={onSwap && !s.you && !s.add && s.removable !== false ? () => onSwap(s.key) : undefined}
             onGone={() => onGone(s.key)}
           />
         ))}
@@ -171,6 +159,7 @@ function Floater({
   canRemove,
   onAdd,
   onHold,
+  onSwap,
   onGone,
 }: {
   seat: FloatSeat;
@@ -180,10 +169,12 @@ function Floater({
   /** The Add button's tap, with where the button is on screen so a menu can open from it. */
   onAdd?: (anchor?: Anchor) => void;
   onHold: () => void;
+  onSwap?: () => void;
   onGone: () => void;
 }) {
   const reduce = useReduceMotion();
   const addRef = useRef<ComponentRef<typeof View>>(null);
+  const tint = useLobbyTint();
   // Each face keeps its own slow clock (4.2 to 6.6s a leg), so they never move in step.
   const { t } = useDrift(4200 + ((phase * 937) % 2400));
   const lean = (phase * 1.7) % (Math.PI * 2);
@@ -225,21 +216,24 @@ function Floater({
   });
 
   const [held, setHeld] = useState(false);
-  // The hold ring: 0 empty, 1 closed (the bot leaves).
-  const ring = useSharedValue(0);
-  const closed = useRef(false);
-  const ringProps = useAnimatedProps(() => ({ strokeDashoffset: RING_LENGTH * (1 - ring.get()) }));
-  const ringTrack = useAnimatedStyle(() => ({ opacity: Math.min(1, ring.get() * 6) }));
-  const startRing = () => {
-    if (!canRemove) return;
-    cancelAnimation(ring);
-    ring.set(withDelay(RING_WAIT, withTiming(1, { duration: HOLD_MS - RING_WAIT, easing: Easing.linear })));
+  // A bot you may take off (not you, not a person with their own menu): its menu.
+  const isBot = !seat.you && !seat.add && seat.removable !== false;
+  const botMenu = () => {
+    haptic.tap();
+    choose(seat.name, canRemove ? undefined : 'A table needs at least one bot.', [
+      ...(onSwap ? [{ text: 'Swap for another bot', onPress: onSwap }] : []),
+      ...(canRemove ? [{ text: 'Remove from table', style: 'destructive' as const, onPress: onHold }] : []),
+      { text: 'Cancel', style: 'cancel' as const },
+    ]);
   };
-  const dropRing = () => {
-    if (closed.current) return;
-    cancelAnimation(ring);
-    ring.set(withTiming(0, { duration: motion.exit, easing: EASE_OUT }));
-  };
+  const menu = seat.onPress
+    ? () => {
+        haptic.tap();
+        seat.onPress?.();
+      }
+    : isBot
+      ? botMenu
+      : undefined;
   const box = [{ position: 'absolute' as const, left: 0, top: 0, width: FACE, alignItems: 'center' as const }, style];
   if (seat.add)
     // Add a bot: an empty seat the same size as a face, dashed, with a plus; a tap seats a bot that pops in.
@@ -266,16 +260,16 @@ function Floater({
               borderRadius: FACE / 2,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: held ? 'rgba(91,139,255,0.28)' : 'rgba(91,139,255,0.14)',
+              backgroundColor: held ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)',
               borderWidth: 1.5,
               borderStyle: 'dashed',
-              borderColor: brand.violetDark,
+              borderColor: tint.link,
               transform: [{ scale: held ? 0.97 : 1 }],
             }}
           >
-            <Icon name="plus" size={23} color={brand.violetDark} />
+            <Icon name="plus" size={23} color={tint.link} />
           </View>
-          <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ marginTop: NAME_GAP, width: FACE + 10, textAlign: 'center', fontSize: 11, lineHeight: LABEL, fontWeight: '700', color: brand.violetDark }}>
+          <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ marginTop: NAME_GAP, width: FACE + 10, textAlign: 'center', fontSize: 11, lineHeight: LABEL, fontWeight: '700', color: tint.link }}>
             Add Bot
           </Text>
         </Pressable>
@@ -284,40 +278,13 @@ function Floater({
   return (
     <Animated.View pointerEvents={seat.leaving ? 'none' : 'auto'} style={[{ position: 'absolute', left: 0, top: 0, width: FACE, alignItems: 'center' }, style]}>
       <Pressable
-        accessibilityRole={seat.you && !seat.onPress ? undefined : 'button'}
+        accessibilityRole={menu ? 'button' : undefined}
         accessibilityLabel={seat.you ? `${seat.name}, you` : seat.removable === false ? seat.name : `${seat.name}, bot`}
-        accessibilityHint={canRemove ? 'Hold to take this bot off the table' : undefined}
-        accessibilityActions={canRemove ? [{ name: 'longpress', label: 'Take off the table' }] : undefined}
-        onAccessibilityAction={canRemove ? onHold : undefined}
-        delayLongPress={HOLD_MS}
-        onPressIn={() => {
-          if (!seat.you || seat.onPress) setHeld(true);
-          startRing();
-        }}
-        onPressOut={() => {
-          setHeld(false);
-          dropRing();
-        }}
-        onPress={
-          seat.onPress
-            ? () => {
-                haptic.tap();
-                seat.onPress?.();
-              }
-            : undefined
-        }
-        onLongPress={() => {
-          if (seat.you || seat.removable === false) return;
-          if (!canRemove) {
-            haptic.failure();
-            return;
-          }
-          closed.current = true;
-          cancelAnimation(ring);
-          ring.set(1);
-          haptic.turn();
-          onHold();
-        }}
+        accessibilityHint={isBot ? 'Opens a menu to remove or swap this bot' : undefined}
+        onPressIn={() => menu && setHeld(true)}
+        onPressOut={() => setHeld(false)}
+        onPress={menu}
+        onLongPress={menu}
         style={{ alignItems: 'center' }}
       >
         <View
@@ -335,26 +302,6 @@ function Floater({
             transform: [{ scale: held ? 0.97 : 1 }],
           }}
         >
-        {canRemove && (
-          // The hold ring, drawn round the face from 12 o'clock (the view is turned a
-          // quarter so the stroke starts at the top). Its faint track shows only once it has started.
-          <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: -RING_OUT, left: -RING_OUT, width: RING, height: RING, transform: [{ rotate: '-90deg' }] }, ringTrack]}>
-            <Svg width={RING} height={RING}>
-              <Circle cx={RING / 2} cy={RING / 2} r={RING_R} stroke="rgba(255,255,255,0.14)" strokeWidth={RING_STROKE} fill="none" />
-              <AnimatedCircle
-                cx={RING / 2}
-                cy={RING / 2}
-                r={RING_R}
-                stroke={HOLD_RED}
-                strokeWidth={RING_STROKE}
-                strokeLinecap="round"
-                fill="none"
-                strokeDasharray={`${RING_LENGTH} ${RING_LENGTH}`}
-                animatedProps={ringProps}
-              />
-            </Svg>
-          </Animated.View>
-        )}
           <Text style={{ fontSize: 30 }} maxFontSizeMultiplier={1}>
             {seat.emoji}
           </Text>

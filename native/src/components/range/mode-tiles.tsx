@@ -6,17 +6,16 @@
 //  - Endless: hand after hand until you stop (Premium).
 //  - Sets: five hands, scored at the end (Premium).
 //  - Gaps: a set built from the spots you miss (Premium). Until you've missed some, it waits, dimmed.
+import type { ReactNode } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 import Svg from 'react-native-svg';
 
-import { INK } from '@design/gameArt';
 import { TRAIN_LOOK, trainThumb, type TrainMode } from '@design/trainArt';
 import { draw } from '@/components/game-picture';
 import { tileHeight } from '@/components/game-tile';
-import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
-import { party, ROUNDED, spacing, useShadows } from '@/theme';
+import { ROUNDED, spacing, useShadows } from '@/theme';
 
 export type { TrainMode };
 
@@ -32,11 +31,12 @@ const ORDER: OtherMode[] = ['endless', 'sets', 'gaps'];
 const GAP = 10;
 
 /**
- * Endless, Sets and Gaps in one row under "Keep training". `locked` puts a crown on each (they need Premium);
- * `gapsWaiting` dims Gaps and says it comes after a few hands (nothing missed yet to build it from), and with Premium
+ * Endless, Sets and Gaps in one row under "Keep training". Without Premium, `veil` (the blurred lock, `LockVeil`) lies
+ * over the whole row, as it does over Home's Host button, and the tiles drop their own crowns. `gapsWaiting` dims Gaps and says it comes after a few hands (nothing missed yet to build it from), and with Premium
  * it can't be tapped until then. A tap goes through `onPick`, which starts the mode or opens the offer.
  */
-export function ModeTiles({ locked, gapsWaiting, onPick }: { locked: boolean; gapsWaiting: boolean; onPick: (mode: OtherMode) => void }) {
+export function ModeTiles({ veil, gapsWaiting, onPick }: { veil?: ReactNode; gapsWaiting: boolean; onPick: (mode: OtherMode) => void }) {
+  const locked = !!veil;
   const { width } = useWindowDimensions();
   const tile = Math.min(170, Math.floor((Math.min(width, 560 + spacing.md * 2) - spacing.md * 2 - GAP * 2) / 3));
   return (
@@ -44,7 +44,9 @@ export function ModeTiles({ locked, gapsWaiting, onPick }: { locked: boolean; ga
       <ThemedText variant="title3" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '800', paddingHorizontal: spacing.xxs }}>
         Keep training
       </ThemedText>
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: GAP }}>
+      {/* The veil covers the tiles and their lines; the row clips its corners. Under it the tiles are hidden from VoiceOver. */}
+      <View style={locked ? { borderRadius: 24, borderCurve: 'continuous', overflow: 'hidden' } : undefined}>
+      <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'} style={{ flexDirection: 'row', justifyContent: 'center', gap: GAP }}>
         {ORDER.map((m) => {
           const waiting = m === 'gaps' && gapsWaiting;
           const hook = waiting ? 'After a few hands' : MODES[m].hook;
@@ -57,7 +59,7 @@ export function ModeTiles({ locked, gapsWaiting, onPick }: { locked: boolean; ga
                 onPress={waiting && !locked ? undefined : () => onPick(m)}
               >
                 <View style={{ opacity: waiting ? 0.45 : 1 }}>
-                  <ModeTile mode={m} width={tile} locked={locked} />
+                  <ModeTile mode={m} width={tile} />
                 </View>
               </PressableScale>
               <ThemedText variant="footnote" tone="secondaryLabel" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ textAlign: 'center' }}>
@@ -67,18 +69,19 @@ export function ModeTiles({ locked, gapsWaiting, onPick }: { locked: boolean; ga
           );
         })}
       </View>
+      {veil}
+      </View>
     </View>
   );
 }
 
-/** One mode as a tile: `GameTile`'s shape, band, type and badges, with the mode's own picture and colours. */
-function ModeTile({ mode, width, locked }: { mode: OtherMode; width: number; locked: boolean }) {
+/** One mode as a tile: `GameTile`'s shape, band and type, with the mode's own picture and colours. */
+function ModeTile({ mode, width }: { mode: OtherMode; width: number }) {
   const shadows = useShadows();
   const look = TRAIN_LOOK[mode];
   const height = tileHeight(width);
   const corner = Math.round(width * 0.2);
   const band = Math.round(width * 0.27);
-  const badge = Math.max(22, Math.round(width * 0.21));
   return (
     // The shadow sits on the outer view: iOS drops the shadow of a view that clips.
     <View style={{ width, height, borderRadius: corner, borderCurve: 'continuous', boxShadow: shadows.card }}>
@@ -97,11 +100,6 @@ function ModeTile({ mode, width, locked }: { mode: OtherMode; width: number; loc
             {MODES[mode].name}
           </Text>
         </View>
-        {locked && (
-          <View style={{ position: 'absolute', top: 6, right: 6, width: badge, height: badge, borderRadius: badge / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: INK }}>
-            <Icon name="crown.fill" size={badge * 0.5} color={party.yellow} />
-          </View>
-        )}
       </View>
     </View>
   );

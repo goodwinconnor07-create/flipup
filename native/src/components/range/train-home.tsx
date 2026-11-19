@@ -1,7 +1,7 @@
 // Range training's start screen, the Train tab (19 Nov 2026, the owner's pick from a mock-up). One layout for
 // everyone: today's hand is the wide card at the top, the one thing to do each day (`DailyCard`: play it, then your
 // result, the countdown to the next, Share, and the offer of a reminder), How it works while you're new, then Endless,
-// Sets and Gaps in a row under "Keep training" (crowned without Premium), what to work on (Premium, once there's
+// Sets and Gaps in a row under "Keep training" (under the blurred Premium lock without it), what to work on (Premium, once there's
 // something), your numbers once you've played, and the library. Nothing is dealt here; hands play full screen in
 // app/range-session.tsx.
 import { router } from 'expo-router';
@@ -16,6 +16,7 @@ import { useReminder } from '@/state/reminder';
 import { haptic } from '@/components/haptics';
 import { Icon, type IconName } from '@/components/icon';
 import { LivingCard } from '@/components/living-card';
+import { LockVeil } from '@/components/premium/lock-veil';
 import { PressableScale } from '@/components/pressable-scale';
 import { Swap, SwapIcon } from '@/components/swap';
 import { ThemedText } from '@/components/themed-text';
@@ -268,7 +269,11 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
     <View style={{ gap: spacing.xl }}>
       <DailyCard q={q} premium={premium} first={first} reminderOn={reminder.on} />
       {history.length < 3 && <HowItWorks />}
-      <ModeTiles locked={!premium} gapsWaiting={gaps.length === 0} onPick={pick} />
+      <ModeTiles
+        veil={premium ? undefined : <LockVeil title="Unlock Premium to train" line="Endless hands, scored sets and your gaps" onPress={locked} />}
+        gapsWaiting={gaps.length === 0}
+        onPick={pick}
+      />
       {workOn}
       {/* Your numbers only once there are some: a row of zeros and dashes reads as nothing to see. The streak is on the card. */}
       {!first && (

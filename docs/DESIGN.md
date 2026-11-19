@@ -51,7 +51,7 @@
 > first visit or "One spot. Your call.", and Play with your streak beside it; once played, how you did (a gold tick
 > for the best play), when the next hand comes, Your answer and Share, and along its bottom the offer "Remind me
 > tomorrow at 6 pm?" (the switch itself is in Settings). How it works shows for your first three hands. Under it,
-> "Keep training": Endless, Sets and Gaps in one row (`ModeTiles`), crowned without Premium; Gaps is blue, not gold,
+> "Keep training": Endless, Sets and Gaps in one row (`ModeTiles`), under the same blurred lock as Home's Host button without Premium (`LockVeil`, "Unlock Premium to train"); Gaps is blue, not gold,
 > and waits, dimmed, until you've missed something. Work on (Premium, once there's something), then your numbers
 > (best plays, best run, hands played) only once you've played, then the library. No empty zeros, no footnote.
 >

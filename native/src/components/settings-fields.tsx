@@ -19,6 +19,9 @@ import type { MenuGroup } from './native-menu.types';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
+/** The ante's sizes, as a share of the big blind (the same words as the lobby's pills). */
+const ANTE_WORDS: Record<number, string> = { 10: '10% BB', 25: '¼ BB', 50: '½ BB', 100: '1 BB' };
+
 /**
  * Chips and blinds, and the house rules, as groups for `NativeMenu` (the table's settings sheet). `online` adds the
  * time to act and the busted players' peek, which only matter with friends. `bots` is how many everyday bots are at
@@ -63,7 +66,7 @@ export function useSettingsGroups({ settings, onChange, online, bots }: { settin
     {
       id: 'rules',
       header: 'House rules',
-      footer: clockFoot,
+      footer: [clockFoot, 'House rules start with the next hand.'].filter(Boolean).join(' '),
       items: [
         (settings.variant ?? 'holdem') === 'holdem' && bots > 0 && {
           kind: 'segmented',
@@ -93,34 +96,28 @@ export function useSettingsGroups({ settings, onChange, online, bots }: { settin
         { kind: 'toggle', id: 'rebuys', title: 'Rebuys', subtitle: online ? 'Busted players can buy back in' : 'If you bust, you can buy back in and keep playing', value: settings.rebuys, onChange: (rebuys) => set({ rebuys }) },
         !online && { kind: 'toggle', id: 'replay', title: 'Review after every hand', subtitle: 'A blue Review button and a 10 second countdown to the next hand', value: !!settings.replayEachHand, onChange: (replayEachHand) => set({ replayEachHand }) },
         online && { kind: 'toggle', id: 'peek', title: 'Busted players peek', subtitle: "Once you're out, you see everyone's cards", value: !!settings.showToBusted, onChange: (showToBusted) => set({ showToBusted }) },
-      ],
-    },
-    {
-      id: 'home',
-      header: 'Home game',
-      footer: 'Changes start with the next hand.',
-      items: [
-        {
-          kind: 'stepper',
-          id: 'ante',
-          title: 'Ante',
-          detail: settings.ante ? `${chips(anteChips(settings))} each` : 'None',
-          value: Math.max(0, ANTE_CHOICES.indexOf(settings.ante ?? 0)),
-          min: 0,
-          max: ANTE_CHOICES.length - 1,
-          onChange: (i) => set({ ante: ANTE_CHOICES[i] }),
+        // Home game rules (the owner, 19 Nov 2026): on/off first; the size or how often shows only once it's on.
+        { kind: 'toggle', id: 'ante', title: 'Ante', subtitle: settings.ante ? `Everyone puts in ${chips(anteChips(settings))} before the deal` : 'Everyone puts in a little before the deal', value: !!settings.ante, onChange: (on) => set({ ante: on ? 25 : 0 }) },
+        !!settings.ante && {
+          kind: 'segmented',
+          id: 'ante-size',
+          title: 'Ante size',
+          stacked: true,
+          value: String(settings.ante),
+          options: ANTE_CHOICES.filter((a) => a > 0).map((a) => ({ value: String(a), label: ANTE_WORDS[a] ?? `${a}%` })),
+          onChange: (v) => set({ ante: Number(v) }),
         },
-        {
-          kind: 'stepper',
-          id: 'bomb',
-          title: 'Bomb pot',
-          detail: settings.bombEvery ? `Every ${settings.bombEvery} hands` : 'Never',
-          value: Math.max(0, BOMB_CHOICES.indexOf(settings.bombEvery ?? 0)),
-          min: 0,
-          max: BOMB_CHOICES.length - 1,
-          onChange: (i) => set({ bombEvery: BOMB_CHOICES[i] }),
+        { kind: 'toggle', id: 'bomb', title: 'Bomb pot', subtitle: 'Everyone puts in 2 big blinds and play starts on the flop', value: !!settings.bombEvery, onChange: (on) => set({ bombEvery: on ? 10 : 0 }) },
+        !!settings.bombEvery && {
+          kind: 'segmented',
+          id: 'bomb-every',
+          title: 'How often',
+          stacked: true,
+          value: String(settings.bombEvery),
+          options: BOMB_CHOICES.filter((b) => b > 0).map((b) => ({ value: String(b), label: `Every ${b}` })),
+          onChange: (v) => set({ bombEvery: Number(v) }),
         },
-        { kind: 'toggle', id: 'straddle', title: 'Straddle', subtitle: 'The player after the big blind puts in two big blinds', value: !!settings.straddle, onChange: (straddle) => set({ straddle }) },
+        { kind: 'toggle', id: 'straddle', title: 'Straddle', subtitle: 'The player after the big blind puts in 2 big blinds', value: !!settings.straddle, onChange: (straddle) => set({ straddle }) },
         (settings.variant ?? 'holdem') === 'holdem' && {
           kind: 'toggle',
           id: 'twice',

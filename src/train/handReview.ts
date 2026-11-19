@@ -8,7 +8,7 @@
 // calls are graded (the price is plain arithmetic), a missed river value bet is pointed out, and bets and raises
 // are described rather than marked wrong. Pure: no clock, no phone, seeded dice.
 
-import { boardCards, equityOf, imagine, opponentsOf, preflopRange, type Card2 } from '../game/botRange';
+import { boardCards, equityOf, imagine, opponentsOf, preflopRange, riverRange, type Card2 } from '../game/botRange';
 import { toInt } from '../game/botEval';
 import { hashString, seededRng, fullDeck, type Card } from '../game/cards';
 import { dealNextStreet, makeMove, potTotal, startHand } from '../game/holdem';
@@ -67,7 +67,7 @@ export function canReview(h: Pick<ReviewHand, 'variant' | 'holes' | 'me' | 'acti
 }
 
 /** Every move you made in the hand, graded. Null if the hand can't be reviewed (see `canReview`) or won't rebuild. */
-export function reviewHand(saved: ReviewHand, samples = 700): ReviewedMove[] | null {
+export function reviewHand(saved: ReviewHand, samples = 2000): ReviewedMove[] | null {
   if (!canReview(saved)) return null;
   try {
     return review(saved, samples);
@@ -145,7 +145,11 @@ function review(saved: ReviewHand, samples: number): ReviewedMove[] {
     const opps = opponentsOf(game, h, seat);
     const ranges = opps.map((o) => preflopRange(game, h, o.id, o.story, o.read));
     const hole = seat.cards.map(toInt) as Card2;
-    const im = imagine(hole, boardCards(h), h.street, opps, ranges, seededRng(hashString(`${step}:${h.board.join('')}`)), samples);
+    const board = boardCards(h);
+    // Heads-up on the river every hand they could hold is counted, weighted by how well it fits their moves (no
+    // sampling, so no noise); anywhere else a few thousand deals are sampled (about ±1 to 2 points).
+    const exact = h.street === 'river' && opps.length === 1;
+    const im = exact ? riverRange(hole, board, opps[0], ranges[0]) : imagine(hole, board, h.street, opps, ranges, seededRng(hashString(`${step}:${h.board.join('')}`)), samples);
     const equity = equityOf(im);
     const toCall = Math.min(Math.max(0, h.currentBet - seat.bet), stack);
     const pot = potTotal(h);
@@ -153,6 +157,9 @@ function review(saved: ReviewHand, samples: number): ReviewedMove[] {
     const base = { step, street: h.street, move, toCall, pot, price, equity };
     // All in for no more than the call is a call.
     const judged = move === 'allin' && toCall > 0 && stack <= h.currentBet - seat.bet ? 'call' : move;
+    // Their moves fit almost none of the hands the model expects (a very odd line): too little to grade on.
+    if (!exact && im.quality < 0.05)
+      return { ...base, verdict: 'fine', title: 'Hard to read', line: "Their betting doesn't fit a usual range, so this move isn't graded." };
     return { ...base, ...judge(judged, equity, price, toCall, pot, h.street, saved.bigBlind, opps.some((o) => o.allIn)) };
   }
 }
@@ -181,31 +188,31 @@ export function judge(
     const edge = equity - price;
     if (move === 'fold') {
       if (edge > (plain ? 0.06 : 0.1))
-        return { verdict: 'mistake', title: 'Fold was too tight', line: `You had about ${E} against their likely hands, and the call needed ${P}.`, costBb: bbs(callEv) };
-      if (edge > 0.02) return { verdict: 'close', title: 'Close fold', line: `About ${E} against their likely hands, and the call needed ${P}. Calling was a little better.`, costBb: bbs(callEv) };
-      if (preflopNoPressure(street, facingAllIn)) return { verdict: 'fine', title: 'Folded', line: `About ${E} against the hands still in.` };
-      return { verdict: 'good', title: 'Good fold', line: `About ${E} against their likely hands, and the call needed ${P}.` };
+        return { verdict: 'mistake', title: 'Fold was too tight', line: `You had about ${E} (our estimate), and the call needed ${P} (pot odds).`, costBb: bbs(callEv) };
+      if (edge > 0.02) return { verdict: 'close', title: 'Close fold', line: `About ${E} (our estimate), and the call needed ${P} (pot odds). Calling was a little better.`, costBb: bbs(callEv) };
+      if (preflopNoPressure(street, facingAllIn)) return { verdict: 'fine', title: 'Folded', line: `About ${E} to win (our estimate).` };
+      return { verdict: 'good', title: 'Good fold', line: `About ${E} (our estimate), and the call needed ${P} (pot odds).` };
     }
     // A call.
     if (edge < (plain ? -0.08 : -0.15))
-      return { verdict: 'mistake', title: 'Call was too loose', line: `You had about ${E} against their likely hands, and the call needed ${P}.`, costBb: bbs(-callEv) };
+      return { verdict: 'mistake', title: 'Call was too loose', line: `You had about ${E} (our estimate), and the call needed ${P} (pot odds).`, costBb: bbs(-callEv) };
     if (edge < (plain ? -0.02 : -0.05))
-      return { verdict: 'close', title: 'Thin call', line: `About ${E} against their likely hands, and the call needed ${P}.${plain ? '' : ' Your outs make up some of it.'}`, costBb: bbs(-callEv) };
-    if (preflopNoPressure(street, facingAllIn)) return { verdict: 'fine', title: 'Called', line: `About ${E} against the hands still in.` };
-    if (river && equity > 0.75) return { verdict: 'good', title: 'Good call', line: `About ${E} against their likely hands. A raise could have won more.` };
-    return { verdict: 'good', title: 'Good call', line: `About ${E} against their likely hands, and the call needed ${P}.` };
+      return { verdict: 'close', title: 'Thin call', line: `About ${E} (our estimate), and the call needed ${P} (pot odds).${plain ? '' : ' Your outs make up some of it.'}`, costBb: bbs(-callEv) };
+    if (preflopNoPressure(street, facingAllIn)) return { verdict: 'fine', title: 'Called', line: `About ${E} to win (our estimate).` };
+    if (river && equity > 0.75) return { verdict: 'good', title: 'Good call', line: `About ${E} (our estimate). A raise could have won more.` };
+    return { verdict: 'good', title: 'Good call', line: `About ${E} (our estimate), and the call needed ${P} (pot odds).` };
   }
 
   if (move === 'check') {
-    if (river && equity >= 0.72) return { verdict: 'close', title: 'Missed value', line: `You were ahead of about ${E} of their likely hands. A bet would have been paid by worse.` };
-    return { verdict: 'fine', title: 'Checked', line: `About ${E} against their likely hands.` };
+    if (river && equity >= 0.72) return { verdict: 'close', title: 'Missed value', line: `You were ahead about ${E} of the time (our estimate). A bet would likely have been paid by worse.` };
+    return { verdict: 'fine', title: 'Checked', line: `About ${E} to win (our estimate).` };
   }
   // Bets, raises and all ins: whether they were for value or a bluff. Folds they'd get aren't counted, so a bluff is
   // never marked wrong.
   const what = move === 'bet' ? 'bet' : move === 'raise' ? 'raise' : 'all in';
-  if (equity >= 0.6) return { verdict: 'good', title: `Value ${what}`, line: `About ${E} against their likely hands: worse hands pay you.` };
-  if (equity <= 0.3) return { verdict: 'fine', title: `A bluff`, line: `About ${E} against their likely hands, so this ${what} needs them to fold.` };
-  return { verdict: 'fine', title: `Thin ${what}`, line: `About ${E} against their likely hands: about as often behind as ahead.` };
+  if (equity >= 0.6) return { verdict: 'good', title: `Value ${what}`, line: `About ${E} to win (our estimate): worse hands can pay you.` };
+  if (equity <= 0.3) return { verdict: 'fine', title: `A bluff`, line: `About ${E} to win (our estimate), so this ${what} needs them to fold.` };
+  return { verdict: 'fine', title: `Thin ${what}`, line: `About ${E} to win (our estimate): about as often behind as ahead.` };
 }
 
 /** Before the flop, a fold or call of a normal raise isn't graded: ranges that early say little. */

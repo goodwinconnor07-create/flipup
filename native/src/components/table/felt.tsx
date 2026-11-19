@@ -15,6 +15,7 @@ import {
   explainHand,
   momentCaption,
   pot,
+  showdownWinners,
   visibleBoard,
   wildText,
   rankLabel,
@@ -67,12 +68,18 @@ export function useHighlight(game: Game, me: Player | undefined) {
   return useMemo(() => {
     if (!hand || hand.board.length < 3) return null;
     if (hand.result?.showdown) {
-      // A split pot lights every winner's five, so nobody's winning hand is left greyed out.
-      const wins = (hand.result.pots[0]?.winners ?? [])
-        .map((id) => seatFor(hand, id))
-        .filter((seat) => seat?.cards.length)
-        .map((seat) => bestHand(variant, seat!.cards, hand.board));
+      // The main pot's winners, each with the board it was won on (run it twice has two, Hit Me lights its poker
+      // half). A split lights every winner's five, so nobody's winning hand is left greyed out.
+      const wins = showdownWinners(hand).flatMap(({ ids, board }) =>
+        ids
+          .map((id) => seatFor(hand, id))
+          .filter((seat) => seat?.cards.length)
+          .map((seat) => bestHand(variant, seat!.cards, board)),
+      );
       if (wins.length) return wins.length === 1 ? wins[0] : { ...wins[0], best: [...new Set(wins.flatMap((w) => w.best))] };
+      // Nobody beat the ghost: its hand is the one that won, so its cards light up (yours don't).
+      if (hand.ghost?.length) return bestHand(variant, hand.ghost, hand.board);
+      return null;
     }
     if (mySeat && !mySeat.folded && mySeat.cards.length) return bestHand(variant, mySeat.cards, hand.board);
     return null;
@@ -523,8 +530,9 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
   const { width } = useWindowDimensions();
   const hand = game.hand!;
   const result = hand.result!;
-  // The ghost turns its cards over first (a beat apart), and only then is the pot named.
-  const wait = result.ghost ? 1700 : 0;
+  // The hands turn over first, then the pot is named (a reveal, then the winner, as the clearer poker apps do): a
+  // beat at every showdown, longer when the ghost turns its cards over a beat apart.
+  const wait = result.ghost ? 1700 : result.showdown ? 600 : 0;
   const [ready, setReady] = useState(wait === 0);
   useEffect(() => {
     if (!wait) return;
@@ -557,6 +565,14 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
     title = `Run 1: ${one.map(name).join(' & ')} · Run 2: ${two.map(name).join(' & ')}`;
     how = `${shortName(result.runs[0].names[one[0]])} · ${shortName(result.runs[1].names[two[0]])}`;
     face = winners[0].p!.emoji;
+  } else if (!result.runs && winners.length && result.pots.length > 1 && result.pots.some((p) => p.winners.join() !== result.pots[0].winners.join())) {
+    // A main pot and side pots that went to different players: who took which, so the side pot isn't left out.
+    const name = (id: string) => (id === me?.id ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
+    const side = result.pots.slice(1).flatMap((p) => p.winners).filter((id) => !result.pots[0].winners.includes(id));
+    const main = result.pots[0].winners;
+    title = `Main: ${main.map(name).join(' & ')} · Side: ${[...new Set(side)].map(name).join(' & ')}`;
+    how = [main[0], side[0]].map((id) => shortName(result.names[id])).filter(Boolean).join(' · ') || undefined;
+    face = game.players.find((p) => p.id === main[0])?.emoji ?? winners[0].p!.emoji;
   } else if (!winners.length) {
     if (!result.ghost?.kept) return null;
     title = `The ghost keeps ${chips(result.ghost.kept)}`;

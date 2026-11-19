@@ -1,7 +1,7 @@
 // House rules: antes, the straddle, bomb pots and running it twice (docs/RULES.md "House rules").
 
 import { describe, expect, it } from 'vitest';
-import { applyAction, createTable, DEFAULT_SETTINGS, options, parseAction, recordNet, seededRng, startWait, type Action, type Game, type Settings } from './index';
+import { applyAction, createTable, DEFAULT_SETTINGS, handNet, options, parseAction, recordNet, seededRng, showdownWinners, startWait, type Action, type Game, type Settings } from './index';
 
 const HOST = 'device-host';
 let clock = 5_000_000;
@@ -168,6 +168,11 @@ describe('run it twice', () => {
     expect(result.runs!.map((r) => r.board)).toEqual([h('Ks 9c 5d 3h Jc'), h('Qs 7h 4d Th 8s')]);
     // Each player takes one half.
     expect(game.players.map((p) => p.stack).sort()).toEqual([1000, 1000]);
+    // Breaking even is shown as 0, not as the 1,000 that came back; each run lights its own winner on its own board.
+    for (const p of game.players) expect(handNet(game.hand!, p.id)).toBe(0);
+    const lit = showdownWinners(game.hand!);
+    expect(lit.map((w) => w.board)).toEqual(result.runs!.map((r) => r.board));
+    expect(lit[0].ids).not.toEqual(lit[1].ids);
     expect(game.logs.at(-1)!.record!.firstBoard).toEqual(h('Ks 9c 5d 3h Jc'));
   });
 

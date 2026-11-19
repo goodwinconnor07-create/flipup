@@ -20,7 +20,7 @@ type Verdict = ReviewedMove['verdict'];
 const LOOK: Record<Verdict, { icon: IconName; color: string; word: string }> = {
   good: { icon: 'checkmark.circle.fill', color: brand.gold, word: 'Good' },
   close: { icon: 'minus.circle.fill', color: '#8fb3ff', word: 'Close' },
-  mistake: { icon: 'exclamationmark.triangle.fill', color: '#ffffff', word: 'Mistake' },
+  mistake: { icon: 'exclamationmark.triangle.fill', color: '#ffffff', word: 'Likely mistake' },
   fine: { icon: 'info.circle', color: 'rgba(255,255,255,0.55)', word: 'Note' },
 };
 
@@ -124,7 +124,7 @@ export function ReviewCard({ moves, step, onJump }: { moves: ReviewedMove[] | un
         })}
       </View>
       <ThemedText variant="caption2" style={{ color: 'rgba(255,255,255,0.5)' }}>
-        Your chance against the hands their betting points to, never their real cards.
+        Pot odds are exact. Your chance to win is our estimate against the hands their betting points to, never their real cards, so treat a verdict as a pointer, not a ruling.
       </ThemedText>
     </View>
   );

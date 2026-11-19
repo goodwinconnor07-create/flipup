@@ -58,12 +58,12 @@ export function useHandReview(r: Replay | undefined, on: boolean): ReviewedMove[
   return state?.key === key ? state.moves : undefined;
 }
 
-/** "1 mistake · about 4 bb", or "No mistakes", for a summary line. */
+/** "1 likely mistake · about 4 bb", or "No mistakes", for a summary line. It's an estimate, so it never says more. */
 export function summaryLine(moves: ReviewedMove[]): string {
   const s = reviewSummary(moves);
   if (!s.mistakes && !s.close) return 'No mistakes';
   const parts = [];
-  if (s.mistakes) parts.push(`${s.mistakes} ${s.mistakes === 1 ? 'mistake' : 'mistakes'}`);
+  if (s.mistakes) parts.push(`${s.mistakes} likely ${s.mistakes === 1 ? 'mistake' : 'mistakes'}`);
   if (s.close) parts.push(`${s.close} close ${s.close === 1 ? 'call' : 'calls'}`);
   if (s.costBb > 0) parts.push(`about ${s.costBb} bb`);
   return parts.join(' · ');

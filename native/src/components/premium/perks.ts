@@ -19,7 +19,7 @@ const games = VARIANTS.length - FREE_VARIANTS;
 const packs = CARD_PACKS.length;
 
 export const PERKS: Perk[] = [
-  { id: 'review', icon: 'lightbulb.fill', title: 'Mistake review', short: 'See where chips went', about: 'Open any Texas Hold\'em hand in Saved hands and see each of your moves graded: your chance to win against the hands their betting points to, against what the call cost, and about how many big blinds a mistake gave up.' },
+  { id: 'review', icon: 'lightbulb.fill', title: 'Mistake review', short: 'See where chips went', about: 'Open any Texas Hold\'em hand in Saved hands and see each of your moves next to the pot odds (exact) and our estimate of your chance against the hands their betting points to, with the likely mistakes and about what they cost.' },
   { id: 'range', icon: 'chart.line.uptrend.xyaxis', title: 'Every range hand', short: 'Free: 1 hand a day', about: 'Free gets one hand a day. Premium opens every hand: Endless, as many sets as you like, and Gaps, practice on the spots you miss.' },
   // Bot Lab took the roster's place in the list (the owner, 17 Nov 2026); every other bot is still Premium and said here.
   { id: 'botlab', icon: 'flask.fill', title: 'Bot Lab', short: 'Make your own bots', about: `Make up to ${MAX_LAB_BOTS} bots of your own: a name, a face and dials for how they play and talk. Seat them at any table you host. Premium also opens every other bot (free tables get the original ${FREE_BOT_NAMES.length}).` },

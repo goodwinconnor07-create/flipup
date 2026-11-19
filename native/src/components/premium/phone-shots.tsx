@@ -231,9 +231,9 @@ function RangeScreen() {
 
 /** A sample hand's review, from the replay's own pieces: the board, the coach line on a fold, and the Review card. */
 const SAMPLE_REVIEW: ReviewedMove[] = [
-  { step: 3, street: 'preflop', move: 'raise', toCall: 10, pot: 15, price: 0.4, equity: 0.64, verdict: 'good', title: 'Value raise', line: 'About 64% against their likely hands: worse hands pay you.' },
-  { step: 6, street: 'flop', move: 'call', toCall: 40, pot: 100, price: 0.29, equity: 0.41, verdict: 'good', title: 'Good call', line: 'About 41% against their likely hands, and the call needed 29%.' },
-  { step: 9, street: 'river', move: 'fold', toCall: 60, pot: 180, price: 0.25, equity: 0.38, verdict: 'mistake', title: 'Fold was too tight', line: 'You had about 38% against their likely hands, and the call needed 25%.', costBb: 3.1 },
+  { step: 3, street: 'preflop', move: 'raise', toCall: 10, pot: 15, price: 0.4, equity: 0.64, verdict: 'good', title: 'Value raise', line: 'About 64% to win (our estimate): worse hands can pay you.' },
+  { step: 6, street: 'flop', move: 'call', toCall: 40, pot: 100, price: 0.29, equity: 0.41, verdict: 'good', title: 'Good call', line: 'About 41% (our estimate), and the call needed 29% (pot odds).' },
+  { step: 9, street: 'river', move: 'fold', toCall: 60, pot: 180, price: 0.25, equity: 0.38, verdict: 'mistake', title: 'Fold was too tight', line: 'You had about 38% (our estimate), and the call needed 25% (pot odds).', costBb: 3.1 },
 ];
 function ReviewScreen() {
   return (

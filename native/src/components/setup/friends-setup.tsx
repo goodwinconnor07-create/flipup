@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
+
+import { LobbyScroll } from '../lobby/lobby-scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type PartySettings, type Settings } from '@/engine';
@@ -236,8 +238,8 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
   };
 
   const inNow = 1 + others.length + bots.length;
-  // Who's in is counted next to Players, so the button only names the game.
-  const line = variantInfo(variant).name;
+  // The game card names the game and Players counts who's in, so a ready button is just "Start game": its line only
+  // says what's still missing.
 
   // The host's own code: the table moves to it (settings and seated bots come along) and the old one ends.
   const changeCode = async (code: string): Promise<string | null> => {
@@ -316,8 +318,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
   return (
     // In the game's colour; a party (several games) keeps the blue field.
     <LobbyBackdrop variant={partyDraft ? null : variant}>
-      <ScrollView
-        contentInsetAdjustmentBehavior="never"
+      <LobbyScroll
         contentContainerStyle={{
           paddingHorizontal: spacing.md,
           paddingTop: insets.top + spacing.xs,
@@ -382,7 +383,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
             <StartPartyButton />
           </>
         )}
-      </ScrollView>
+      </LobbyScroll>
       <OpenTableButton
         title={partyDraft ? 'Start party' : 'Start game'}
         line={
@@ -394,7 +395,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
                 : 'Wait for a friend or let bots fill in'
             : inNow < 2
               ? 'Add a bot or wait for a friend'
-              : line
+              : undefined
         }
         busy={busy}
         // A table needs two: nothing to deal until a friend sits down or you add a bot (a party: or bots fill in).

@@ -38,7 +38,8 @@ export default function HandsTab() {
   };
   return (
     <ForceScheme scheme="dark">
-      <Stack.Screen options={{ title: 'Hands', headerShown: false }} />
+      {/* Always dark, so the clock and battery are white whatever the phone's own look. */}
+      <Stack.Screen options={{ title: 'Hands', headerShown: false, statusBarStyle: 'light' }} />
       <View style={{ flex: 1 }}>
         <GrainBackground style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
         <TabScreen title="Hands" accessory={<ProfileMenu />}>

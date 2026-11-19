@@ -49,8 +49,9 @@ const PICK = 'flipup.homegame';
  * top right (a tap opens your profile, which holds Premium, How to play and Settings); the games as a line of cards
  * across the whole screen, locked on one at a time (`GameSwiper`), a little bigger than before; the chosen one's
  * name, hook and a quiet "How it plays" link under it; a row of three round shortcuts (Stats, Saved hands, Share
- * cards; the owner brought them back on 19 Nov 2026 and kept the big game and buttons); then Host <game>
- * (`PlayButton`), with Play bots and Join a game under it. No hint pill, no dots. The leftover height sits mostly above the game, so the buttons ride a little above the tab bar rather than
+ * cards; the owner brought them back on 19 Nov 2026 and kept the big game and buttons); then Play with friends
+ * (`PlayButton`), with Play bots and Join a game under it. No hint pill, no dots. The leftover height sits mostly
+ * above the game, so the buttons ride a little above the tab bar rather than
  * leaving a gap under the link. Nothing scrolls.
  */
 export default function Home() {
@@ -115,7 +116,8 @@ export default function Home() {
   const pad = { paddingHorizontal: spacing.md };
   return (
     <ForceScheme scheme="dark">
-      <Stack.Screen options={{ title: 'Play', headerShown: false }} />
+      {/* Always dark, so the clock and battery are white whatever the phone's own look. */}
+      <Stack.Screen options={{ title: 'Play', headerShown: false, statusBarStyle: 'light' }} />
       <GameBackdrop variant={variant} style={{ flex: 1 }}>
         <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.sm }}>
           {/* Top bar: the page's name on the left, you on the right. */}
@@ -141,15 +143,20 @@ export default function Home() {
           <Animated.View entering={arrive(1)} style={{ alignItems: 'center', gap: spacing.xs }}>
             <GameSwiper variant={variant} onChange={(v) => save(PICK, v)} size={card} width={Math.min(width, 560 + spacing.md * 2)} />
             <View style={[pad, { alignItems: 'center', gap: 2 }]}>
-              <Swap id={variant} kind="text">
+              {/* The name and hook change with the game. Both boxes run the full width, so a longer old name isn't cut
+                  to the new one's width as it leaves, and the name rolls by half its line so the two never print over
+                  each other. */}
+              <Swap id={variant} kind="text" slide={narrow ? 18 : 22} style={{ alignSelf: 'stretch' }}>
                 <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontFamily: ROUNDED, fontSize: narrow ? 32 : 38, fontWeight: '900', letterSpacing: -0.5, color: '#ffffff', textAlign: 'center' }}>
                   {info.name}
                 </Text>
               </Swap>
               {!narrow && (
-                <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 17, lineHeight: 22, fontWeight: '500', color: 'rgba(255, 255, 255, 0.8)', textAlign: 'center' }}>
-                  {look.hook}
-                </Text>
+                <Swap id={variant} kind="text" style={{ alignSelf: 'stretch' }}>
+                  <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 17, lineHeight: 22, fontWeight: '500', color: 'rgba(255, 255, 255, 0.8)', textAlign: 'center' }}>
+                    {look.hook}
+                  </Text>
+                </Swap>
               )}
             </View>
             <PressableScale accessibilityRole="button" accessibilityLabel={`How ${info.name} plays`} onPress={go(`/how-to-play/${variant}`)} haptics={false} style={{ minHeight: 36, paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -170,7 +177,7 @@ export default function Home() {
             {/* A Premium game without Premium: the game sheet's lock (blur, lock, its words) over Host <game>; a tap opens the offer for this game. */}
             <View style={{ borderRadius: 26, borderCurve: 'continuous', overflow: 'hidden' }}>
               <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}>
-                <PlayButton label={`Host ${info.name}`} line="with friends · share a code" ink={shade(look.band, 0.35)} onPress={start(`/play-friends?variant=${variant}`)} />
+                <PlayButton label="Play with friends" line="Host a table · share the code" ink={shade(look.band, 0.35)} onPress={start(`/play-friends?variant=${variant}`)} />
               </View>
               {locked && <LockVeil compact game={info.name} onPress={() => unlockToHost([variant], premium)} />}
             </View>

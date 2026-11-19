@@ -1,9 +1,8 @@
 import { router } from 'expo-router';
-import { NavRow } from './setup-header';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { LobbyScroll } from '../lobby/lobby-scroll';
+import { LobbyScroll, NAV_H } from '../lobby/lobby-scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, type Settings } from '@/engine';
@@ -95,15 +94,14 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
   return (
     <LobbyBackdrop variant={variant}>
       <LobbyScroll
+        title="Play with bots"
         contentContainerStyle={{
           paddingHorizontal: spacing.md,
-          paddingTop: insets.top + spacing.xs,
+          paddingTop: insets.top + NAV_H + spacing.xs,
           paddingBottom: OPEN_BUTTON_ROOM + insets.bottom,
           gap: spacing.lg,
         }}
       >
-        <NavRow title="Play with bots" />
-
         <BotsCard
           bots={bots}
           room={room}

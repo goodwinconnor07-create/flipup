@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, View } from 'react-native';
 
-import { LobbyScroll } from '../lobby/lobby-scroll';
+import { LobbyScroll, NAV_H } from '../lobby/lobby-scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type PartySettings, type Settings } from '@/engine';
@@ -34,7 +34,6 @@ import { labRowBot, randomBot, type RowBot } from './row-bot';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 import { lobbyRows, usePartyView } from '../party/panel';
 import { PartyCard, PartyRules, StartPartyButton } from './party-pieces';
-import { NavRow } from './setup-header';
 import { choose } from '@/components/choose';
 
 /**
@@ -319,17 +318,16 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
     // In the game's colour; a party (several games) keeps the blue field.
     <LobbyBackdrop variant={partyDraft ? null : variant}>
       <LobbyScroll
+        title="Lobby"
         contentContainerStyle={{
           paddingHorizontal: spacing.md,
-          paddingTop: insets.top + spacing.xs,
+          paddingTop: insets.top + NAV_H + spacing.xs,
           paddingBottom: OPEN_BUTTON_ROOM + insets.bottom,
           gap: spacing.lg,
         }}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >
-        <NavRow title="Lobby" />
-
         {partyDraft ? (
           <>
             <CodeCard

@@ -538,7 +538,6 @@ export const SCENARIOS: Scenario[] = [
         range: [
           { label: 'A-Q: a smaller full house', hands: 'AQ', role: 'value' },
           { label: 'Bigger full houses: Q-Q, 8-8', hands: 'QQ, 88', role: 'value' },
-          { label: 'Quads: A♥2♥', hands: 'Ah2h', role: 'value' },
         ],
       },
     ],
@@ -547,7 +546,7 @@ export const SCENARIOS: Scenario[] = [
       { street: 'preflop', text: 'Five limpers, you raise big from the button, and the small blind and one limper call. A solid player calling from the small blind has pairs, suited aces and broadways.' },
       { street: 'flop', text: 'Q♠8♠2♠: they lead, you raise, they call. Leading and calling a raise is strong: flushes, sets, two pair, big spade draws.' },
       { street: 'turn', text: 'The 2♣ pairs the board and both check. Their flop call and this check take out the bluffs.' },
-      { street: 'river', text: 'The 2♦ and they shove. Shoving a flush into a big flop raise would be insane, so it’s full houses: A-Q, Q-Q and 8-8, plus the odd quads.' },
+      { street: 'river', text: 'The 2♦ and they shove. Shoving a flush into a big flop raise would be insane, so it’s full houses: A-Q, Q-Q and 8-8.' },
     ],
     why: 'You beat A-Q (six combos) and lose to Q-Q and 8-8 (three each). That’s close to half, and you need about 32%. Even if they shove A-Q only half the time, you’re near break-even. Unless you have an epic read, you can’t fold here.',
   },

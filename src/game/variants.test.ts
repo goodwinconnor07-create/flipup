@@ -602,7 +602,8 @@ describe('all-in choices and the rabbit hunt', { timeout: TABLE_MS }, () => {
     expect(chose).toBeGreaterThan(0);
   });
 
-  it('shows the board that would have come once everyone folds, only with the house rule', () => {
+  // Eight bot tables played to a fold: 20s was too tight on a busy CI runner (it timed out on the Demo's merge).
+  it('shows the board that would have come once everyone folds, only with the house rule', { timeout: 60_000 }, () => {
     for (const v of ['holdem', 'circle', 'redriver', 'pittsburgh'] as Variant[]) {
       for (const rabbit of [true, false]) {
         let g = table(v, 2, 1000);

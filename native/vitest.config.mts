@@ -10,5 +10,7 @@ export default defineConfig({
       '@train': fileURLToPath(new URL('../src/train', import.meta.url)),
     },
   },
-  test: { include: ['native/tests/**/*.test.ts'], environment: 'node' },
+  // 30s a test, as the engine's tests: the ones that play real hands in every game (share-layout) ran past the
+  // default 5s on a busy CI runner beside the worklet compile check.
+  test: { include: ['native/tests/**/*.test.ts'], environment: 'node', testTimeout: 30_000 },
 });

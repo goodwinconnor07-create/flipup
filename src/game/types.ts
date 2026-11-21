@@ -3,7 +3,7 @@
 import type { LabBotSpec, LabDials } from './botLab';
 import type { Style } from './botStyles';
 import type { Card } from './cards';
-import type { Variant } from './variants';
+import type { RedStep, Variant } from './variants';
 import type { BotDifficulty } from '../bot_engine/everyday';
 import type { EverydayBotState } from '../bot_engine/everydayLive';
 
@@ -40,6 +40,8 @@ export interface Settings {
   ante?: number;
   /** The player after the big blind posts a straddle of two big blinds every hand (three players or more). */
   straddle?: boolean;
+  /** House rule: once everyone folds, show the board cards that would have come next. */
+  rabbit?: boolean;
   /** Every this many hands is a bomb pot: everyone puts in two big blinds and the hand starts on the flop. */
   bombEvery?: number;
   /** When an all-in leaves cards to come in Texas Hold'em, the players in it can agree to deal the rest twice. */
@@ -304,6 +306,17 @@ export interface Hand {
   dice?: { roll: number; out?: Card; in?: Card; until?: number };
   /** Hit Me: how many cards each player has hit (public; the cards themselves are face down). */
   hits?: Record<string, number>;
+  /**
+   * Hit Me and Power Cards: a new street is out and the players who can't act on it (all in, or everyone is) make
+   * the game's choice before it goes on: hit or stand, play their power or keep it. `stood` are the ones done;
+   * `street` the street it's for. `streets` are the streets already offered this hand.
+   */
+  choosing?: { street: Street; stood: string[]; until: number | null };
+  chose?: Street[];
+  /** Red River: the board before the run (four cards) and each step of it. */
+  redRun?: { base: Card[]; steps: RedStep[] };
+  /** Rabbit hunt (a house rule): the whole board as it would have been, set once everyone folds before the river. */
+  rabbit?: Card[];
   /** Hit Me: players who went over 21 and were folded. */
   busted?: string[];
   /** Memory Poker: the 20 cards taken out of the deck before this hand. Phones only get them once the hand is over. */
@@ -433,8 +446,8 @@ export interface DemoDeal {
   powers?: PowerId[];
   /** A bot's moves on a street, in order, by `<seat from the button>:<street>`. Past the list it checks, or calls a bet. */
   moves?: Record<string, DemoMove[]>;
-  /** Hit Me: how many cards a bot hits on the flop, by seat from the button. */
-  hits?: Record<number, number>;
+  /** Hit Me: how many cards a bot hits, by `<seat from the button>:<street>`. */
+  hits?: Record<string, number>;
   /** How many of each `moves` list (and of each bot's `hits`) have been played. */
   used?: Record<string, number>;
 }
@@ -552,6 +565,8 @@ export type Action =
   | { type: 'next'; hand: number }
   /** Hit Me: on your turn on the flop, take another card. */
   | { type: 'hit'; hand: number; seq: number }
+  /** Hit Me or Power Cards, all in: done with this street's choice (stand, or keep the power). */
+  | { type: 'stand'; hand: number }
   /** Power Cards: play your power on your turn, before your move. `target` (X-ray, Silence), `card` (Swap: yours; Reroll: the board's), `rank` (Bounty). */
   | { type: 'power'; hand: number; seq: number; target?: string; card?: Card; rank?: number }
   /** Run it twice: your answer when an all-in is asked to run twice. */

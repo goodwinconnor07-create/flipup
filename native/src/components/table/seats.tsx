@@ -9,7 +9,7 @@ import Animated, { cancelAnimation, Easing, FadeIn, FadeOut, LinearTransition, u
 
 import { handNet, holeCountAt, moveLabel, myPlayer, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { me as myDevice, dispatch } from '@/state/session';
+import { me as myDevice, dispatch, refreshTable } from '@/state/session';
 import { EASE_OUT } from '@/motion/presets';
 import { usePlainColors, brand, motion } from '@/theme';
 
@@ -351,7 +351,9 @@ function SeatPod({
               },
             ]
           : [];
-        const info = `${chips(player.stack)} chips${player.bot ? ' · Bot' : ''}`;
+        const info = `${chips(player.stack)} chips${player.bot ? ' · Bot' : ''}${player.offline ? ' · Offline' : ''}`;
+        // Shown offline: Refresh checks the link again (yours, and the server's view of whose phones are here).
+        const refresh = player.offline && game.code ? [{ text: 'Refresh', onPress: () => refreshTable() }] : [];
         const key = seatKey(player);
         // Another person at an online table: Report and Block (App Store guideline 1.2), and the host's Remove.
         if (other && key && game.code)
@@ -359,9 +361,9 @@ function SeatPod({
             { key, name: player.name, emoji: player.emoji, where: 'table', code: game.code, playerId: player.id },
             player.name,
             info,
-            remove,
+            [...refresh, ...remove],
           );
-        choose(player.name, info, [...remove, { text: 'Cancel', style: 'cancel' }]);
+        choose(player.name, info, [...refresh, ...remove, { text: 'Cancel', style: 'cancel' }]);
       }}
       style={{ alignItems: 'center' }}
     >

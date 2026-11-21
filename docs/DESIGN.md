@@ -41,6 +41,14 @@
 > evenly spaced on equal columns, a same-sized dashed Add button at the end), not a list and not a drawn table, so the
 > game card stays on screen; new bots pop in, and a bot's menu (tap or long press) takes it out. The online lobbies' Players section is the same group, with an "Add Bot" button; a tap on a person opens their menu. People come first and wear a solid white ring (you, gold); bots follow with a faint ring. The LIVE tag on Rejoin has a pulsing dot.
 
+> **21 Nov 2026 (owner, from a reference card): the lobby's game card is a living scene.** The picture is the whole
+> card: the game's own sticker subject drawn big on the left (live SVG, sharp at any size) in a world of its own, parts
+> of it moving on slow loops and the game's particles drifting over everything, the words on the right over a shade
+> of the game's band. Each game has its own: Hold'em a table rail and rising suits, Haunted Pot a moonlit night and
+> snow, Pittsburgh a bridge over flowing rivers and rain, Crazy Deuces confetti, Bean Stalk clouds and falling leaves,
+> Round the Clock turning hands, Power Cards rings of power and sparks, and so on (`src/design/gameBanner.ts`). Still
+> under Reduce Motion, paused off screen. Set pieces never sit behind the words.
+
 > **Home (owner, 2026-11-19, from a mock-up).** Two tabs: Play and Train (a Hands tab came and went the same day: once
 > Home had its shortcuts the owner had it removed). Home is the game
 > swiper a little bigger, the game's name, hook and a Demo button (it was a quiet "How it plays ›" link until 21 Nov 2026), then Play with friends on the big
@@ -88,7 +96,7 @@
 > you could type in beside its stepper. Lobbies scroll in `LobbyScroll`, which fades in a blur tinted with the page's
 > darkest colour under the status bar once the page moves, matching Start game's bar at the bottom.
 >
-> **19 Nov 2026 (owner): lobby layout.** Code, Players, the game (How it plays inside its card), house rules, then
+> **19 Nov 2026 (owner): lobby layout.** Code, Players, the game (its Demo inside its card), house rules, then
 > Start a party last. The code card has Copy and QR as small round icons and Share as its one text button; a tap on
 > the code changes it. Start game sits on a blurred bar tinted with the page's darkest colour, so nothing reads
 > through round it. A tap or long press on a bot opens its menu (Swap for another bot, Remove from table, then Undo);

@@ -91,7 +91,7 @@ describe('demo hands', () => {
         const start = frames.find((g) => g.hand)!.hand!;
         expect(start.seats.map((s) => s.cards)).toEqual(spec.holes);
         if (spec.ghost) expect(hand.ghost).toEqual(spec.ghost);
-        const board = spec.dice?.fresh ? spec.board.map((c, i) => (i === spec.dice!.roll - 1 ? spec.dice!.fresh! : c)) : spec.board;
+        const board = spec.final ?? (spec.dice?.fresh ? spec.board.map((c, i) => (i === spec.dice!.roll - 1 ? spec.dice!.fresh! : c)) : spec.board);
         expect(hand.board).toEqual(board);
       });
 
@@ -165,17 +165,21 @@ describe('each twist shows up', () => {
     expect(name).toMatch(/straight/i);
   });
 
-  it('Red River: red, red, then black', () => {
+  it('Red River: the run keeps the red king and swaps out the black cards', () => {
     const { hand, name } = won('redriver');
-    expect(hand.board).toHaveLength(7);
-    expect(hand.board.slice(4, 6).every(isRed)).toBe(true);
-    expect(isRed(hand.board[6])).toBe(false);
+    expect(hand.redRun?.steps.map((st) => st.card)).toEqual(DEMO_SPECS.redriver.run);
+    expect(hand.board).toEqual(DEMO_SPECS.redriver.final);
+    expect(hand.board.slice(4, 5).every(isRed)).toBe(true);
     expect(name).toMatch(/straight/i);
   });
 
   it('Crucifix: a straight down the cross', () => expect(won('crucifix').name).toMatch(/straight/i));
 
-  it('Round the Clock: a straight round the top of the clock', () => expect(won('circle').name).toMatch(/straight/i));
+  it('Round the Clock: twelve cards, and a straight round the top of the clock', () => {
+    const { hand, name } = won('circle');
+    expect(hand.board).toHaveLength(12);
+    expect(name).toMatch(/straight/i);
+  });
 
   it('Memory Poker: all four aces leave the deck', () => {
     const { hand } = won('memory');

@@ -1,7 +1,7 @@
 import { router, type ErrorBoundaryProps } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Share, Text, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInUp, SlideOutUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -35,11 +35,13 @@ import { DiceRoll } from '@/components/table/dice-roll';
 import { WildDeuces } from '@/components/table/playing-card';
 import { myPlayer, runoutOdds, options, seatFor, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { tableShare } from '@/state/table-share';
+import { tableShare, tableShareMessage } from '@/state/table-share';
 import { markRulesSeen, rulesSeen } from '@/state/rules-seen';
 import { forgetParty } from '@/state/party';
 import { leaveTable, dispatch, me as myDevice, releaseRules, retryConnection, useTable } from '@/state/session';
-import { EASE_OUT, exitMs } from '@/motion/presets';
+import { joinLink } from '@/state/api';
+import { CodeCard } from '@/components/lobby/code-card';
+import { EASE_OUT, popIn } from '@/motion/presets';
 import { gradient, motion, radius, spacing, useColors, usePlainColors } from '@/theme';
 import { useAnnounce } from '@/components/announce';
 
@@ -307,18 +309,20 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
   );
 }
 
-/** When the blinds go up, a red banner slides down from the top for five seconds, as on the web. */
+/**
+ * When the blinds go up, a small red pill flashes in the middle of the table for a moment (the owner's call: the old
+ * banner across the top was big and covered the menu). Taps go straight through it.
+ */
 function BlindNews({ game }: { game: Game }) {
   const c = usePlainColors();
   const reduce = useReduceMotion();
-  const insets = useSafeAreaInsets();
   const bigBlind = game.settings.bigBlind;
   const last = useRef(bigBlind);
   const [news, setNews] = useState<{ id: number; text: string } | null>(null);
   useAnnounce(news?.text, news?.id);
   useEffect(() => {
     if (bigBlind > last.current && game.status === 'playing') {
-      setNews({ id: Date.now(), text: `Blinds are now ${chips(game.settings.smallBlind)}/${chips(bigBlind)} 🚨` });
+      setNews({ id: Date.now(), text: `🚨 Blinds up · ${chips(game.settings.smallBlind)}/${chips(bigBlind)}` });
       playSound('chips');
       haptic.tap();
     }
@@ -326,35 +330,31 @@ function BlindNews({ game }: { game: Game }) {
   }, [bigBlind]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!news) return;
-    const t = setTimeout(() => setNews(null), 5000);
+    const t = setTimeout(() => setNews(null), 1400);
     return () => clearTimeout(t);
   }, [news]);
   if (!news) return null;
   return (
-    <Animated.View
-      key={news.id}
-      accessibilityRole="text"
-      accessibilityLiveRegion="polite"
-      entering={reduce ? FadeIn : SlideInUp.duration(380).easing(EASE_OUT)}
-      exiting={reduce ? FadeOut : SlideOutUp.duration(exitMs(380)).easing(EASE_OUT)}
-      pointerEvents="none"
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 60,
-        paddingTop: insets.top + 12,
-        paddingBottom: 12,
-        paddingHorizontal: 16,
-        boxShadow: '0 10px 30px -10px rgba(0,0,0,0.4)',
-        ...gradient(`linear-gradient(180deg, ${c.red}, #d70015)`),
-      }}
-    >
-      <Text maxFontSizeMultiplier={1.3} style={{ color: '#ffffff', fontSize: 17, fontWeight: '700', textAlign: 'center' }}>
-        {news.text}
-      </Text>
-    </Animated.View>
+    <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 60, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View
+        key={news.id}
+        accessibilityRole="text"
+        accessibilityLiveRegion="polite"
+        entering={reduce ? FadeIn.duration(120) : popIn()}
+        exiting={FadeOut.duration(220)}
+        style={{
+          paddingVertical: 10,
+          paddingHorizontal: 18,
+          borderRadius: 999,
+          boxShadow: '0 10px 30px -10px rgba(0,0,0,0.5)',
+          ...gradient(`linear-gradient(180deg, ${c.red}, #d70015)`),
+        }}
+      >
+        <Text maxFontSizeMultiplier={1.3} style={{ color: '#ffffff', fontSize: 17, fontWeight: '700', textAlign: 'center' }}>
+          {news.text}
+        </Text>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -370,6 +370,8 @@ function EmptyTableCountdown({ game, emptyAt, onLeave }: { game: Game; emptyAt: 
   const now = useTableNow(game.fast, 250);
   const host = game.hostDeviceId === myDevice;
   const secs = Math.max(0, Math.ceil((emptyAt - now) / 1000));
+  // The code this phone is connected to: the table's own, never a stale copy.
+  const code = useTable().code ?? game.code;
   return (
     <Modal visible transparent animationType="fade">
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.55)' }}>
@@ -389,12 +391,7 @@ function EmptyTableCountdown({ game, emptyAt, onLeave }: { game: Game; emptyAt: 
           <Text style={{ fontSize: 15, color: c.tertiaryLabel, textAlign: 'center' }}>
             Closing game in <Text style={{ fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}>{secs}s</Text>
           </Text>
-          {game.code && (
-            <View style={{ alignItems: 'center', paddingVertical: 8, borderRadius: 16, backgroundColor: c.cell }}>
-              <Text style={{ fontSize: 13, color: c.tertiaryLabel }}>Game code</Text>
-              <Text style={{ fontSize: 28, fontWeight: '800', letterSpacing: 2, color: c.label }}>{game.code}</Text>
-            </View>
-          )}
+          {code && <CodeCard code={code} share={{ message: tableShareMessage({ host: game.players.find((p) => p.deviceId === game.hostDeviceId)?.name ?? '', game: variantInfo(variantOf(game)).name, code }), url: joinLink(code) }} />}
           <Text style={{ fontSize: 15, color: c.tertiaryLabel, textAlign: 'center' }}>
             Friends can still join with the code, or add bots to keep playing.
           </Text>
@@ -596,6 +593,11 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
               onRaise={() => {
                 setPowerFor('');
                 setRaiseTurn(turnKey);
+              }}
+              onPower={() => {
+                haptic.tap();
+                setRaiseTurn('');
+                setPowerFor(handKey);
               }}
             />
             </Spot>

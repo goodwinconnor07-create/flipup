@@ -126,6 +126,14 @@ export function useSettingsGroups({ settings, onChange, online, bots }: { settin
           value: !!settings.runTwice,
           onChange: (runTwice) => set({ runTwice }),
         },
+        {
+          kind: 'toggle',
+          id: 'rabbit',
+          title: 'Show what was coming',
+          subtitle: 'After everyone folds, see the cards that would have come',
+          value: !!settings.rabbit,
+          onChange: (rabbit) => set({ rabbit }),
+        },
       ],
     },
   ];

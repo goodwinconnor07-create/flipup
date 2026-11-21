@@ -24,6 +24,8 @@ import {
   anteChips,
   discardCard,
   resumeBetting,
+  endChoices,
+  standChoice,
   endDiscards,
   foldOutOfTurn,
   canHit,
@@ -95,6 +97,7 @@ export function houseRuleWords(s: Settings): string[] {
   if (s.straddle) out.push('Straddle');
   if (s.bombEvery) out.push(`Bomb pot every ${s.bombEvery}`);
   if (s.runTwice && (s.variant ?? 'holdem') === 'holdem') out.push('Run it twice');
+  if (s.rabbit) out.push('Show what was coming');
   return out;
 }
 export const TIMER_CHOICES = [0, 20, 30, 45, 90];
@@ -123,6 +126,7 @@ export function validSettings(s: Settings): boolean {
     (s.straddle === undefined || typeof s.straddle === 'boolean') &&
     (s.bombEvery === undefined || BOMB_CHOICES.includes(s.bombEvery)) &&
     (s.runTwice === undefined || typeof s.runTwice === 'boolean') &&
+    (s.rabbit === undefined || typeof s.rabbit === 'boolean') &&
     (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
     (s.blindHands === undefined || (int(s.blindHands) && s.blindHands >= 0 && s.blindHands <= 100)) &&
     (s.blindMinutes === undefined || (int(s.blindMinutes) && s.blindMinutes >= 0 && s.blindMinutes <= 120)) &&
@@ -777,21 +781,36 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     case 'hit': {
       const hand = game.hand;
       if (!me) return fail("You're not at this table.");
-      if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
-      if (hand.seq !== action.seq) return fail('That turn has passed.');
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      // On your turn the hit has to be for this turn; all in, a street's choices are open to everyone choosing.
+      if (!hand.choosing) {
+        if (hand.toAct !== me.id) return fail("It's not your turn.");
+        if (hand.seq !== action.seq) return fail('That turn has passed.');
+      }
       if (hand.moment?.gate && ctx.now < hand.moment.until) return fail('One moment…');
-      const error = hitCard(game, ctx);
+      const error = hitCard(game, ctx, me.id);
       if (error) return fail(error);
       me.timeouts = 0;
       return done();
     }
 
+    case 'stand': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = standChoice(game, me.id, ctx);
+      return error ? fail(error) : done();
+    }
+
     case 'power': {
       const hand = game.hand;
       if (!me) return fail("You're not at this table.");
-      if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
-      if (hand.seq !== action.seq) return fail('That turn has passed.');
-      const error = playPower(game, { target: action.target, card: action.card, rank: action.rank }, ctx);
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      if (!hand.choosing) {
+        if (hand.toAct !== me.id) return fail("It's not your turn.");
+        if (hand.seq !== action.seq) return fail('That turn has passed.');
+      }
+      const error = playPower(game, { target: action.target, card: action.card, rank: action.rank }, ctx, me.id);
       if (error) return fail(error);
       me.timeouts = 0;
       return done();
@@ -1036,6 +1055,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
     // Crazy Pineapple: time's up for throwing a card away.
     if (hand.discarding) {
       endDiscards(game, ctx);
+      return true;
+    }
+    // Hit Me, Power Cards: time's up for the all-in players' choices.
+    if (hand.choosing) {
+      endChoices(game, ctx);
       return true;
     }
     // A moment (a die, a red river...) is over: betting starts.

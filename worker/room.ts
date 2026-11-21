@@ -25,6 +25,11 @@ import {
   countsAsPlay,
   newLife,
   type Life,
+  knowsRules,
+  parseRules,
+  rulesFor,
+  UPDATE_NEEDED,
+  variantInfo,
 } from '../src/game';
 import { mayHostPremium } from './premium';
 
@@ -38,6 +43,8 @@ interface SocketMeta {
   deviceId: string;
   /** This phone owns Premium when it connected (or the server isn't enforcing Premium). */
   premium: boolean;
+  /** The rules its app knows (1 for an app from before the number was sent). */
+  rules?: number;
 }
 
 /**
@@ -99,10 +106,21 @@ export class TableRoom extends DurableObject<Env> {
   /** WebSocket upgrade, forwarded by the Worker from /api/tables/:code/ws?device=… */
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });
-    const deviceId = new URL(request.url).searchParams.get('device');
+    const params = new URL(request.url).searchParams;
+    const deviceId = params.get('device');
     if (!isDeviceId(deviceId)) return new Response('Missing device id', { status: 400 });
+    const rules = parseRules(params.get('rules'));
     const game = await this.load();
     if (!game) return new Response('Table not found', { status: 404 });
+    // An app on older rules would draw this game wrong: it's told to update and let go. An app from before the rules
+    // number stops retrying on 4404 (after showing the message); a newer one knows 4426.
+    if (!knowsRules(rules, [game.settings.variant, game.hand?.variant])) {
+      const [client, server] = Object.values(new WebSocketPair());
+      server.accept();
+      this.send(server, { t: 'reject', error: UPDATE_NEEDED });
+      server.close(params.has('rules') ? 4426 : 4404, 'Update FlipUp');
+      return new Response(null, { status: 101, webSocket: client });
+    }
     // A table seats at most MAX_SEATS; a few sockets each for reconnects is plenty. A script opening thousands of
     // sockets to one table would make every move fan out to all of them.
     if (this.ctx.getWebSockets().length >= MAX_SOCKETS) return new Response('Table is busy', { status: 503 });
@@ -110,7 +128,7 @@ export class TableRoom extends DurableObject<Env> {
     const premium = await mayHostPremium(this.env, deviceId);
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server, [deviceId]);
-    server.serializeAttachment({ deviceId, premium } satisfies SocketMeta);
+    server.serializeAttachment({ deviceId, premium, rules } satisfies SocketMeta);
     this.send(server, { t: 'state', game: redactForDevice(game, deviceId) });
     await this.syncPresence();
     return new Response(null, { status: 101, webSocket: client });
@@ -135,7 +153,11 @@ export class TableRoom extends DurableObject<Env> {
       ws.close(4404, 'Table not found');
       return;
     }
-    if (t === 'sync') return this.send(ws, { t: 'state', game: redactForDevice(game, deviceId) });
+    // A phone asking for the latest also gets who's connected checked again (its Refresh, or coming back to the app).
+    if (t === 'sync') {
+      await this.syncPresence();
+      return this.send(ws, { t: 'state', game: redactForDevice((await this.load()) ?? game, deviceId) });
+    }
     if (t === 'log') return this.send(ws, { t: 'log', logs: redactLogs(game, deviceId) });
     if (t !== 'act') return;
 
@@ -144,6 +166,13 @@ export class TableRoom extends DurableObject<Env> {
 
     const action = parseAction(a);
     if (!action) return this.send(ws, { t: 'reject', id, error: "The server didn't understand that." });
+    // A phone that's playing is plainly connected: if the table still has it down as offline, look again.
+    if (game.players.some((p) => p.deviceId === deviceId && p.offline)) await this.syncPresence();
+    // Switching to a game someone's app is too old for would leave them looking at the wrong table.
+    const switchTo = action.type === 'settings' ? action.settings.variant : action.type === 'playAgain' ? action.variant : undefined;
+    if (switchTo && !this.allKnow(rulesFor(switchTo))) {
+      return this.send(ws, { t: 'reject', id, error: `Someone here needs to update FlipUp before the table can play ${variantInfo(switchTo).name}.` });
+    }
     // Opening a Premium game is for Premium hosts: changing the table's mode (or playing again in another) needs it too, not only opening the table.
     if (premium === false && actionNeedsPremium(action)) return this.send(ws, { t: 'reject', id, error: 'Hosting this game needs FlipUp Premium.' });
     // A host without Premium seats only the free bots.
@@ -254,6 +283,14 @@ export class TableRoom extends DurableObject<Env> {
       // Already closed.
     }
     await this.syncPresence(ws);
+  }
+
+  /** Every phone at the table knows rules this new. */
+  private allKnow(rules: number): boolean {
+    return this.ctx.getWebSockets().every((socket) => {
+      const meta = socket.deserializeAttachment() as SocketMeta | null;
+      return !meta || (meta.rules ?? 1) >= rules;
+    });
   }
 
   /** Tells the game which phones are connected, so a dropped player is shown as offline and their clock shortens. */

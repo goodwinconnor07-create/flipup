@@ -93,7 +93,7 @@ describe('the bots\' quick scoring', () => {
     for (let n = 0; n < 3000; n++) {
       const d = deck.slice().sort(() => rng() - 0.5);
       const v = (['deuces', 'pittsburgh', 'redriver', 'holdem', 'crucifix', 'circle'] as Variant[])[n % 6];
-      const boardSize = v === 'pittsburgh' ? 7 : v === 'redriver' ? 5 + (n % 5) : v === 'crucifix' ? 9 : v === 'circle' ? 6 : 5;
+      const boardSize = v === 'pittsburgh' ? 7 : v === 'redriver' ? 5 + (n % 5) : v === 'crucifix' ? 9 : v === 'circle' ? 12 : 5;
       const [hole, board] = [d.slice(0, 2), d.slice(2, 2 + boardSize)];
       expect(variantScore(v, hole, board)).toBe(bestHand(v, hole, board).score);
     }

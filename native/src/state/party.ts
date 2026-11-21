@@ -1,6 +1,6 @@
 // The party this phone is in, as on the web (src/state/party.ts): which one, and the calls that change it. The
 // party screens poll `readParty`. The party itself lives on the server (a PartyRoom per code).
-import { cleanName, type PartySettings, type PartyView } from '@/engine';
+import { cleanName, RULES_VERSION, type PartySettings, type PartyView } from '@/engine';
 
 import { createPartyOnServer, fetchParty, partyAct } from './api';
 import { deviceId } from './device';
@@ -22,7 +22,7 @@ const remember = (code: string): void => save(KEY, { code, at: Date.now() });
 
 const who = () => {
   const p = read<{ name?: string; emoji?: string } | null>('flipup.profile', null) ?? {};
-  return { deviceId: deviceId(), name: cleanName(p.name ?? ''), emoji: p.emoji ?? '' };
+  return { deviceId: deviceId(), name: cleanName(p.name ?? ''), emoji: p.emoji ?? '', rules: RULES_VERSION };
 };
 
 export async function createParty(settings: PartySettings): Promise<string> {
@@ -38,7 +38,7 @@ export async function joinParty(code: string): Promise<PartyView> {
 }
 
 /** The host changes the playlist and rules while the party is still a lobby. */
-export const configureParty = (code: string, settings: PartySettings): Promise<PartyView> => partyAct(code, 'settings', { deviceId: deviceId(), settings });
+export const configureParty = (code: string, settings: PartySettings): Promise<PartyView> => partyAct(code, 'settings', { deviceId: deviceId(), settings, rules: RULES_VERSION });
 
 export const readParty = (code: string): Promise<PartyView | null> => fetchParty(code, deviceId());
 export const startParty = (code: string): Promise<PartyView> => partyAct(code, 'start', { deviceId: deviceId() });

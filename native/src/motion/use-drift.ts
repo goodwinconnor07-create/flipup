@@ -6,7 +6,7 @@ import { cancelAnimation, Easing, useSharedValue, withRepeat, withSequence, with
 import { useReduceMotion } from './use-reduce-motion';
 
 /** True while the app is in the foreground. */
-function useAppActive(): boolean {
+export function useAppActive(): boolean {
   const [active, setActive] = useState(AppState.currentState === 'active');
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => setActive(s === 'active'));

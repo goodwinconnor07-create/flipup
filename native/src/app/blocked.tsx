@@ -33,7 +33,6 @@ export default function BlockedSheet() {
               title: `${b.emoji}  ${b.name}`,
               subtitle: `Blocked ${new Date(b.at).toLocaleDateString()}`,
               detail: 'Unblock',
-              detailTint: true,
               chevron: false,
               onPress: () => unblock(b.key),
             })),

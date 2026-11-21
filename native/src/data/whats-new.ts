@@ -24,7 +24,7 @@ export const RELEASES: Release[] = [
     items: [
       { icon: 'suit.spade.fill', title: 'Poker night on your phones', text: 'Host a table and your friends join on their own phones with a six-character game code or a QR code. Bots fill any empty seats.' },
       { icon: 'cpu.fill', title: 'Play bots anywhere', text: 'Play against bots on your own, even with no signal. Every bot has a style of its own and plenty to say about the hand.' },
-      { icon: 'person.2.fill', title: 'A lobby for every game', text: 'Your lobby takes the colour of the game you pick. Tap a bot to swap it for another or take it off the table.' },
+      { icon: 'person.2.fill', title: 'A lobby for every game', text: 'Your lobby takes the colour of the game you pick, and its game card comes alive with a scene of its own. Tap a bot to swap it for another or take it off the table.' },
       { icon: 'sparkles', title: '12 mini games', text: 'Texas Hold’em plus games with a twist, like Haunted Pot, Crazy Pineapple, Die on the River and Power Cards. Each has its own table.' },
       { icon: 'play.fill', title: 'Demos', text: 'Tap Demo on any game for a quick hand against two bots, with a guide that lights up what to look at and what to tap. Free for every game, Premium ones too.' },
       { icon: 'flask.fill', title: 'Bot Lab', text: 'Make up to 25 bots of your own in Settings: a name, a face and dials for how they play and talk. Seat them from + Add Bot in any lobby you host. Part of Premium.' },

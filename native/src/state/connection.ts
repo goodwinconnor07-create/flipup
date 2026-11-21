@@ -3,7 +3,7 @@
 // state when the app comes back to the front.
 import { AppState, type AppStateStatus, type NativeEventSubscription } from 'react-native';
 
-import { PING, type ClientMessage, type ServerMessage } from '@/engine';
+import { PING, RULES_VERSION, UPDATE_NEEDED, type ClientMessage, type ServerMessage } from '@/engine';
 
 import { fetchTableInfo, socketUrl } from './api';
 
@@ -19,6 +19,8 @@ export interface ConnectionHandlers {
 }
 
 const HEARTBEAT_MS = 20_000;
+/** After asking for the latest, a link that hasn't answered in this long is taken for dead and made again. */
+const PROBE_MS = 4_000;
 const STALE_MS = 50_000;
 const MAX_RETRY_MS = 10_000;
 
@@ -27,6 +29,7 @@ export class Connection {
   private failures = 0;
   private retryTimer: ReturnType<typeof setTimeout> | undefined;
   private beatTimer: ReturnType<typeof setInterval> | undefined;
+  private probeTimer: ReturnType<typeof setTimeout> | undefined;
   private lastHeard = 0;
   private closed = false;
   private appState: NativeEventSubscription;
@@ -54,8 +57,45 @@ export class Connection {
     this.open();
   }
 
+  /**
+   * Checks the link now (Refresh on an offline player, or the app coming back to the front): asks for the latest,
+   * which also makes the server look again at whose phones are connected, and if no answer comes quickly opens a
+   * fresh link. iOS can leave a socket looking open after the app was in the background when it's long gone.
+   */
+  refresh(): void {
+    if (this.closed) return;
+    if (this.ws?.readyState === WebSocket.CONNECTING) return;
+    if (this.ws?.readyState !== WebSocket.OPEN || !this.send({ t: 'sync' })) {
+      this.reconnectNow();
+      return;
+    }
+    const asked = Date.now();
+    clearTimeout(this.probeTimer);
+    this.probeTimer = setTimeout(() => {
+      if (!this.closed && this.lastHeard < asked) this.reconnectNow();
+    }, PROBE_MS);
+  }
+
+  /** Drops the link and makes a new one at once. */
+  private reconnectNow(): void {
+    if (this.closed) return;
+    clearTimeout(this.probeTimer);
+    clearTimeout(this.retryTimer);
+    clearInterval(this.beatTimer);
+    const old = this.ws;
+    this.ws = null;
+    try {
+      old?.close(1000, 'Reconnecting');
+    } catch {
+      // Already gone.
+    }
+    this.failures = 0;
+    this.open();
+  }
+
   close(): void {
     this.closed = true;
+    clearTimeout(this.probeTimer);
     clearTimeout(this.retryTimer);
     clearInterval(this.beatTimer);
     this.appState.remove();
@@ -70,7 +110,7 @@ export class Connection {
     this.h.onStatus('connecting');
     let ws: WebSocket;
     try {
-      ws = new WebSocket(socketUrl(`/api/tables/${this.code}/ws?device=${encodeURIComponent(this.deviceId)}`));
+      ws = new WebSocket(socketUrl(`/api/tables/${this.code}/ws?device=${encodeURIComponent(this.deviceId)}&rules=${RULES_VERSION}`));
     } catch {
       this.retryLater();
       return;
@@ -97,6 +137,11 @@ export class Connection {
       if (this.ws !== ws) return;
       this.ws = null;
       clearInterval(this.beatTimer);
+      if (event.code === 4426) {
+        this.closed = true;
+        this.h.onGone(UPDATE_NEEDED);
+        return;
+      }
       if (event.code === 4404 || event.code === 4410) {
         this.closed = true;
         this.h.onGone(event.code === 4410 ? event.reason || 'That table has closed.' : 'That table no longer exists.');
@@ -138,10 +183,6 @@ export class Connection {
 
   private onAppState = (status: AppStateStatus): void => {
     if (status !== 'active' || this.closed) return;
-    if (this.ws?.readyState === WebSocket.OPEN) this.send({ t: 'sync' });
-    else {
-      this.failures = 0;
-      this.open();
-    }
+    this.refresh();
   };
 }

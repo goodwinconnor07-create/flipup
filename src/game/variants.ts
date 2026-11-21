@@ -2,7 +2,7 @@
 // (pot limit at a Ghost table); what changes is how many cards you get, what's wild and how a hand is scored.
 
 import { score, toInt } from './botEval';
-import { fullDeck, rankLabel, rankName, rankOf, suitOf, SUITS, type Card } from './cards';
+import { fullDeck, isRed, rankLabel, rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
 import { POWERS } from './powerList';
@@ -103,36 +103,37 @@ export const VARIANTS: VariantInfo[] = [
     id: 'redriver',
     name: 'Red River',
     emoji: '🟥',
-    tagline: 'A red river keeps the cards coming until a black one lands.',
+    tagline: 'Ten cards fight over the river. Red ones stay, black ones swap.',
     rules: [
       "Normal Hold'em until the river.",
-      'If the river is red (a heart or a diamond), another card is dealt, and another, until a black card (a spade or a club) comes.',
-      'Every card on the board counts: make your best five from your two and all of them.',
-      "Then there's one round of river betting.",
+      'Then ten cards come one at a time. A red card (a heart or a diamond) is added to the board.',
+      'A black card (a spade or a club) takes the place of the newest card on the board, so the first one can even swap out the turn.',
+      'After the ten, one last card lands as the river, whatever its colour.',
+      "Every card on the board counts: make your best five from your two and all of them. Then there's one round of river betting.",
     ],
   },
   {
     id: 'crucifix',
     name: 'Crucifix',
     emoji: '➕',
-    tagline: 'The board is a cross. Play the line across or the line down.',
+    tagline: 'The board is a cross. Play a line across, down, or round a corner.',
     rules: [
       'The board is dealt as a cross of nine cards: one in the middle and two on each arm.',
       'The flop is the middle card and one card on each arm. The turn adds one to the top arm and one to the right arm, and the river finishes the cross.',
-      'Your hand is your two cards with one line: either the five across or the five down (the middle card is in both). Make your best five from those seven.',
-      "You can't mix cards from the two lines. The app picks the line that gives you the best hand.",
+      'Your hand is your two cards with one line of five: the five across, the five down, or one of two L shapes through the middle (the bottom arm and the right arm, or the top arm and the left arm). Make your best five from those seven.',
+      "You can't mix cards from different lines. The app picks the line that gives you the best hand.",
     ],
   },
   {
     id: 'circle',
     name: 'Round the Clock',
     emoji: '⭕',
-    tagline: 'Six cards round a clock. Use three in a row with both of yours.',
+    tagline: 'Twelve cards round a clock. Five in a row with your two.',
     rules: [
-      'The board is six cards in a circle, like the hours on a clock.',
-      "The flop is two cards, at 12 and 6 o'clock. The turn adds 8 and 2 o'clock, and the river adds 10 and 4 o'clock to close the circle.",
-      'Your hand is both of your cards plus three board cards that sit next to each other round the circle (12, 2 and 4, or 10, 12 and 2, and so on).',
-      'You must use both of your cards. The app picks the best three in a row for you.',
+      "The board is twelve cards in a circle, one on every hour of a clock, dealt round from 12 o'clock.",
+      "The flop is 12, 1, 2 and 3 o'clock. The turn adds 4 to 7, and the river adds 8 to 11 to close the circle.",
+      'Your hand is your two cards plus five board cards in a row round the clock (12 to 4, 9 to 1, and so on). Make your best five from those seven.',
+      'The five board cards have to sit next to each other. The app picks the best run for you.',
     ],
   },
   {
@@ -162,10 +163,11 @@ export const VARIANTS: VariantInfo[] = [
     id: 'bjholdem',
     name: 'Hit Me',
     emoji: '♠️',
-    tagline: 'Hit on the flop. Half the pot to the best hand, half to closest to 21.',
+    tagline: 'Hit any street. Half the pot to the best hand, half to closest to 21.',
     rules: [
       "Normal Hold'em: two cards each, then the flop, the turn and the river.",
-      'On the flop, on your turn, you can Hit as many times as you like to take another card, face down, before you check, bet or call.',
+      'On every street, on your turn, you can Hit as many times as you like to take another card, face down, before you check, bet or call.',
+      "All in? You still get to hit: when each new street comes, everyone who's all in can hit or stand before the game goes on.",
       'Your 21 count is your own cards: your two plus your hits (not the board). Aces are 1 or 11, picture cards 10.',
       'Go over 21 and you bust: your hand is folded straight away.',
       'Hit cards count in your poker hand too: make your best five from your cards, your hits and the board.',
@@ -182,7 +184,7 @@ export const VARIANTS: VariantInfo[] = [
       'At the start of every hand everyone is dealt one power at random. Nobody else knows what yours is.',
       "Play it on your turn, before your move (then check, bet, call or fold as usual). Once per hand, and if you don't play it, it's gone when the hand ends.",
       'When a power is played the whole table sees which one, who played it and who it was aimed at. What a Peek or an X-ray shows stays with the player who played it.',
-      'Some powers only work on certain streets, and none can be played during an all-in run-out.',
+      "Some powers only work on certain streets. All in? When each new street comes you can still play yours (or keep it) before the game goes on.",
       ...POWERS.map((p) => `${p.emoji} ${p.name}: ${p.rule}`),
     ],
   },
@@ -219,6 +221,62 @@ export function count21(cards: Card[]): number {
   while (total > 21 && aces--) total -= 10;
   return total;
 }
+/**
+ * The rules each phone's app knows. When a game's rules change, this goes up and the game is marked in RULES_SINCE, so
+ * a phone on an older app can't sit at (or host) a table it would draw wrong. The server checks it.
+ */
+export const RULES_VERSION = 2;
+/** The rules version each game's current rules came in (1 for any game not listed). */
+const RULES_SINCE: Partial<Record<Variant, number>> = { redriver: 2, circle: 2, crucifix: 2, bjholdem: 2, power: 2 };
+export const rulesFor = (v: Variant | undefined): number => (v ? (RULES_SINCE[v] ?? 1) : 1);
+/** Whether an app on these rules can play every one of these games. */
+export const knowsRules = (rules: number, games: (Variant | undefined)[]): boolean => games.every((v) => rulesFor(v) <= rules);
+/** A rules number sent by a phone: anything missing or odd is an app from before the number existed. */
+export const parseRules = (value: unknown): number => {
+  const n = typeof value === 'string' ? Number(value) : value;
+  return typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 1000 ? n : 1;
+};
+/** What the server says to a phone whose app is too old for a game. */
+export const UPDATE_NEEDED = 'This game has new rules. Update FlipUp from the App Store to play it.';
+
+/** Red River: cards that come before the river, each added (red) or swapped in for the newest card (black). */
+export const RED_DRAWS = 10;
+export type RedStep = { card: Card; kind: 'add' | 'swap' | 'river'; out?: Card };
+/** Red River: where the next drawn card goes. A red card is added; a black card replaces the newest board card. */
+export function redDraw(board: Card[], card: Card): RedStep {
+  if (isRed(card)) {
+    board.push(card);
+    return { card, kind: 'add' };
+  }
+  const out = board[board.length - 1];
+  board[board.length - 1] = card;
+  return { card, kind: 'swap', out };
+}
+/** Red River: the whole river run (the ten draws, then the river itself) on this board, in place. Returns each step. */
+export function redRun(board: Card[], take: () => Card | undefined): RedStep[] {
+  const steps: RedStep[] = [];
+  for (let i = 0; i < RED_DRAWS; i++) {
+    const c = take();
+    if (!c) return steps;
+    steps.push(redDraw(board, c));
+  }
+  const river = take();
+  if (river) {
+    board.push(river);
+    steps.push({ card: river, kind: 'river' });
+  }
+  return steps;
+}
+/** Red River: the board after the first `n` steps of the run, from the four cards before it. */
+export function redBoardAt(base: Card[], steps: RedStep[], n: number): Card[] {
+  const board = base.slice();
+  for (const st of steps.slice(0, n)) {
+    if (st.kind === 'swap') board[board.length - 1] = st.card;
+    else board.push(st.card);
+  }
+  return board;
+}
+
 /** Memory Poker: cards taken out of the deck before each hand. */
 export const MEMORY_REMOVED = 20;
 /** A card is burned before each street (not in Bean Stalk, which needs them: nine players use up 50 cards). */
@@ -226,7 +284,7 @@ export const burns = (v: Variant) => v !== 'beanstalk';
 /** Board cards dealt on each street. */
 export function streetCards(v: Variant, street: 'flop' | 'turn' | 'river'): number {
   if (v === 'crucifix') return street === 'flop' ? 5 : 2;
-  if (v === 'circle') return 2;
+  if (v === 'circle') return 4;
   return street === 'flop' ? 3 : street === 'river' && v === 'pittsburgh' ? 3 : 1;
 }
 /** Power Cards: board cards still to come, by street (an Extra Card makes the board longer than five). */
@@ -323,7 +381,11 @@ export function wildHand(cards: Card[]): HandValue {
 export const CROSS_LINES = [
   [5, 1, 0, 3, 7], // down: outer top, top, middle, bottom, outer bottom
   [8, 4, 0, 2, 6], // across: outer left, left, middle, right, outer right
+  [7, 3, 0, 2, 6], // an L: outer bottom, bottom, middle, right, outer right
+  [5, 1, 0, 4, 8], // an L: outer top, top, middle, left, outer left
 ];
+/** What each Crucifix line is called, in CROSS_LINES order. */
+export const CROSS_LINE_NAMES = ['the column', 'the row', 'the bottom-right L', 'the top-left L'];
 /** Where each Crucifix board card sits on a 5×5 grid, as [row, column] (1-based). */
 export const CROSS_CELLS: [number, number][] = [
   [3, 3],
@@ -336,16 +398,28 @@ export const CROSS_CELLS: [number, number][] = [
   [5, 3],
   [3, 1],
 ];
-/** Circle board, dealt at 12 and 6 o'clock, then 8 and 2, then 10 and 4. Each card's o'clock position. */
-export const CIRCLE_HOURS = [12, 6, 8, 2, 10, 4];
-/** The board cards in order round the circle, clockwise from 12. */
-export const CIRCLE_RING = [0, 3, 5, 1, 2, 4];
+/** Round the Clock: twelve cards dealt round the clock from 12. Each card's o'clock position. */
+export const CIRCLE_HOURS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+/** Board cards in a run on the clock. */
+export const CIRCLE_RUN = 5;
+/**
+ * The runs a Round the Clock hand can use, as board indexes: five in a row once five are out (the flop's four make
+ * one shorter run), wrapping past 12 only once the circle is closed. The cards come round in order, so what's out is
+ * always one stretch from 12 o'clock.
+ */
+export function circleRuns(boardLength: number): number[][] {
+  const n = Math.min(boardLength, CIRCLE_HOURS.length);
+  if (!n) return [];
+  const len = Math.min(CIRCLE_RUN, n);
+  const starts = n === CIRCLE_HOURS.length ? n : n - len + 1;
+  return Array.from({ length: starts }, (_, p) => Array.from({ length: len }, (_, k) => (p + k) % n));
+}
 
 // ── Scoring for any variant ─────────────────────────────────────────────────
 
 /**
  * The card sets a hand can be made from, by the table's rules: hole cards plus the whole board, or plus each
- * Pittsburgh river, each Crucifix line, or each three-in-a-row on the Circle (only lines and runs that are out so far).
+ * Pittsburgh river, each Crucifix line, or each five-in-a-row round the clock (only lines and runs that are out so far).
  */
 export function handSets(v: Variant, hole: Card[], board: Card[]): Card[][] {
   if (v === 'pittsburgh' && board.length > 5) return board.slice(4).map((river) => [...hole, ...board.slice(0, 4), river]);
@@ -354,13 +428,8 @@ export function handSets(v: Variant, hole: Card[], board: Card[]): Card[][] {
     return CROSS_LINES.map((line) => [...hole, ...line.filter((i) => i < board.length).map((i) => board[i])]);
   }
   if (v === 'circle') {
-    const runs: Card[][] = [];
-    for (let p = 0; p < 6; p++) {
-      const run = [0, 1, 2].map((k) => CIRCLE_RING[(p + k) % 6]);
-      if (run.every((i) => i < board.length)) runs.push([...hole, ...run.map((i) => board[i])]);
-    }
-    // No three in a row until the river: until then a hand is just the two hole cards.
-    return runs.length ? runs : [hole];
+    const runs = circleRuns(board.length);
+    return runs.length ? runs.map((run) => [...hole, ...run.map((i) => board[i])]) : [hole];
   }
   return [[...hole, ...board]];
 }

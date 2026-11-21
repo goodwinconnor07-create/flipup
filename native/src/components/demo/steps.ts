@@ -197,20 +197,17 @@ export const DEMO_STEPS: Record<Variant, CoachStep[]> = {
   ],
 
   redriver: [
-    welcome('Red River', 'Plain Hold’em, until the river. Then watch its colour. A quick hand against Luna and Max.'),
+    welcome('Red River', 'Plain Hold’em, until the river. Then a run of cards. A quick hand against Luna and Max.'),
     { ...callToPlay('Plain Hold’em to start. Call to play.'), spots: ['mine'], title: 'Your two cards' },
     { id: 'flop', when: turn('flop'), spots: ['board'], tap: 'act.call', title: 'The flop', text: (c) => `A ten and a nine. Luna bets ${betBy(c, 'Luna')}: call.` },
-    { id: 'turn', when: turn('turn'), tap: 'act.check', title: 'Watch the river', text: 'If the river is red, another card comes, and another, until a black one lands. Check.' },
+    { id: 'turn', when: turn('turn'), tap: 'act.check', title: 'Watch the river', text: 'Next comes a run of ten cards, one by one. Then the river. Check.' },
     {
       id: 'river',
       when: turn('river'),
       spots: ['board'],
       tap: 'act.check',
-      title: 'Red keeps coming',
-      text: (c) => {
-        const extra = (c.hand?.board ?? []).slice(4);
-        return `${extra.map(short).join(', then ')}: red, red, black. That made ${a(yourHand(c))}. Check.`;
-      },
+      title: 'Red stays, black swaps',
+      text: (c) => `A red card stays; a black one takes the newest card’s place. The ${short(c.hand?.redRun?.steps[0]?.card)} stayed: ${a(yourHand(c))}! Check.`,
     },
     showdown('Every card counts: best five from your two and the whole board, however long it got.'),
   ],
@@ -225,11 +222,11 @@ export const DEMO_STEPS: Record<Variant, CoachStep[]> = {
   ],
 
   circle: [
-    welcome('Round the Clock', 'Six board cards round a clock. A quick hand against Luna and Max.'),
-    { ...callToPlay('Both your cards always play here, so start strong. Call.'), spots: ['mine'], title: 'Both cards play' },
-    { id: 'flop', when: turn('flop'), spots: ['board'], tap: 'act.check', title: 'Round the clock', text: 'The flop lands at 12 and 6 o’clock. Check.' },
-    { id: 'turn', when: turn('turn'), spots: ['board'], tap: 'act.check', title: 'The turn', text: 'Two more, at 2 and 8. Check.' },
-    { id: 'river', when: turn('river'), spots: ['board', 'mine'], tap: 'act.call', title: 'Three in a row', text: (c) => `Your two plus three side by side: 12, 2 and 4 make ${a(yourHand(c))}. Call.` },
+    welcome('Round the Clock', 'Twelve board cards round a clock. A quick hand against Luna and Max.'),
+    { ...callToPlay('Your two play with five cards in a row round the clock. Call.'), spots: ['mine'], title: 'Your two cards' },
+    { id: 'flop', when: turn('flop'), spots: ['board'], tap: 'act.check', title: 'Round the clock', text: (c) => `The flop lands at 12, 1, 2 and 3 o’clock. Already ${a(yourHand(c))}. Check.` },
+    { id: 'turn', when: turn('turn'), spots: ['board'], tap: 'act.check', title: 'The turn', text: 'Four more, from 4 to 7 o’clock. Check.' },
+    { id: 'river', when: turn('river'), spots: ['board', 'mine'], tap: 'act.call', title: 'Five in a row', text: (c) => `The river fills 8 to 11. Your two plus 12 to 4 make ${a(yourHand(c))}. Call.` },
     showdown((c) => `Your ${yourHand(c)} ${beats(c, 'Luna')}.`),
   ],
 
@@ -256,7 +253,7 @@ export const DEMO_STEPS: Record<Variant, CoachStep[]> = {
     welcome('Hit Me', 'Count your cards like blackjack, play them like poker. A quick hand against Luna and Max.'),
     { id: 'count', when: turn('preflop'), spots: ['mine'], title: 'Count to 21', text: (c) => `${both(c.seat?.cards)} count ${count(c)}. Picture cards count 10, aces 1 or 11.` },
     callToPlay(),
-    { id: 'luna', when: turn('flop', (c) => !hit(c)), spots: ['seat:Luna'], title: 'Hit or stand', text: 'On the flop anyone can take more cards, face down. Luna took one.' },
+    { id: 'luna', when: turn('flop', (c) => !hit(c)), spots: ['seat:Luna'], title: 'Hit or stand', text: 'On any street, anyone can take more cards, face down. Luna took one.' },
     { id: 'hit', when: turn('flop', (c) => !hit(c)), tap: 'act.hit', title: 'Hit me', text: (c) => `You’re on ${count(c)}. Tap Hit for another card. Over 21 and you’re out.` },
     { id: 'hit-done', when: turn('flop', hit), spots: ['mine'], tap: 'act.check', title: (c) => `${count(c)}!`, text: (c) => `The ${short(c.seat?.cards[2])} takes you to ${count(c)}, and it plays in your poker hand too. Check.` },
     { id: 'turn', when: turn('turn'), spots: ['board'], tap: 'act.check', title: 'The turn', text: 'One card from a straight. Check.' },

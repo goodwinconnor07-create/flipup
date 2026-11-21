@@ -136,9 +136,9 @@ export default function ProfileScreen() {
           {
             id: 'you',
             items: [
-              { kind: 'link', id: 'settings', title: 'Settings', detail: 'Sound, looks and your data', onPress: () => router.push('/settings') },
+              { kind: 'link', id: 'settings', title: 'Settings', subtitle: 'Sound, looks and your data', onPress: () => router.push('/settings') },
               { kind: 'link', id: 'premium', title: 'FlipUp Premium', detail: premium ? 'Unlocked' : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`, trailingCrown: true, onPress: () => router.push('/premium') },
-              { kind: 'link', id: 'demo', title: 'Demos', detail: 'Play a hand of any game, with a guide', onPress: () => showDemo(game) },
+              { kind: 'link', id: 'demo', title: 'Demos', subtitle: 'Play a hand of any game, with a guide', onPress: () => showDemo(game) },
             ],
           },
         ]}

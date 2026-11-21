@@ -25,6 +25,10 @@ export interface DemoSpec {
   ghost?: Card[];
   /** Haunted Pot: chips the ghost is already holding from earlier hands (it's a bounty for whoever beats it). */
   bounty?: number;
+  /** Red River: the river run's ten draws and then the river, in order (the board then ends as `final`). */
+  run?: Card[];
+  /** Red River: the board the run leaves, for the tests and anyone reading. */
+  final?: Card[];
   /** Cards dealt to players after a street's board cards: Bean Stalk's new hole cards, Hit Me's hits (in the order they're taken). */
   after?: Partial<Record<'flop' | 'turn' | 'river', Card[]>>;
   /** Die on the River: what it rolls, and the card that comes in for a 1 to 5. */
@@ -103,11 +107,14 @@ export const DEMO_SPECS: Record<Variant, DemoSpec> = {
     moves: { [key(SEAT.luna, 'flop')]: [bet(40)], [key(SEAT.luna, 'river')]: [bet(80)], [key(SEAT.max, 'river')]: [fold] },
     plays: ['call', 'call', 'check', 'call'],
   },
-  // A red river, another red card (the king that makes your straight), then a black one ends it.
+  // The river run: the red king stays (your straight), a red five covers it, and then every black card swaps out the
+  // newest card, so the king is never touched. The river is the three of hearts.
   redriver: {
     variant: 'redriver',
     holes: [['Qd', 'Jd'], ['Tc', '9h'], ['8s', '8h']],
-    board: ['Td', '4c', '9s', '2c', '3h', 'Kd', '5c'],
+    board: ['Td', '4c', '9s', '2c'],
+    run: ['Kd', '5h', '4s', '3c', '7s', '6c', '5s', '3s', '5c', '6s', '3h'],
+    final: ['Td', '4c', '9s', '2c', 'Kd', '6s', '3h'],
     moves: { [key(SEAT.luna, 'flop')]: [bet(40)] },
     plays: ['call', 'call', 'check', 'check'],
   },
@@ -120,12 +127,12 @@ export const DEMO_SPECS: Record<Variant, DemoSpec> = {
     moves: { [key(SEAT.luna, 'river')]: [bet(60)] },
     plays: ['call', 'check', 'check', 'call'],
   },
-  // Twelve, two and four o'clock run queen, king, nine: with your ten and jack, a straight.
+  // Twelve to four o'clock run queen, king, nine: with your ten and jack, a straight. Luna's fours make a smaller one.
   circle: {
     variant: 'circle',
     holes: [['Th', 'Jh'], ['4s', '8d'], ['Qc', '3s']],
-    // 12 and 6 o'clock; then 8 and 2; then 10 and 4.
-    board: ['Qs', '4h', '4c', 'Kd', '7d', '9c'],
+    // 12 to 3 o'clock; then 4 to 7; then 8 to 11.
+    board: ['Qs', 'Kd', '9c', '4h', '4c', '7d', '2s', '5d', '3c', '8c', '6s', 'Ah'],
     moves: { [key(SEAT.luna, 'river')]: [bet(60)] },
     plays: ['call', 'check', 'check', 'call'],
   },
@@ -153,9 +160,9 @@ export const DEMO_SPECS: Record<Variant, DemoSpec> = {
     variant: 'bjholdem',
     holes: [['9h', '3c'], ['Kc', '5d'], ['Qs', 'Qh']],
     board: ['9s', '4d', '7c', 'Tc', 'Js'],
-    // Luna hits first (the 6 of hearts, 21), then you (the 8 of diamonds, 20).
+    // On the flop Luna hits first (the 6 of hearts, 21), then you (the 8 of diamonds, 20).
     after: { flop: ['6h', '8d'] },
-    hits: { [SEAT.luna]: 1 },
+    hits: { [key(SEAT.luna, 'flop')]: 1 },
     plays: ['call', { hit: true }, 'check', 'check', 'check'],
   },
   // A Peek on the flop shows the king coming on the turn: your straight, and only you know.
@@ -183,6 +190,7 @@ export function stackDeck(spec: DemoSpec): Card[] {
     ...spec.board,
     ...(spec.dice?.fresh ? [spec.dice.fresh] : []),
     ...Object.values(spec.after ?? {}).flat(),
+    ...(spec.run ?? []),
     ...(spec.memory ?? []),
   ];
   if (new Set(named).size !== named.length) throw new Error(`The ${v} demo uses a card twice`);
@@ -193,10 +201,11 @@ export function stackDeck(spec: DemoSpec): Card[] {
   let at = 0;
   for (const street of ['flop', 'turn', 'river'] as const) {
     if (burns(v)) order.push(spare.shift()!);
-    // The river takes the rest of the board: one card, Pittsburgh's three, or Red River's run of reds and the black.
+    // The river takes the rest of the board (one card, or Pittsburgh's three); Red River's is its run.
     const count = street === 'river' ? spec.board.length - at : streetCards(v, street);
     order.push(...spec.board.slice(at, at + count));
     at += count;
+    if (street === 'river' && spec.run) order.push(...spec.run);
     if (street === 'river' && spec.dice?.fresh) order.push(spec.dice.fresh);
     order.push(...(spec.after?.[street] ?? []));
   }
@@ -258,13 +267,13 @@ export function demoBotMove(game: Game, hand: Hand, seat: Seat): DemoMove {
   return { move: hand.currentBet > seat.bet ? 'call' : 'check' };
 }
 
-/** Hit Me: whether a demo bot takes another card now (it takes as many as its script says, on the flop). */
+/** Hit Me: whether a demo bot takes another card now (as many as its script says for this street). */
 export function demoHits(game: Game, hand: Hand, seat: Seat): boolean {
   const demo = game.demo!;
-  const pos = fromButton(hand, seat);
-  const k = `hit:${pos}`;
+  const street = key(fromButton(hand, seat), hand.street);
+  const k = `hit:${street}`;
   const done = demo.used?.[k] ?? 0;
-  if (done >= (demo.hits?.[pos] ?? 0)) return false;
+  if (done >= (demo.hits?.[street] ?? 0)) return false;
   demo.used = { ...demo.used, [k]: done + 1 };
   return true;
 }

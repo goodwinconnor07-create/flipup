@@ -59,13 +59,13 @@ function row(item: MenuItem) {
           modifiers={[buttonStyle('plain')]}
         >
           <HStack spacing={8} modifiers={[contentShape(shapes.rectangle())]}>
-            {item.symbol && <Image systemName={sf(item.symbol)} size={20} modifiers={[foregroundStyle(brand.violet)]} />}
+            {item.symbol && <Image systemName={sf(item.symbol)} size={20} modifiers={[PRIMARY]} />}
             <VStack alignment="leading" spacing={2}>
               <Text modifiers={[PRIMARY]}>{item.title}</Text>
               {item.subtitle && <Text modifiers={[SECONDARY, font({ textStyle: 'footnote' })]}>{item.subtitle}</Text>}
             </VStack>
             <Spacer />
-            {item.detail && <Text modifiers={item.detailTint ? [foregroundStyle(brand.violet)] : [SECONDARY]}>{item.detail}</Text>}
+            {item.detail && <Text modifiers={[SECONDARY]}>{item.detail}</Text>}
             {item.trailingCrown && <Image systemName="crown.fill" size={14} modifiers={[foregroundStyle(brand.gold)]} />}
             {item.chevron !== false && <Image systemName="chevron.right" size={13} modifiers={[TERTIARY, font({ weight: 'semibold' })]} />}
           </HStack>
@@ -74,7 +74,7 @@ function row(item: MenuItem) {
     case 'button': {
       // Drawn by hand, not as a Label: a Label sizes each symbol by its own shape, so the icons sat at different widths and
       // kept the tint while the text went red. One fixed icon column and one colour for the glyph and its words.
-      const colour = item.destructive ? DESTRUCTIVE : brand.violet;
+      const colour = item.destructive ? foregroundStyle(DESTRUCTIVE) : PRIMARY;
       return (
         <Button
           onPress={
@@ -90,10 +90,10 @@ function row(item: MenuItem) {
           <HStack spacing={12} modifiers={[contentShape(shapes.rectangle())]}>
             {item.symbol && (
               <HStack modifiers={[frame({ width: 28, alignment: 'center' })]}>
-                <Image systemName={sf(item.symbol)} size={20} modifiers={[foregroundStyle(colour)]} />
+                <Image systemName={sf(item.symbol)} size={20} modifiers={[colour]} />
               </HStack>
             )}
-            <Text modifiers={[foregroundStyle(colour)]}>{item.busy ? `${item.title}…` : item.title}</Text>
+            <Text modifiers={[colour]}>{item.busy ? `${item.title}…` : item.title}</Text>
             <Spacer />
           </HStack>
         </Button>
@@ -202,7 +202,7 @@ function row(item: MenuItem) {
     case 'info':
       return (
         <HStack alignment="top" spacing={14} modifiers={[padding({ vertical: 4 })]}>
-          <Image systemName={sf(item.symbol)} size={22} modifiers={[foregroundStyle(brand.violet)]} />
+          <Image systemName={sf(item.symbol)} size={22} modifiers={[PRIMARY]} />
           <VStack alignment="leading" spacing={3}>
             <Text modifiers={[font({ textStyle: 'body', weight: 'semibold' })]}>{item.title}</Text>
             <Text modifiers={[SECONDARY, font({ textStyle: 'subheadline' })]}>{item.text}</Text>

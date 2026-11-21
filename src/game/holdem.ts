@@ -3,11 +3,12 @@
 
 import { dramaPause } from './botTalk';
 import { usesEverydayBots } from './botTableMode';
+import { botHits } from './botVariants';
 import { dealMoment, MOMENT_TIMING, scaled } from './moments';
 import { handRecord } from './record';
-import { fullDeck, isRed, rankName, rankOf, shuffle, type Card } from './cards';
-import { effectOf, playablePower, powerLine, powerTargets, POWER_IDS, type PowerPlan } from './powers';
-import { bestHand, holeCount, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
+import { fullDeck, rankName, rankOf, shuffle, type Card } from './cards';
+import { botPowerPlan, effectOf, playablePower, powerLine, powerTargets, POWER_IDS, type PowerPlan } from './powers';
+import { bestHand, holeCount, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, redRun, streetCards, variantOf, type Variant } from './variants';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, PowerUse, Seat, Street } from './types';
 
 export const TIMING = {
@@ -500,6 +501,7 @@ export function foldOutOfTurn(game: Game, playerId: string, ctx: ActionContext):
   if (hand.seats.filter((s) => !s.folded).length === 1) {
     winWithoutShowdown(game, ctx);
   } else if (hand.discarding && !pendingDiscards(game).length) endDiscards(game, ctx);
+  else if (hand.choosing && !pendingChoosers(game).length) endChoices(game, ctx);
 }
 
 /** After a move (or the blinds): next player, next street, or the end of the hand. */
@@ -577,7 +579,9 @@ function dealStreet(game: Game, hand: Hand, rng: () => number, now: number): voi
   // Crazy Pineapple: anyone who still has three cards when the turn comes (all in, out of time) keeps their best two.
   if (next === 'turn' && variant === 'pineapple') for (const s of hand.seats) if (!s.folded && s.cards.length > 2) throwAway(game, s, null);
   if (burns(variant)) hand.deck.shift(); // burn
-  const count = streetCards(variant, next as 'flop' | 'turn' | 'river');
+  // Red River: the river is a run of cards (ten draws, then the river), dealt below.
+  const isRun = next === 'river' && variant === 'redriver';
+  const count = isRun ? 0 : streetCards(variant, next as 'flop' | 'turn' | 'river');
   const from = hand.board.length;
   for (let i = 0; i < count; i++) hand.board.push(hand.deck.shift()!);
   // Bean Stalk: everyone still in gets another card of their own, starting left of the button.
@@ -592,11 +596,12 @@ function dealStreet(game: Game, hand: Hand, rng: () => number, now: number): voi
   hand.street = next;
   const label = next === 'flop' ? 'Flop' : next === 'turn' ? 'Turn' : 'River';
   // Like Poker Now: the new card on its own after the ones already out.
-  hand.log.push(
-    next === 'flop'
-      ? `${label}: ${cardsText(hand.board)}`
-      : `${label}: ${cardsText(hand.board.slice(0, -count))} ${cardsText(hand.board.slice(-count))}`,
-  );
+  if (!isRun)
+    hand.log.push(
+      next === 'flop'
+        ? `${label}: ${cardsText(hand.board)}`
+        : `${label}: ${cardsText(hand.board.slice(0, -count))} ${cardsText(hand.board.slice(-count))}`,
+    );
   let redExtra = 0;
   if (next === 'river' && variant === 'dice') {
     // Die on the River: a 1 to 5 swaps that board card (from the left) for a fresh one; a 6 leaves it.
@@ -611,16 +616,18 @@ function dealStreet(game: Game, hand: Hand, rng: () => number, now: number): voi
       hand.dice = { roll };
       hand.log.push(`The die rolls a ${roll}: the board stays`);
     }
-  } else if (next === 'river' && variant === 'redriver') {
-    // Red River: while the last card is red, another one comes.
-    while (isRed(hand.board[hand.board.length - 1]) && hand.deck.length) {
-      hand.board.push(hand.deck.shift()!);
-      redExtra++;
-      hand.log.push(`Red river, another card: ${cardsText(hand.board.slice(-1))}`);
-    }
+  } else if (isRun) {
+    // Red River: ten cards one at a time (a red card is added, a black one takes the newest card's place), then the
+    // river, whatever its colour. All dealt now; the phones replay it step by step (moments.ts).
+    const base = hand.board.slice();
+    const steps = redRun(hand.board, () => hand.deck.shift());
+    hand.redRun = { base, steps };
+    for (const st of steps)
+      hand.log.push(st.kind === 'river' ? `River: ${cardsText([st.card])}` : st.kind === 'add' ? `Red ${cardsText([st.card])}: it stays` : `Black ${cardsText([st.card])}: it replaces ${cardsText([st.out!])}`);
+    redExtra = steps.length;
   }
   // The twist of the street plays out on the clock (see moments.ts); betting waits for it.
-  hand.moment = dealMoment(variant, now, from, hand.board.length - from, botsOnly(game), redExtra);
+  hand.moment = dealMoment(variant, now, isRun ? 4 : from, isRun ? redExtra : hand.board.length - from, botsOnly(game), redExtra);
 }
 
 function endStreet(game: Game, ctx: ActionContext): void {
@@ -805,11 +812,11 @@ function payBounties(game: Game, hand: Hand): void {
  * The player to act plays their power (Power Cards), before their move. Checks it can be played now and that the
  * choice fits, changes the table, and holds the table for a moment so everyone sees it. Returns an error, or null.
  */
-export function playPower(game: Game, plan: PowerPlan, ctx: ActionContext): string | null {
+export function playPower(game: Game, plan: PowerPlan, ctx: ActionContext, playerId?: string): string | null {
   const hand = game.hand!;
-  const seat = hand.seats.find((s) => s.playerId === hand.toAct);
+  const seat = hand.seats.find((s) => s.playerId === (playerId ?? hand.toAct));
   if (!seat) return "It's not your turn.";
-  if (hand.moment?.gate && ctx.now < hand.moment.until) return 'One moment…';
+  if (hand.moment?.gate && ctx.now < hand.moment.until && !botChoosing) return 'One moment…';
   const can = playablePower(game, hand, seat);
   if (!can) return "You can't play your power right now.";
   const { power, effect } = can;
@@ -890,22 +897,33 @@ export function playPower(game: Game, plan: PowerPlan, ctx: ActionContext): stri
   } else if (playerById(game, seat.playerId)?.bot) {
     hand.actAt = until;
   }
+  // All in: that was their choice for this street.
+  if (hand.choosing) {
+    hand.choosing.stood.push(seat.playerId);
+    if (!botChoosing && !pendingChoosers(game).length) endChoices(game, ctx);
+  }
   schedule(game);
   return null;
 }
 
 // ── Hit Me hits ──────────────────────────────────────────────────
 
-/** Whether the player to act can take another card: Hit Me, on the flop, before their move. */
+/**
+ * Whether this player can take another card in Hit Me: on their turn on any street, before their move; or, when a
+ * street comes and they can't act on it (all in, or everyone is), until they stand. Never at 21 or more.
+ */
 export function canHit(game: Game, hand: Hand, seat: Seat): boolean {
-  return variantOf(game) === 'bjholdem' && hand.street === 'flop' && !hand.result && !hand.runout && hand.toAct === seat.playerId && !seat.folded && !seat.allIn;
+  if (variantOf(game) !== 'bjholdem' || hand.result || seat.folded || count21(seat.cards) >= 21) return false;
+  if (hand.choosing) return (seat.allIn || !!hand.runout) && !hand.choosing.stood.includes(seat.playerId);
+  return !hand.runout && hand.toAct === seat.playerId && !seat.allIn;
 }
 
-/** The player to act hits: another card of their own, face down. Over 21 and they bust, which folds them. */
-export function hitCard(game: Game, ctx: ActionContext): string | null {
+/** This player hits (the player to act, or one choosing while all in): another card of their own, face down. Over 21 and they bust, which folds them. */
+export function hitCard(game: Game, ctx: ActionContext, playerId?: string): string | null {
   const hand = game.hand!;
-  const seat = hand.seats.find((s) => s.playerId === hand.toAct);
-  if (!seat || !canHit(game, hand, seat)) return 'You can only hit on the flop, on your turn.';
+  const seat = hand.seats.find((s) => s.playerId === (playerId ?? hand.toAct));
+  if (!seat || !canHit(game, hand, seat)) return "You can't hit right now.";
+  if (hand.choosing) return hitWhileChoosing(game, hand, seat, ctx, true);
   if (!hand.deck.length) return 'There are no cards left to hit.';
   seat.cards.push(hand.deck.shift()!);
   hand.hits = { ...hand.hits, [seat.playerId]: (hand.hits?.[seat.playerId] ?? 0) + 1 };
@@ -933,6 +951,141 @@ export function hitCard(game: Game, ctx: ActionContext): string | null {
     return error;
   }
   return null;
+}
+
+// ── All-in choices (Hit Me, Power Cards) ─────────────────────────────────
+
+/** Set while the bots make their all-in choices at once, so their moves don't close the window under them. */
+let botChoosing = false;
+
+/** Players still choosing while a street waits for the ones who are all in: a hit to take, or a power to play. */
+export function pendingChoosers(game: Game): Seat[] {
+  const hand = game.hand;
+  if (!hand?.choosing) return [];
+  const v = variantOf(game);
+  return hand.seats.filter((s) => {
+    const p = playerById(game, s.playerId);
+    if (!p || p.leaving || s.folded || hand.choosing!.stood.includes(s.playerId)) return false;
+    return v === 'bjholdem' ? canHit(game, hand, s) : !!playablePower(game, hand, s);
+  });
+}
+
+/**
+ * A street is out (or the river, before the showdown): anyone who can't act on it (all in, or everyone is) makes the
+ * game's own choice first, in Hit Me hit or stand and in Power Cards play their power or keep it (owner's call). Bots
+ * choose at once; people get the clock. Returns whether the table now waits (or the hand ended).
+ */
+function openChoices(game: Game, ctx: ActionContext): boolean {
+  const hand = game.hand!;
+  const v = variantOf(game);
+  if ((v !== 'bjholdem' && v !== 'power') || hand.result || hand.street === 'preflop' || hand.chose?.includes(hand.street)) return false;
+  const waiting = (s: Seat) => !s.folded && (s.allIn || !!hand.runout);
+  if (!hand.seats.some(waiting)) return false;
+  hand.chose = [...(hand.chose ?? []), hand.street];
+  hand.choosing = { street: hand.street, stood: [], until: null };
+  botChoosing = true;
+  try {
+    for (const s of hand.seats) {
+      if (!waiting(s) || !playerById(game, s.playerId)?.bot) continue;
+      if (v === 'bjholdem') {
+        while (canHit(game, hand, s) && botHits(game, s, ctx.rng)) {
+          hitWhileChoosing(game, hand, s, ctx, false);
+          if (hand.result) return true;
+        }
+      } else if (playablePower(game, hand, s)) {
+        const plan = botPowerPlan(game, hand, s, ctx.rng);
+        if (plan) playPower(game, plan, ctx, s.playerId);
+      }
+      if (hand.choosing && !hand.choosing.stood.includes(s.playerId)) hand.choosing.stood.push(s.playerId);
+    }
+  } finally {
+    botChoosing = false;
+  }
+  if (hand.result) return true;
+  if (!pendingChoosers(game).length) {
+    hand.choosing = undefined;
+    // A bot played a power or busted: the table holds while everyone sees it, then goes on.
+    const wait = hand.moment?.gate ? hand.moment.until - ctx.now : 0;
+    if (wait <= 0) return false;
+    hand.toAct = null;
+    hand.deadline = null;
+    if (hand.runout) hand.actAt = hand.moment!.until;
+    else {
+      hand.bettingAt = hand.moment!.until;
+      hand.actAt = hand.bettingAt;
+    }
+    schedule(game);
+    return true;
+  }
+  hand.toAct = null;
+  hand.deadline = game.settings.turnSeconds > 0 ? ctx.now + game.settings.turnSeconds * 1000 : null;
+  hand.choosing.until = hand.deadline;
+  hand.actAt = hand.deadline;
+  hand.seq += 1;
+  schedule(game);
+  return true;
+}
+
+/** A hit while all in. A bust folds them; if that leaves one player, the hand is theirs. */
+function hitWhileChoosing(game: Game, hand: Hand, seat: Seat, ctx: ActionContext, settle: boolean): string | null {
+  if (!hand.deck.length) return 'There are no cards left to hit.';
+  seat.cards.push(hand.deck.shift()!);
+  hand.hits = { ...hand.hits, [seat.playerId]: (hand.hits?.[seat.playerId] ?? 0) + 1 };
+  hand.seq += 1;
+  log(game, `${nameOf(game, seat.playerId)} hits`);
+  const total = count21(seat.cards);
+  if (total > 21) {
+    hand.busted = [...(hand.busted ?? []), seat.playerId];
+    log(game, `${nameOf(game, seat.playerId)} busts with ${total}`);
+    seat.folded = true;
+    seat.last = { move: 'fold', amount: 0, street: hand.street };
+    hand.moment = { kind: 'bust', at: ctx.now, until: ctx.now + scaled(MOMENT_TIMING.bust, botsOnly(game)), gate: true, who: seat.playerId, value: total };
+    if (hand.seats.filter((s) => !s.folded).length === 1) {
+      hand.choosing = undefined;
+      winWithoutShowdown(game, ctx);
+      return null;
+    }
+  }
+  if (settle) {
+    if (!pendingChoosers(game).length) endChoices(game, ctx);
+    else schedule(game);
+  }
+  return null;
+}
+
+/** All in and done for this street: stand (Hit Me) or keep the power (Power Cards). */
+export function standChoice(game: Game, playerId: string, ctx: ActionContext): string | null {
+  const hand = game.hand;
+  const seat = hand?.seats.find((s) => s.playerId === playerId);
+  if (!hand?.choosing || !seat || !pendingChoosers(game).includes(seat)) return "There's nothing to choose now.";
+  hand.choosing.stood.push(playerId);
+  hand.seq += 1;
+  if (!pendingChoosers(game).length) endChoices(game, ctx);
+  else schedule(game);
+  return null;
+}
+
+/** Everyone has chosen (or time's up): the street goes on, once anything just played has been seen. */
+export function endChoices(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  if (hand.result) return;
+  hand.choosing = undefined;
+  hand.deadline = null;
+  hand.toAct = null;
+  hand.seq += 1;
+  const shown = hand.moment?.gate ? Math.max(0, hand.moment.until - ctx.now) : 0;
+  if (hand.runout) {
+    hand.actAt = ctx.now + shown + (botsOnly(game) ? TIMING.fastRunout : TIMING.streetPause);
+    schedule(game);
+    return;
+  }
+  if (shown > 0) {
+    hand.bettingAt = ctx.now + shown;
+    hand.actAt = hand.bettingAt;
+    schedule(game);
+    return;
+  }
+  startBetting(game, ctx);
 }
 
 // ── Crazy Pineapple discards ────────────────────────────────────────────────
@@ -1006,6 +1159,8 @@ export function dealNextStreet(game: Game, ctx: ActionContext): void {
 function startBetting(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   hand.bettingAt = null;
+  // All-in players make the game's choice for this street first (Hit Me, Power Cards).
+  if (openChoices(game, ctx)) return;
   const button = indexOf(hand, hand.buttonId);
   // After the flop the first player still in, left of the button, acts first.
   const first = nextIndex(hand, button === -1 ? hand.seats.length - 1 : button, isLive);
@@ -1089,6 +1244,8 @@ export function runoutStep(game: Game, ctx: ActionContext): void {
     closeRunTwice(game, ctx);
     return;
   }
+  // The street that's out: anyone all in makes the game's choice first (a hit, a power).
+  if (!hand.twice?.first && openChoices(game, ctx)) return;
   if (hand.street === 'river') {
     const t = hand.twice;
     // The first run is out: keep it, take the board back to where the all-in was, and deal the rest again.
@@ -1307,7 +1464,34 @@ function winWithoutShowdown(game: Game, ctx: ActionContext): void {
     showdown: false,
   };
   log(game, `${nameOf(game, winner.playerId)} wins ${n0(amount)}`);
+  if (game.settings.rabbit && hand.street !== 'river') hand.rabbit = rabbitBoard(game, hand);
   finishHand(game, ctx, TIMING.afterFold);
+}
+
+/**
+ * Rabbit hunt: the board as it would have finished, from the cards left in the deck, dealt the way the table deals
+ * (burns, the street sizes, Bean Stalk's own cards, the Red River run). Die on the River's roll isn't made up.
+ */
+export function rabbitBoard(game: Game, hand: Hand): Card[] {
+  const v = variantOf(game);
+  const deck = hand.deck.slice();
+  const board = hand.board.slice();
+  const take = () => deck.shift();
+  const left = hand.seats.filter((s) => !s.folded).length;
+  const streets: ('flop' | 'turn' | 'river')[] = hand.street === 'preflop' ? ['flop', 'turn', 'river'] : hand.street === 'flop' ? ['turn', 'river'] : ['river'];
+  for (const street of streets) {
+    if (burns(v)) take();
+    if (street === 'river' && v === 'redriver') {
+      redRun(board, take);
+      continue;
+    }
+    for (let i = 0; i < streetCards(v, street); i++) {
+      const c = take();
+      if (c) board.push(c);
+    }
+    if (v === 'beanstalk') for (let i = 0; i < left; i++) take();
+  }
+  return board;
 }
 
 function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {

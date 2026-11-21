@@ -100,18 +100,25 @@ describe('hand bank', () => {
 
 describe('share card data', () => {
   const who = { name: 'Me', emoji: '🙂' };
-  it('turns a hand into a card with the hand line by line', () => {
+  it('turns a hand into a card in its game\'s colours', () => {
     const game = finishedHand();
     noteReplay(game, ME, 'bots');
     const d = handData(lastHand()!, 'Biggest win', who);
     expect(d.eyebrow).toBe('BIGGEST WIN');
-    expect(d.lines?.at(-1)?.left).toBe('Pot');
+    expect(d.variant).toBe(game.settings.variant ?? 'holdem');
     expect(shareText(d)).toContain('FlipUp');
   });
-  it('turns your record into a card', () => {
-    const d = statsData({ hands: 10, won: 4, biggestPot: 30, best: null, games: [], played: [], seen: [] }, 3, who);
+  it('turns your record into a card with the games you play most', () => {
+    const at = 0;
+    const games = [
+      { at, variant: 'dice' as const, place: 1, players: 4 },
+      { at, variant: 'holdem' as const, place: 2, players: 4 },
+      { at, variant: 'dice' as const, place: 3, players: 4 },
+    ];
+    const d = statsData({ hands: 10, won: 4, biggestPot: 30, best: null, games, played: [], seen: [] }, who);
     expect(d.headline).toBe('40%');
-    expect(d.stats?.find((s) => s.label === 'STREAK')?.value).toBe('3d');
+    expect(d.games).toEqual(['dice', 'holdem']);
+    expect(d.stats?.find((s) => s.label === 'GAMES')?.value).toBe('3');
   });
 });
 

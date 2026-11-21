@@ -1,7 +1,7 @@
 // How Range training's ways to train look on their tiles, drawn exactly like the games' tiles (gameArt.ts): a flat
 // field, one bold subject in the shared sticker style (white cards in the four-colour deck, the dark outline and the
 // hard flat shadow), a softer spot behind it, and the name on a band in a darker shade of the field. The colours
-// stay in the app's palette (blue, night and gold), so the Train tab reads as a calmer cousin of Play.
+// stay in the app's blues, so the Train tab reads as a calmer cousin of Play.
 // Drawn by native/src/components/range/mode-tiles.tsx.
 import { GLOW, INK, oval, rr, type CardShape, type PathShape, type Shape } from './gameArt';
 
@@ -20,7 +20,8 @@ export const TRAIN_LOOK: Record<TrainMode, TrainLook> = {
   daily: { field: '#2557d6', band: '#163a9e', tone: '#3d6ce4' },
   endless: { field: '#1b2556', band: '#10173a', tone: '#2b376f' },
   sets: { field: '#3a5694', band: '#253a69', tone: '#5069a6' },
-  gaps: { field: '#c98a00', band: '#8f6200', tone: '#dca42a' },
+  // Blue, not gold (19 Nov 2026): gold is for good news and Premium, and Gaps is the spots you miss.
+  gaps: { field: '#2b74c9', band: '#1b4f91', tone: '#4d8fdb' },
 };
 
 const card = (c: Omit<CardShape, 'kind'>): CardShape => ({ kind: 'card', ...c });

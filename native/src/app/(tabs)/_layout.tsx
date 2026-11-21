@@ -1,7 +1,7 @@
 import { NativeTabs } from 'expo-router/native-tabs';
 
 // Apple's own tab bar (Liquid Glass on iOS 26), which stays full size when a page scrolls (minimizeBehavior never):
-// Play and Train. A party starts from Play with friends, and joining a table or party is Play's Join a game (the
+// Play and Train (your stats, Saved hands and Share cards are Home's shortcuts). A party starts from Play with friends, and joining a table or party is Play's Join a game (the
 // `join` sheet). Tabs are peers, so switching never slides.
 export default function TabsLayout() {
   return (

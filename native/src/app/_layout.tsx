@@ -1,5 +1,5 @@
 import '@/polyfills';
-import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
+import { Color, DarkTheme, DefaultTheme, router, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 
 import { useReminderTaps } from '@/state/reminder';
 import { useEffect } from 'react';
@@ -15,8 +15,7 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { startStore } from '@/state/purchase';
 import { loadAppearance, useAppearance, type AppearancePref } from '@/state/prefs';
 import { haptic } from '@/components/haptics';
-import { GLASS_SHEETS } from '@/components/sheet-material';
-import { useColors, usePlainColors, useReduceTransparency } from '@/theme';
+import { useColors, usePlainColors } from '@/theme';
 
 /** Appearance in Settings: follow the phone, or always light or dark. */
 const applyAppearance = (a: AppearancePref) => {
@@ -60,19 +59,25 @@ export default function RootLayout() {
   const reduce = useReduceMotion();
   const colors = useColors();
   const plain = usePlainColors();
-  const solid = useReduceTransparency();
   // The navigation chrome (headers, titles, hairlines) takes the same tokens as the screens.
   const base = dark ? DarkTheme : DefaultTheme;
   const theme = {
     ...base,
     colors: { ...base.colors, primary: plain.accent, background: plain.background, card: plain.background, text: plain.label, border: plain.separator },
   };
+  // Every sheet has a solid page and a solid title bar. Left clear, iOS 26 draws the sheet in Liquid Glass, and over
+  // the table or a lobby that glass picked up the felt and the page's colours in smears behind the title and rows.
   const sheet = {
     presentation: 'formSheet' as const,
     sheetAllowedDetents: [0.6, 1],
     sheetGrabberVisible: true,
-    contentStyle: { backgroundColor: GLASS_SHEETS && !solid ? 'transparent' : colors.background },
+    contentStyle: { backgroundColor: colors.background },
+    headerStyle: { backgroundColor: colors.background as string },
+    headerShadowVisible: false,
   };
+  // Sheets drawn by SwiftUI's Form (`NativeMenu`): its grey grouped page, under the title too.
+  const grouped = process.env.EXPO_OS === 'ios' ? Color.ios.systemGroupedBackground : colors.background;
+  const menuSheet = { ...sheet, contentStyle: { backgroundColor: grouped }, headerStyle: { backgroundColor: grouped as string } };
   // Apple's own navigation bar on the dark pages: a large title that collapses, a blur under it once the page scrolls, "‹ Back".
   const darkPage = {
     headerShown: true,
@@ -114,8 +119,9 @@ export default function RootLayout() {
         {/* No swipe back here: a finger that just misses a slider and drifts sideways used to pull the whole page away (iOS 26 swipes back from anywhere). The page has its own Back, Save and Delete. */}
         <Stack.Screen name="bot-lab-edit" options={{ headerShown: false, gestureEnabled: false, title: 'Bot', statusBarStyle: 'light' }} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
-        {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. */}
-        <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />
+        {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. In the game's
+            colour (drawn by the page), so it keeps a dark fill of its own rather than the glass. */}
+        <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false, contentStyle: { backgroundColor: '#05070f' } }} />
         {/* Play with friends' Change on the game card: every game in a list, Premium under a gold line. */}
         <Stack.Screen name="lobby-game" options={{ ...sheet, sheetAllowedDetents: [0.6, 1], headerShown: false, title: 'Change the game' }} />
         {/* How to Play: a story on black in a sheet at full height (a black page, so it keeps its own fill); the X closes it. */}
@@ -130,12 +136,12 @@ export default function RootLayout() {
         <Stack.Screen name="share-card" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Share card' }} />
         <Stack.Screen name="replays" options={{ ...darkPage, title: 'Saved hands' }} />
         <Stack.Screen name="replay/[id]" options={{ headerShown: false, title: 'Replay', statusBarStyle: 'light' }} />
-        <Stack.Screen name="table-menu" options={{ ...sheet, title: 'Menu' }} />
+        <Stack.Screen name="table-menu" options={{ ...menuSheet, title: 'Menu' }} />
         <Stack.Screen name="table-standings" options={{ ...sheet, title: 'Standings' }} />
-        <Stack.Screen name="table-theme" options={{ ...sheet, title: 'Table theme' }} />
-        <Stack.Screen name="table-settings" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Table settings' }} />
+        <Stack.Screen name="table-theme" options={{ ...menuSheet, title: 'Table theme' }} />
+        <Stack.Screen name="table-settings" options={{ ...menuSheet, sheetAllowedDetents: [0.75, 1], title: 'Table settings' }} />
         {/* Range training: a set of five hands, full screen over the tabs (Back and the set's progress on top). */}
-        <Stack.Screen name="range-session" options={{ headerShown: false, title: 'Range training' }} />
+        <Stack.Screen name="range-session" options={{ headerShown: false, title: 'Range training', statusBarStyle: 'light' }} />
         {/* Range training: the full breakdown of the hand you just answered (the result card's Breakdown). */}
         <Stack.Screen name="range-breakdown" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Breakdown' }} />
         {/* Range training explained in four steps (the Train tab's How it works). */}
@@ -143,7 +149,7 @@ export default function RootLayout() {
         <Stack.Screen name="hand-rankings"options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand rankings' }} />
         <Stack.Screen name="table-log" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand log' }} />
         <Stack.Screen name="card-packs" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Card packs' }} />
-        <Stack.Screen name="blocked" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Blocked players' }} />
+        <Stack.Screen name="blocked" options={{ ...menuSheet, sheetAllowedDetents: [0.75, 1], title: 'Blocked players' }} />
         {/* The welcome: a face and a name, once, before a first table (state/ask-name.ts). Full screen, no swipe away. */}
         <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', gestureEnabled: false, headerShown: false, title: 'Welcome', statusBarStyle: 'light' }} />
         <Stack.Screen name="emoji" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Your emoji' }} />

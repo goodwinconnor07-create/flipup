@@ -5,7 +5,7 @@
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { holeCount, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Talk } from '@/engine';
+import { handNet, holeCount, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Talk } from '@/engine';
 import { save, useStored } from '@/state/storage';
 import { brand, usePlainColors } from '@/theme';
 
@@ -54,7 +54,9 @@ export function MyArea({
   const hand = game.hand;
   const seat = seatFor(hand, me?.id);
   const inBB = useStored<boolean>('flipup.bb', false) === true;
-  const won = me ? (hand?.result?.won[me.id] ?? 0) : 0;
+  // What you're up on the hand (chips back less chips in): a split that only gave your own back isn't a win.
+  const won = me && hand?.result ? Math.max(0, handNet(hand, me.id)) : 0;
+  const lostWith = me && hand?.result?.showdown && !won && !(hand.result.won[me.id] > 0) ? hand.result.names[me.id] : undefined;
   const variant = variantOf(game);
   const count = seat?.cards.length || holeCount(variant);
   const { width: screen } = useWindowDimensions();
@@ -208,7 +210,14 @@ export function MyArea({
             </Pressable>
             {/* A fixed slot, so the win line coming or going never changes the box's height and moves the table. */}
             <View style={{ height: compact ? 16 : 20, justifyContent: 'center' }}>
-              {won > 0 && <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: c.green }}>+{chips(won)}</Text>}
+              {won > 0 ? (
+                <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: c.green }}>+{chips(won)}</Text>
+              ) : lostWith ? (
+                // A showdown you lost: what your hand was, so it's never a mystery why.
+                <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ fontSize: 13, lineHeight: 18, fontWeight: '600', color: c.tertiaryLabel }}>
+                  {lostWith.split(',')[0]}
+                </Text>
+              ) : null}
             </View>
           </View>
         )}

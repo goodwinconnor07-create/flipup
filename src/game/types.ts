@@ -35,6 +35,15 @@ export interface Settings {
   turnSeconds: number;
   /** Which game the table plays (see variants.ts). Missing = Texas Hold'em. */
   variant?: Variant;
+  // Home game house rules (see docs/RULES.md "House rules"). Missing = off.
+  /** Everyone dealt in antes this share of the big blind, in percent (10, 25, 50 or 100). */
+  ante?: number;
+  /** The player after the big blind posts a straddle of two big blinds every hand (three players or more). */
+  straddle?: boolean;
+  /** Every this many hands is a bomb pot: everyone puts in two big blinds and the hand starts on the flop. */
+  bombEvery?: number;
+  /** When an all-in leaves cards to come in Texas Hold'em, the players in it can agree to deal the rest twice. */
+  runTwice?: boolean;
 }
 
 export interface Player {
@@ -155,7 +164,7 @@ export interface Seat {
   /** Cards are face up for everyone. */
   shown: boolean;
   /** The last thing they did, shown under their picture. */
-  last: { move: Move | 'sb' | 'bb'; amount: number; street: Street } | null;
+  last: { move: Move | 'sb' | 'bb' | 'straddle' | 'bomb'; amount: number; street: Street } | null;
 }
 
 export interface PotResult {
@@ -178,6 +187,16 @@ export interface HandResult {
   ghost?: { cards: Card[]; name: string; kept: number; paid?: number };
   /** Hit Me: each showing player's 21 count, and who won each pot's poker half and 21 half (by pot). */
   blackjack?: { counts: Record<string, number>; poker: string[][]; winners: string[][] };
+  /** Run it twice: each board, its hand names and each pot's winners on it (half of each pot per run). */
+  runs?: RunResult[];
+}
+
+/** One board of a hand that was run twice. */
+export interface RunResult {
+  board: Card[];
+  names: Record<string, string>;
+  /** Winners of each pot's half on this board, in the order of `HandResult.pots`. */
+  winners: string[][];
 }
 
 /** One finished hand, for the hand log. */
@@ -221,6 +240,14 @@ export interface HandRecord {
   /** Chips each player got back at the end. */
   won: Record<string, number>;
   showdown: boolean;
+  /** House rules: chips each player put in before the hand as dead money (antes, or a bomb pot's buy-in). */
+  dead?: Record<string, number>;
+  /** A bomb pot: no blinds, no betting before the flop. */
+  bomb?: boolean;
+  /** Who straddled, and for how much. */
+  straddle?: { id: string; amount: number };
+  /** Run it twice: the first run's board (`board` is the second). */
+  firstBoard?: Card[];
 }
 
 export interface Hand {
@@ -295,6 +322,35 @@ export interface Hand {
   powerUses?: PowerUse[];
   /** Power Cards: players who can't bet or raise, and on which street (Silence). */
   silenced?: Record<string, Street>;
+  /** House rules: chips each player put in before the deal as dead money (antes or a bomb pot). */
+  dead?: Record<string, number>;
+  /** A bomb pot: everyone put in `bomb` chips and the hand starts on the flop. */
+  bomb?: number;
+  /** Who straddled this hand, and for how much. */
+  straddle?: { id: string; amount: number };
+  /** Run it twice (see `RunTwice`). */
+  twice?: RunTwice;
+}
+
+/**
+ * Run it twice. When an all-in leaves cards to come, every person in it is asked (`asking`, until `until`; bots answer
+ * at once). Everyone yes: `agreed`, and once the first run reaches the river its board is kept in `first` and the
+ * cards after `from` are dealt again. Public: there's nothing hidden in it.
+ */
+export interface RunTwice {
+  /** Board cards out when the all-in happened: both runs share these. */
+  from: number;
+  /** The street the run-out started on. */
+  street: Street;
+  /** Who has said yes or no so far. */
+  votes: Record<string, boolean>;
+  /** Players asked (everyone still in the hand). */
+  asked: string[];
+  /** Waiting for answers until this time. */
+  until: number | null;
+  agreed: boolean;
+  /** The first run's whole board, once it's out. */
+  first?: Card[];
 }
 
 /** What `variantTalk()` has already seen this hand, so each power and bust is reacted to once. */
@@ -491,6 +547,8 @@ export type Action =
   | { type: 'hit'; hand: number; seq: number }
   /** Power Cards: play your power on your turn, before your move. `target` (X-ray, Silence), `card` (Swap: yours; Reroll: the board's), `rank` (Bounty). */
   | { type: 'power'; hand: number; seq: number; target?: string; card?: Card; rank?: number }
+  /** Run it twice: your answer when an all-in is asked to run twice. */
+  | { type: 'runTwice'; hand: number; yes: boolean }
   /** Crazy Pineapple: throw this card away after the flop. */
   | { type: 'discard'; hand: number; card: Card }
   /** Turn your cards face up once the hand is over. */

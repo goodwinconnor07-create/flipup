@@ -12,10 +12,9 @@ import { useRangeGrades } from '@/state/ranges';
 import { ForceScheme } from '@/theme';
 
 /**
- * The Train tab is Range training's start screen: Start plays a set of five hands full screen (app/range-session.tsx),
- * with the numbers that matter (streak, best plays, best run, how much of the library you've mastered) and what to
- * work on under it. There's no separate stats page. Always dark, on Range training's slow light field
- * (TrainBackground), which settles into a calm gold glow once today's quiz is done.
+ * The Train tab, titled Train like its tab, is Range training's start screen (`TrainHome`): today's hand first, then
+ * the other ways to train, your numbers and the library. Hands play full screen (app/range-session.tsx). Always dark, on Range training's slow light field
+ * (TrainBackground), which settles into a calm gold glow once today's hand is played.
  */
 export default function TrainTab() {
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -25,8 +24,9 @@ export default function TrainTab() {
   return (
     <ForceScheme scheme="dark">
       <TrainBackground mood={daily.finished ? 'done' : 'idle'}>
-        <Stack.Screen options={{ title: 'Range training', headerShown: false }} />
-        <TabScreen title="Range training" accessory={<ProfileMenu />} scrollRef={scroll}>
+        {/* Always dark, so the clock and battery are white whatever the phone's own look. */}
+        <Stack.Screen options={{ title: 'Train', headerShown: false, statusBarStyle: 'light' }} />
+        <TabScreen title="Train" accessory={<ProfileMenu />} scrollRef={scroll}>
           <TrainHome history={history} grades={grades} />
         </TabScreen>
       </TrainBackground>

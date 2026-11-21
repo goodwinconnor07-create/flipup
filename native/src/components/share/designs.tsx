@@ -1,550 +1,381 @@
-// The share card designs. Each draws the same `ShareData` (data.ts) at a fixed 360 × 450 points, saved at 3x
-// (1080 × 1350, the shape Instagram and Messages show best). They are pictures to send, so they keep their own
-// colours and type whatever the app's appearance: Night is free, the rest come with FlipUp Premium. A design that
-// needs a hand (`fits`) is only offered for one: the odds chart needs odds, so a hand where everyone still in showed.
-//   night    the app's night card: big rounded numbers on deep blue
-//   felt     a photo of the table: the cards on green felt inside a gold rail
-//   gold     black lacquer, gold foil frame, serif type: a luxury invitation
-//   receipt  a casino till receipt: the hand line by line in monospace, torn edge
-//   poster   a Swiss poster: one giant number on a blue block, heavy type
-//   odds     your win chance street by street as a line, from where you were to where you ended
-//   broadcast a TV poker graphic: the board, both hands on name plates with their odds, the moment as a ticker
+// The share cards, drawn like the game icons (the owner, 19 Nov 2026): the game pictures' sticker system from
+// src/design/gameArt.ts, so a card looks like the game it came from. Each card is a fixed 360 × 450 points, saved at
+// 3x (1080 × 1350, the shape Instagram and Messages show best), and keeps its own colours whatever the app's look.
+//   a flat field in the game's colour (brand blue for your stats), its lighter spot and scattered suits
+//   one subject with the shared ink outline and hard flat shadow: the real playing cards, the game's scene, the spade
+//   the big number outlined like a sticker, gold when you won; labels on white capsules
+//   the app icon, FlipUp and "Free on the App Store" at the top, the game's icon stuck in the corner, and your face
+//   and name on the darker band at the bottom, like a game's name under its picture on Home
+// Every card is free: a card is how a game gets seen. A hand can be drawn three ways (`layoutsFor()`): the hand, the
+// showdown against the player who showed, and the odds street by street.
 import type { ReactNode } from 'react';
-import { Platform, Text, View, type TextStyle } from 'react-native';
-import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
+import { Text as RNText, View, type TextStyle } from 'react-native';
+import Svg, { Circle, G, Path, Rect, Text } from 'react-native-svg';
 
-import { Icon } from '@/components/icon';
-import { LivingCard } from '@/components/living-card';
-import { PlayingCard } from '@/components/table/playing-card';
-import { brand, cardColors, gradient, ROUNDED } from '@/theme';
+import { gameLook, gameScene, GLOW, INK, OUTLINE, SUIT_PATH, type Shape } from '@design/gameArt';
+import { IconArt } from '@/components/app-icon-art';
+import { DrawnThumb, draw, FONT } from '@/components/game-picture';
+import { ICON_RADIUS } from '@/components/launch-mark';
+import { brand, cardColors, ROUNDED } from '@/theme';
 
-import type { Card, Street } from '@/engine';
+import type { Card, Street, Variant } from '@/engine';
 
 import type { ShareData, ShareSide } from './data';
+import { BAND, CARD_H, CARD_W, handCardLayout, layoutsFor, ROW_MAX, showdownLayout, SIDE_X, VS, type Placed, type ShareLayout } from './layout';
 
-export const CARD_W = 360;
-export const CARD_H = 450;
+export { CARD_H, CARD_W } from './layout';
+const SHADOW = 0.24;
+const WHITE = '#ffffff';
 
-export type ShareDesignId = 'night' | 'felt' | 'gold' | 'receipt' | 'poster' | 'odds' | 'broadcast';
+export { isShareLayout, LAYOUT_NAMES, layoutsFor, type ShareLayout } from './layout';
 
-export interface ShareDesign {
-  id: ShareDesignId;
-  name: string;
-  premium: boolean;
-  swatch: readonly string[];
-  /** Only offered for cards it can draw; every card when left out. */
-  fits?: (d: ShareData) => boolean;
+/** Your stats wear the brand: the app's blue in the game pictures' three shades. */
+const BRAND_LOOK = { field: brand.violet, tone: cardColors.violet[0], band: brand.violetDeep } as const;
+function lookOf(d: ShareData) {
+  if (!d.variant) return BRAND_LOOK;
+  const l = gameLook(d.variant);
+  return { field: l.card[0], tone: l.tone, band: l.band };
 }
 
-export const SHARE_DESIGNS: ShareDesign[] = [
-  { id: 'night', name: 'Night', premium: false, swatch: cardColors.night },
-  { id: 'felt', name: 'Felt', premium: true, swatch: ['#2f9a5a', '#16673a', '#083a20'] },
-  { id: 'gold', name: 'Gold Foil', premium: true, swatch: ['#1b1a1f', '#0a0a0c', '#d9a93a'] },
-  { id: 'receipt', name: 'Receipt', premium: true, swatch: ['#faf7ef', '#efe9da', '#1b1b1b'] },
-  { id: 'poster', name: 'Poster', premium: true, swatch: [brand.violet, '#ffffff', '#0b0b0f'] },
-  { id: 'odds', name: 'Odds', premium: true, swatch: ['#0d1a44', '#060b1c', brand.gold], fits: (d) => (d.odds?.length ?? 0) >= 2 },
-  { id: 'broadcast', name: 'Broadcast', premium: true, swatch: ['#1f4fc9', '#0a1d55', brand.gold], fits: (d) => d.kind === 'hand' && !!d.hole?.length },
-];
-
-/** The designs that can draw this card. */
-export const designsFor = (d: ShareData): ShareDesign[] => SHARE_DESIGNS.filter((x) => !x.fits || x.fits(d));
-
-export const isShareDesign = (v: unknown): v is ShareDesignId => SHARE_DESIGNS.some((d) => d.id === v);
-
-const SERIF = Platform.select({ ios: 'Didot', default: 'Georgia' });
-const MONO = Platform.select({ ios: 'Menlo', default: 'monospace' });
-
-export function ShareCard({ design, data }: { design: ShareDesignId; data: ShareData }) {
-  const fits = SHARE_DESIGNS.find((d) => d.id === design)?.fits;
-  const Design = fits && !fits(data) ? Night : { night: Night, felt: Felt, gold: Gold, receipt: Receipt, poster: Poster, odds: Odds, broadcast: Broadcast }[design];
+export function ShareCard({ data, layout = 'hand' }: { data: ShareData; layout?: ShareLayout }) {
+  const look = lookOf(data);
+  const use = layoutsFor(data).includes(layout) ? layout : 'hand';
+  const art =
+    data.kind === 'stats' ? <StatsArt d={data} look={look} /> : data.kind === 'game' ? <GameArt d={data} /> : use === 'showdown' ? <ShowdownArt d={data} /> : use === 'odds' ? <OddsArt d={data} /> : <HandArt d={data} />;
   return (
-    <View style={{ width: CARD_W, height: CARD_H, overflow: 'hidden' }}>
-      <Design data={data} />
+    <View style={{ width: CARD_W, height: CARD_H, overflow: 'hidden', backgroundColor: look.field }}>
+      <Svg width={CARD_W} height={CARD_H} viewBox={`0 0 ${CARD_W} ${CARD_H}`} style={{ position: 'absolute' }}>
+        {data.kind !== 'game' && <Field look={look} />}
+        {art}
+        <Rect y={CARD_H - BAND} width={CARD_W} height={BAND} fill={look.band} />
+        <Path d={`M0 ${CARD_H - BAND}H${CARD_W}`} stroke={INK} strokeWidth={OUTLINE} />
+      </Svg>
+      <Header />
+      {data.variant && <GameSticker variant={data.variant} />}
+      <Band d={data} />
     </View>
   );
 }
 
-/** The cards a share card shows: your hole cards, then the board (or your best hand). */
-function Cards({ data, width, gap = 6, boardWidth }: { data: ShareData; width: number; gap?: number; boardWidth?: number }) {
-  if (!data.hole?.length && !data.board?.length) return null;
+// ── The pieces every card shares ────────────────────────────────────────────
+
+/** The game picture's backdrop, card sized: the soft spot and the suit scattered in the lighter shade. */
+function Field({ look }: { look: { tone: string } }) {
+  const spots: [number, number, number, number][] = [
+    [30, 92, -18, 1.8],
+    [334, 120, 16, 1.5],
+    [18, 300, 24, 2.1],
+    [344, 290, -22, 1.9],
+  ];
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: gap * 2 }}>
-      {!!data.hole?.length && (
-        <View style={{ flexDirection: 'row', gap: 3 }}>
-          {data.hole.map((c) => (
-            <PlayingCard key={c} card={c} size="md" width={width} />
-          ))}
-        </View>
-      )}
-      {!!data.board?.length && (
-        <View style={{ flexDirection: 'row', gap: 3 }}>
-          {data.board.map((c) => (
-            <PlayingCard key={c} card={c} size="md" width={boardWidth ?? width * 0.8} />
-          ))}
-        </View>
-      )}
-    </View>
+    <G>
+      <Circle cx={180} cy={214} r={152} fill={look.tone} />
+      {spots.map(([x, y, r, k]) => (
+        <Path key={`${x}`} d={SUIT_PATH['♠']} fill={look.tone} transform={`translate(${x} ${y}) rotate(${r}) scale(${k})`} />
+      ))}
+    </G>
   );
 }
 
-const handle = (data: ShareData) => data.who.name;
-
-// ── Night ───────────────────────────────────────────────────────────────────
-
-function Night({ data }: { data: ShareData }) {
-  const label: TextStyle = { fontSize: 11, fontWeight: '700', letterSpacing: 1.4, color: 'rgba(255,255,255,0.6)' };
+/** FlipUp's own icon, the name and where to get it: every card is an advert for the app. */
+function Header() {
+  const size = 40;
   return (
-    <LivingCard colors={cardColors.night} radius={0} shadow={false} still outerStyle={{ width: CARD_W, height: CARD_H }} style={{ flex: 1, padding: 26, justifyContent: 'space-between' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <View style={{ width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet }}>
-          <Icon name="suit.spade.fill" size={15} color="#ffffff" />
+    <View style={{ position: 'absolute', top: 18, left: 18, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <View style={{ width: size, height: size, borderRadius: size * ICON_RADIUS, borderCurve: 'continuous', boxShadow: `0 3px 0 rgba(20, 20, 28, ${SHADOW})` }}>
+        <View style={{ flex: 1, borderRadius: size * ICON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
+          <IconArt size={size} id="share-icon" />
         </View>
-        <Text style={{ flex: 1, fontFamily: ROUNDED, fontSize: 21, fontWeight: '800', color: '#ffffff' }}>FlipUp</Text>
-        <Text style={label}>{data.eyebrow}</Text>
       </View>
       <View>
-        <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: ROUNDED, fontSize: 88, lineHeight: 96, fontWeight: '800', color: data.tone === 'win' ? brand.gold : '#ffffff' }}>
-          {data.headline}
-        </Text>
-        {data.subline && <Text style={{ fontFamily: ROUNDED, fontSize: 19, fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>{data.subline}</Text>}
+        <RNText style={{ ...words, fontSize: 19, fontWeight: '800', lineHeight: 22 }}>FlipUp</RNText>
+        <RNText style={{ ...words, fontSize: 12, fontWeight: '700', opacity: 0.88 }}>Free on the App Store</RNText>
       </View>
-      <Cards data={data} width={46} />
-      {data.stats && (
-        <View style={{ flexDirection: 'row' }}>
-          {data.stats.map((s) => (
-            <View key={s.label} style={{ flex: 1 }}>
-              <Text style={{ ...label, fontSize: 9 }}>{s.label}</Text>
-              <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: ROUNDED, fontSize: 22, fontWeight: '800', color: '#ffffff' }}>
-                {s.value}
-              </Text>
+    </View>
+  );
+}
+
+/** The game's icon, slapped on the corner like a sticker. */
+function GameSticker({ variant }: { variant: Variant }) {
+  const size = 54;
+  return (
+    <View style={{ position: 'absolute', top: 16, right: 18, transform: [{ rotate: '6deg' }], borderRadius: size * 0.24, boxShadow: `0 3.4px 0 rgba(20, 20, 28, ${SHADOW})` }}>
+      <View style={{ borderRadius: size * 0.24, borderWidth: OUTLINE, borderColor: INK, overflow: 'hidden' }}>
+        <DrawnThumb variant={variant} size={size - OUTLINE * 2} rounded={size * 0.24 - OUTLINE} />
+      </View>
+    </View>
+  );
+}
+
+/** Your face and name on the band, with the game (or, for stats, the games you play most). */
+function Band({ d }: { d: ShareData }) {
+  return (
+    <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: BAND, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <RNText style={{ fontSize: 22 }}>{d.who.emoji}</RNText>
+      <RNText numberOfLines={1} style={{ ...words, flexShrink: 1, fontSize: 17, fontWeight: '800' }}>
+        {d.who.name}
+      </RNText>
+      <View style={{ flex: 1 }} />
+      {d.kind === 'stats' && d.games?.length ? (
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          {d.games.map((v) => (
+            <View key={v} style={{ borderRadius: 8, borderWidth: 2, borderColor: INK, overflow: 'hidden' }}>
+              <DrawnThumb variant={v} size={26} rounded={6} />
             </View>
           ))}
         </View>
+      ) : (
+        <RNText numberOfLines={1} style={{ ...words, flexShrink: 1, fontSize: 14, fontWeight: '700', opacity: 0.88 }}>
+          {d.kind === 'stats' ? d.date : d.game}
+        </RNText>
       )}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={{ fontSize: 22 }}>{data.who.emoji}</Text>
-        <Text numberOfLines={1} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
-          {handle(data)}
-        </Text>
-        <Text numberOfLines={1} style={{ ...label, letterSpacing: 0.4, fontWeight: '600' }}>
-          {data.game ?? data.date ?? 'Poker night on your phones'}
-        </Text>
-      </View>
-    </LivingCard>
-  );
-}
-
-// ── Felt ────────────────────────────────────────────────────────────────────
-
-function Felt({ data }: { data: ShareData }) {
-  const goldText: TextStyle = { color: '#f3d27a', fontWeight: '800', letterSpacing: 2, fontSize: 11 };
-  return (
-    <View style={{ flex: 1, backgroundColor: '#3a2414', padding: 14 }}>
-      <View style={{ flex: 1, borderRadius: 150, borderWidth: 5, borderColor: '#d8b25a', overflow: 'hidden', ...gradient('radial-gradient(ellipse at 50% 40%, #33a463 0%, #187040 60%, #0b4325 100%)') }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingHorizontal: 20 }}>
-          <Text style={goldText}>{data.eyebrow}</Text>
-          <Cards data={data} width={52} boardWidth={44} gap={4} />
-          <View style={{ alignItems: 'center', paddingHorizontal: 18, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.35)' }}>
-            <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: ROUNDED, fontSize: 52, lineHeight: 58, fontWeight: '800', color: data.tone === 'win' ? '#ffe08a' : '#ffffff' }}>
-              {data.headline}
-            </Text>
-          </View>
-          {data.subline && (
-            <Text numberOfLines={2} style={{ textAlign: 'center', fontFamily: ROUNDED, fontSize: 17, fontWeight: '700', color: '#ffffff' }}>
-              {data.subline}
-            </Text>
-          )}
-          {data.stats && !data.hole && (
-            <View style={{ flexDirection: 'row', gap: 18 }}>
-              {data.stats.slice(0, 3).map((s) => (
-                <View key={s.label} style={{ alignItems: 'center' }}>
-                  <Text style={{ ...goldText, fontSize: 9, letterSpacing: 1 }}>{s.label}</Text>
-                  <Text style={{ fontFamily: ROUNDED, fontSize: 18, fontWeight: '800', color: '#ffffff' }}>{s.value}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 10, paddingHorizontal: 8 }}>
-        <Text style={{ flex: 1, ...goldText, fontSize: 12 }}>
-          {data.who.emoji} {handle(data)}
-        </Text>
-        <Text style={{ ...goldText, fontSize: 12 }}>♠ FLIPUP</Text>
-      </View>
     </View>
   );
 }
 
-// ── Gold Foil ───────────────────────────────────────────────────────────────
+const words: TextStyle = { fontFamily: ROUNDED, color: WHITE };
 
-const FOIL = 'linear-gradient(135deg, #fff1c1 0%, #e6b956 25%, #9c6b1b 50%, #f2d27c 72%, #b07d24 100%)';
-const GOLD_INK = '#e3bb5c';
-
-function Gold({ data }: { data: ShareData }) {
+/** Sticker words: the hard shadow, a thick ink outline, then the fill on top. */
+function Sticker({ x, y, size, fill = WHITE, children }: { x: number; y: number; size: number; fill?: string; children: string }) {
+  const ow = Math.max(OUTLINE, size * 0.12) * 2;
+  const common = { x, fontFamily: FONT, fontSize: size, fontWeight: '900' as const, textAnchor: 'middle' as const };
   return (
-    <View style={{ flex: 1, padding: 18, ...gradient('linear-gradient(160deg, #1d1c22 0%, #09090b 55%, #18171c 100%)') }}>
-      <View style={{ flex: 1, padding: 3, borderRadius: 6, ...gradient(FOIL) }}>
-        <View style={{ flex: 1, borderRadius: 4, backgroundColor: '#0c0c0e', padding: 22, alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontFamily: SERIF, fontSize: 13, letterSpacing: 6, color: GOLD_INK }}>FLIPUP</Text>
-            <View style={{ width: 40, height: 1, backgroundColor: GOLD_INK }} />
-            <Text style={{ fontFamily: SERIF, fontSize: 12, letterSpacing: 3, color: 'rgba(227,187,92,0.8)' }}>{data.eyebrow}</Text>
-          </View>
-          <View style={{ alignItems: 'center' }}>
-            <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: SERIF, fontSize: 84, lineHeight: 96, color: GOLD_INK }}>
-              {data.headline}
-            </Text>
-            {data.subline && (
-              <Text numberOfLines={2} style={{ textAlign: 'center', fontFamily: SERIF, fontStyle: 'italic', fontSize: 18, color: '#f3e3b8' }}>
-                {data.subline}
-              </Text>
-            )}
-          </View>
-          <Cards data={data} width={42} />
-          {data.stats && !data.hole && (
-            <View style={{ flexDirection: 'row', gap: 22 }}>
-              {data.stats.slice(0, 3).map((s) => (
-                <View key={s.label} style={{ alignItems: 'center' }}>
-                  <Text style={{ fontFamily: SERIF, fontSize: 22, color: '#f3e3b8' }}>{s.value}</Text>
-                  <Text style={{ fontFamily: SERIF, fontSize: 9, letterSpacing: 2, color: 'rgba(227,187,92,0.75)' }}>{s.label}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-          <View style={{ alignItems: 'center', gap: 4 }}>
-            <View style={{ width: 40, height: 1, backgroundColor: GOLD_INK }} />
-            <Text style={{ fontFamily: SERIF, fontSize: 14, letterSpacing: 1, color: '#f3e3b8' }}>
-              {data.who.emoji} {handle(data)}
-            </Text>
-            {(data.game || data.date) && <Text style={{ fontFamily: SERIF, fontSize: 10, letterSpacing: 2, color: 'rgba(227,187,92,0.7)' }}>{(data.game ?? data.date ?? '').toUpperCase()}</Text>}
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-// ── Receipt ─────────────────────────────────────────────────────────────────
-
-/** The receipt's torn edge: a row of paper teeth. */
-function Tear({ flip }: { flip?: boolean }) {
-  return (
-    <View style={{ flexDirection: 'row', height: 8, transform: flip ? [{ rotate: '180deg' }] : undefined }}>
-      {Array.from({ length: 24 }, (_, i) => (
-        <View key={i} style={{ width: 0, height: 0, borderLeftWidth: 6, borderRightWidth: 6, borderBottomWidth: 8, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: '#faf7ef' }} />
-      ))}
-    </View>
-  );
-}
-
-function Receipt({ data }: { data: ShareData }) {
-  const ink = '#1b1b1b';
-  const t: TextStyle = { fontFamily: MONO, fontSize: 11, lineHeight: 15, color: ink };
-  // The hand line by line, cut to what fits with the total at the bottom.
-  const all = data.lines ?? [];
-  const lines = all.length > 13 ? [...all.slice(0, 6), { left: '…' }, ...all.slice(-6)] : all;
-  return (
-    <View style={{ flex: 1, backgroundColor: '#2b2d33', alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ width: 288, transform: [{ rotate: '-2deg' }] }}>
-        <Tear />
-        <View style={{ backgroundColor: '#faf7ef', paddingHorizontal: 18, paddingVertical: 12, gap: 6 }}>
-          <View style={{ alignItems: 'center' }}>
-            <Text style={{ ...t, fontSize: 16, fontWeight: '700', letterSpacing: 4 }}>♠ FLIPUP ♠</Text>
-            <Text style={t}>{data.eyebrow}</Text>
-            <Text style={t}>{data.date ?? new Date().toLocaleDateString('en-GB')}</Text>
-          </View>
-          <Text style={t}>{'-'.repeat(36)}</Text>
-          {lines.map((l, i) => (
-            <View key={i} style={{ flexDirection: 'row' }}>
-              <Text numberOfLines={1} style={{ ...t, flex: 1 }}>
-                {l.left}
-              </Text>
-              {l.right !== undefined && <Text style={t}>{l.right}</Text>}
-            </View>
-          ))}
-          <Text style={t}>{'='.repeat(36)}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-            <Text style={{ ...t, flex: 1, fontWeight: '700' }}>{data.kind === 'hand' ? 'NET' : 'TOTAL'}</Text>
-            <Text numberOfLines={1} adjustsFontSizeToFit style={{ ...t, fontSize: 30, lineHeight: 36, fontWeight: '700' }}>
-              {data.headline}
-            </Text>
-          </View>
-          {data.subline && <Text style={{ ...t, textAlign: 'right' }}>{data.subline}</Text>}
-          <Text style={t}>{'-'.repeat(36)}</Text>
-          <Text style={{ ...t, textAlign: 'center' }}>
-            {data.who.emoji} {handle(data)}
-          </Text>
-          <Text style={{ ...t, textAlign: 'center', fontSize: 9 }}>THANK YOU FOR PLAYING · PLAY CHIPS ONLY</Text>
-          {/* A barcode, for the look. */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', height: 26, gap: 1.5, marginTop: 2 }}>
-            {Array.from({ length: 46 }, (_, i) => (
-              <View key={i} style={{ width: (i * 7) % 3 === 0 ? 2.5 : 1, backgroundColor: ink }} />
-            ))}
-          </View>
-        </View>
-        <Tear flip />
-      </View>
-    </View>
-  );
-}
-
-// ── Poster ──────────────────────────────────────────────────────────────────
-
-function Poster({ data }: { data: ShareData }) {
-  const black = '#0b0b0f';
-  return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-      <View style={{ height: 270, backgroundColor: brand.violet, padding: 22, justifyContent: 'space-between' }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text style={{ fontSize: 13, fontWeight: '900', letterSpacing: 1, color: '#ffffff' }}>FLIPUP</Text>
-          <Text style={{ fontSize: 13, fontWeight: '900', letterSpacing: 1, color: '#ffffff' }}>{data.date ?? 'POKER'}</Text>
-        </View>
-        <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 150, lineHeight: 150, fontWeight: '900', letterSpacing: -6, color: '#ffffff' }}>
-          {data.headline}
-        </Text>
-      </View>
-      <View style={{ height: 14, backgroundColor: data.tone === 'win' ? brand.gold : black }} />
-      <View style={{ flex: 1, padding: 22, justifyContent: 'space-between' }}>
-        <View>
-          <Text style={{ fontSize: 30, lineHeight: 32, fontWeight: '900', letterSpacing: -1, color: black }}>{data.eyebrow}</Text>
-          {data.subline && (
-            <Text numberOfLines={2} style={{ fontSize: 16, fontWeight: '600', color: black }}>
-              {data.subline}
-            </Text>
-          )}
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-          {data.hole?.length || data.board?.length ? (
-            <Cards data={data} width={30} boardWidth={26} gap={3} />
-          ) : (
-            <Text style={{ fontSize: 13, fontWeight: '800', color: black }}>{data.stats?.map((s) => `${s.label} ${s.value}`).slice(0, 2).join('   ')}</Text>
-          )}
-          <Text style={{ fontSize: 13, fontWeight: '900', color: black }}>
-            {data.who.emoji} {handle(data)}
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-// ── Odds ────────────────────────────────────────────────────────────────────
-
-const STREET_SHORT: Record<Street, string> = { preflop: 'PRE', flop: 'FLOP', turn: 'TURN', river: 'RIVER' };
-const pct = (x: number) => `${Math.round(x * 100)}%`;
-const GOLD = brand.gold;
-const NIGHT = '#060b1c';
-
-/** Where the story starts: your lowest point for a win, your highest for a loss. */
-function oddsStory(odds: { you: number }[], won: boolean) {
-  const before = odds.slice(0, -1);
-  const from = before.reduce((m, o) => (won ? Math.min(m, o.you) : Math.max(m, o.you)), won ? 1 : 0);
-  return { from, to: odds[odds.length - 1].you };
-}
-
-function Odds({ data }: { data: ShareData }) {
-  const odds = data.odds ?? [];
-  const won = data.tone === 'win';
-  const { from, to } = oddsStory(odds, won);
-  // The chart: 316 wide, 100% at 30 points down and 0% at 166, leaving room above every point for its number.
-  const W = 316;
-  const H = 196;
-  const top = 30;
-  const bottom = 166;
-  const x = (i: number) => 18 + (i * (W - 36)) / Math.max(1, odds.length - 1);
-  const y = (v: number) => bottom - v * (bottom - top);
-  const line = odds.map((o, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(o.you).toFixed(1)}`).join(' ');
-  const area = `${line} L${x(odds.length - 1).toFixed(1)} ${bottom} L${x(0).toFixed(1)} ${bottom} Z`;
-  const label: TextStyle = { fontSize: 10, fontWeight: '800', letterSpacing: 1.4, color: 'rgba(255,255,255,0.55)' };
-  const big: TextStyle = { fontFamily: ROUNDED, fontSize: 54, lineHeight: 60, fontWeight: '800', letterSpacing: -1.5 };
-  return (
-    <View style={{ flex: 1, backgroundColor: NIGHT, paddingHorizontal: 22, paddingTop: 22, paddingBottom: 18 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={label}>MY WIN CHANCE</Text>
-        <View style={{ flexDirection: 'row', gap: 3 }}>
-          {data.hole?.map((c) => (
-            <PlayingCard key={c} card={c} size="sm" width={24} />
-          ))}
-        </View>
-      </View>
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 }}>
-        <Text style={{ ...big, color: 'rgba(255,255,255,0.4)' }}>{pct(from)}</Text>
-        <Icon name="arrow.right" size={22} color={won ? GOLD : 'rgba(255,255,255,0.7)'} />
-        <Text style={{ ...big, color: won ? GOLD : '#ffffff' }}>{pct(to)}</Text>
-      </View>
-      <Text numberOfLines={2} style={{ fontFamily: ROUNDED, fontSize: 17, lineHeight: 22, fontWeight: '700', color: '#ffffff' }}>
-        {data.moment?.headline ?? data.subline}
+    <G>
+      <Text {...common} y={y + Math.max(3.4, size * 0.07)} fill={INK} stroke={INK} strokeWidth={ow} strokeLinejoin="round" opacity={SHADOW}>
+        {children}
       </Text>
-
-      <View style={{ width: W, height: H + 20, marginTop: 8 }}>
-        <Svg width={W} height={H}>
-          <Defs>
-            <LinearGradient id="oddsFill" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={GOLD} stopOpacity={0.4} />
-              <Stop offset="1" stopColor={GOLD} stopOpacity={0} />
-            </LinearGradient>
-          </Defs>
-          <Line x1={0} x2={W} y1={y(0.5)} y2={y(0.5)} stroke="rgba(255,255,255,0.22)" strokeDasharray="4 5" />
-          <Line x1={0} x2={W} y1={bottom} y2={bottom} stroke="rgba(255,255,255,0.14)" />
-          <Path d={area} fill="url(#oddsFill)" />
-          <Path d={line} stroke={GOLD} strokeWidth={3.5} fill="none" strokeLinejoin="round" strokeLinecap="round" />
-          {odds.map((o, i) => (
-            <Circle key={o.street} cx={x(i)} cy={y(o.you)} r={i === odds.length - 1 ? 6 : 4.5} fill={i === odds.length - 1 ? GOLD : NIGHT} stroke={GOLD} strokeWidth={2.5} />
-          ))}
-        </Svg>
-        {odds.map((o, i) => (
-          <Text key={o.street} style={{ position: 'absolute', left: x(i) - 30, width: 60, textAlign: 'center', top: y(o.you) - 24, fontFamily: ROUNDED, fontSize: 13, fontWeight: '800', color: '#ffffff' }}>
-            {pct(o.you)}
-          </Text>
-        ))}
-        {odds.map((o, i) => (
-          <Text key={`l-${o.street}`} style={{ ...label, position: 'absolute', left: x(i) - 30, width: 60, textAlign: 'center', top: bottom + 8 }}>
-            {STREET_SHORT[o.street]}
-          </Text>
-        ))}
-      </View>
-
-      <View style={{ flex: 1 }} />
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-        <View style={{ gap: 2 }}>
-          <Text style={{ fontFamily: ROUNDED, fontSize: 30, lineHeight: 34, fontWeight: '800', color: won ? brand.raise : '#ffffff' }}>{data.headline}</Text>
-          <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.6)' }}>
-            {[data.matchup?.them?.cards.length ? `vs ${data.matchup.them.cards.map(cardText).join(' ')}` : null, handle(data)].filter(Boolean).join(' · ')}
-          </Text>
-        </View>
-        <Mark />
-      </View>
-    </View>
+      <Text {...common} y={y} fill={INK} stroke={INK} strokeWidth={ow} strokeLinejoin="round">
+        {children}
+      </Text>
+      <Text {...common} y={y} fill={fill}>
+        {children}
+      </Text>
+    </G>
   );
 }
 
-const SUIT_TEXT: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
-const cardText = (c: Card) => `${c[0] === 'T' ? '10' : c[0]}${SUIT_TEXT[c[1]] ?? ''}`;
-
-/** The FlipUp mark for a card's corner. */
-function Mark({ color = '#ffffff' }: { color?: string }) {
+/** Plain words on the field, no outline. */
+function Words({ x, y, size, children, opacity = 1, weight = '800' }: { x: number; y: number; size: number; children: string; opacity?: number; weight?: '700' | '800' | '900' }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-      <Icon name="suit.spade.fill" size={13} color={color} />
-      <Text style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '800', color }}>FlipUp</Text>
-    </View>
+    <Text x={x} y={y} fontFamily={FONT} fontSize={size} fontWeight={weight} textAnchor="middle" fill={WHITE} opacity={opacity}>
+      {children}
+    </Text>
   );
 }
 
-// ── Broadcast ───────────────────────────────────────────────────────────────
-
-const MONO_BOLD: TextStyle = { fontFamily: MONO, fontWeight: '800' };
-
-function Broadcast({ data }: { data: ShareData }) {
-  const odds = data.odds;
-  const last = odds?.[odds.length - 1];
-  const street = data.board?.length ? (data.board.length >= 5 ? 'RIVER' : data.board.length === 4 ? 'TURN' : 'FLOP') : 'PREFLOP';
-  const swing = new Set(data.swing ?? []);
-  const you = data.matchup?.you ?? { name: data.who.name, emoji: data.who.emoji, cards: data.hole ?? [], won: data.tone === 'win' };
-  const them = data.matchup?.them;
-  const pot = data.stats?.find((s) => s.label === 'POT')?.value;
-  const caps: TextStyle = { fontSize: 10, fontWeight: '800', letterSpacing: 1.6, color: 'rgba(255,255,255,0.6)' };
+/** A white capsule with ink capitals, outlined, with the hard shadow. Long labels get smaller letters. */
+function Capsule({ x, y, text, fill = WHITE, max = 300 }: { x: number; y: number; text: string; fill?: string; max?: number }) {
+  const size = Math.min(13, (max - 28) / (text.length * 0.72));
+  const w = Math.min(max, text.length * size * 0.72 + 28);
+  const h = size + 15;
+  const d = rr(x - w / 2, y - h / 2, w, h, h / 2);
   return (
-    <View style={{ flex: 1, ...gradient('radial-gradient(ellipse at 50% 38%, #1f4fc9 0%, #0a1d55 55%, #03081a 100%)') }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ff3b30' }} />
-          <Text style={{ ...caps, color: '#ffffff' }}>REPLAY</Text>
-        </View>
-        <Text numberOfLines={1} style={{ ...MONO_BOLD, fontSize: 10, color: 'rgba(255,255,255,0.65)' }}>
-          {(data.game ?? '').toUpperCase()}
-        </Text>
-      </View>
-
-      <View style={{ alignItems: 'center', gap: 8, marginTop: 18 }}>
-        <Text style={{ ...MONO_BOLD, fontSize: 11, letterSpacing: 4, color: GOLD }}>{street}</Text>
-        {!!data.board?.length && (
-          <View style={{ flexDirection: 'row', gap: 4 }}>
-            {data.board.map((c) => (
-              <PlayingCard key={c} card={c} size="md" width={50} glow={swing.has(c)} />
-            ))}
-          </View>
-        )}
-        {pot && (
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-            <Text style={caps}>POT</Text>
-            <Text style={{ ...MONO_BOLD, fontSize: 24, color: '#ffffff' }}>{pot}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={{ paddingHorizontal: 14, gap: 8, marginTop: 16 }}>
-        <Plate side={you} odds={last?.you} />
-        {them && <Plate side={them} odds={last?.them} />}
-      </View>
-
-      {odds && odds.length >= 2 ? (
-        <View style={{ paddingHorizontal: 14, marginTop: 16, gap: 5 }}>
-          <Text style={caps}>YOUR WIN CHANCE</Text>
-          <View style={{ flexDirection: 'row', gap: 6 }}>
-            {odds.map((o, i) => {
-              // Gold is good news: the last box only lights up for a win.
-              const end = i === odds.length - 1 && data.tone === 'win';
-              return (
-                <View key={o.street} style={{ flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 6, backgroundColor: end ? GOLD : 'rgba(255,255,255,0.09)' }}>
-                  <Text style={{ fontSize: 9, fontWeight: '800', letterSpacing: 1, color: end ? brand.goldInk : 'rgba(255,255,255,0.55)' }}>{STREET_SHORT[o.street]}</Text>
-                  <Text style={{ ...MONO_BOLD, fontSize: 15, color: end ? brand.goldInk : '#ffffff' }}>{pct(o.you)}</Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      ) : null}
-
-      <View style={{ flex: 1 }} />
-      <View style={{ flexDirection: 'row', height: 44 }}>
-        <View style={{ backgroundColor: GOLD, justifyContent: 'center', paddingHorizontal: 12 }}>
-          <Text style={{ fontFamily: ROUNDED, fontSize: 14, fontWeight: '800', color: brand.goldInk }}>FlipUp</Text>
-        </View>
-        <View style={{ flex: 1, backgroundColor: '#ffffff', justifyContent: 'center', paddingHorizontal: 12 }}>
-          <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '800', color: '#0b1430' }}>
-            {data.moment?.headline ?? `${handle(data)} ${data.tone === 'win' ? 'wins' : 'plays'} ${data.headline}`}
-          </Text>
-        </View>
-      </View>
-    </View>
+    <G>
+      <Path d={d} fill={INK} opacity={SHADOW} transform="translate(0 3.4)" />
+      <Path d={d} fill={fill} stroke={INK} strokeWidth={OUTLINE} />
+      <Text x={x} y={y + size * 0.36} fontFamily={FONT} fontSize={size} fontWeight="900" letterSpacing={1} textAnchor="middle" fill={INK}>
+        {text}
+      </Text>
+    </G>
   );
 }
 
-/** A name plate: cards, name and hand, and the win chance (or the result) on the right. */
-function Plate({ side, odds }: { side: ShareSide; odds?: number }) {
-  const right = odds !== undefined ? pct(odds) : side.won ? 'WIN' : '';
+const rr = (x: number, y: number, w: number, h: number, r: number) =>
+  `M${x + r} ${y}H${x + w - r}A${r} ${r} 0 0 1 ${x + w} ${y + r}V${y + h - r}A${r} ${r} 0 0 1 ${x + w - r} ${y + h}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + h - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}Z`;
+
+/** An outlined shape with its hard shadow. */
+function Ink({ d, fill, t, sw = OUTLINE }: { d: string; fill: string; t?: string; sw?: number }) {
   return (
-    <View style={{ flexDirection: 'row', height: 60, borderRadius: 6, overflow: 'hidden', opacity: side.won ? 1 : 0.82 }}>
-      <View style={{ width: 5, backgroundColor: side.won ? GOLD : 'rgba(255,255,255,0.3)' }} />
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, backgroundColor: 'rgba(255,255,255,0.96)' }}>
-        {side.cards.length ? (
-          side.cards.map((c) => <PlayingCard key={c} card={c} size="sm" width={28} />)
-        ) : (
-          <Text style={{ fontSize: 24 }}>{side.emoji}</Text>
-        )}
-      </View>
-      <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 10, backgroundColor: '#0b1430', gap: 2 }}>
-        <Text numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '800', color: '#ffffff' }}>
-          {side.name.toUpperCase()}
-        </Text>
-        {side.hand && (
-          <Text numberOfLines={2} style={{ fontSize: 10, lineHeight: 12, fontWeight: '800', letterSpacing: 0.4, color: side.won ? GOLD : 'rgba(255,255,255,0.6)' }}>
-            {side.hand.toUpperCase()}
-          </Text>
-        )}
-      </View>
-      {!!right && (
-        <View style={{ width: 66, alignItems: 'center', justifyContent: 'center', backgroundColor: side.won ? GOLD : '#2a3550' }}>
-          <Text style={{ ...MONO_BOLD, fontSize: 20, color: side.won ? brand.goldInk : 'rgba(255,255,255,0.75)' }}>{right}</Text>
-        </View>
+    <G transform={t}>
+      <Path d={d} fill={INK} opacity={SHADOW} transform="translate(0 3.4)" />
+      <Path d={d} fill={fill} stroke={INK} strokeWidth={sw} strokeLinejoin="round" />
+    </G>
+  );
+}
+
+const SUITS: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
+/** A real card as the game pictures draw it. */
+const sticker = (c: Card, x: number, y: number, s: number, r = 0, glow = false): Shape => ({ kind: 'card', x, y, s, r, rank: c[0] === 'T' ? '10' : c[0], suit: SUITS[c[1]] ?? '♠', glow });
+const drawn = (shapes: Shape[]) => shapes.map((s, i) => draw(s, i));
+
+/** Cards placed by layout.ts, drawn as the game pictures' sticker cards; `glow` frames the ones that swung the hand. */
+function cardsAt(cards: Card[], at: Placed[], glow: ReadonlySet<Card> = new Set()): Shape[] {
+  return cards.map((c, i) => sticker(c, at[i].x, at[i].y, at[i].s, at[i].r, glow.has(c)));
+}
+
+/** A headline's size so it fits the card's width. */
+const fit = (text: string, size: number, width = 300) => Math.min(size, width / (text.length * 0.6));
+
+// ── The cards ───────────────────────────────────────────────────────────────
+
+function HandArt({ d }: { d: ShareData }) {
+  const hole = d.hole ?? [];
+  const board = d.board ?? [];
+  const hasBoard = board.length > 0;
+  const at = handCardLayout(hole.length, board.length);
+  const line = d.moment?.headline ?? d.subline;
+  return (
+    <G>
+      <Capsule x={180} y={98} text={d.eyebrow} />
+      {drawn(cardsAt(hole, at.hole))}
+      {drawn(cardsAt(board, at.board, new Set(d.swing ?? [])))}
+      <Sticker x={180} y={hasBoard ? 350 : 336} size={fit(d.headline, board.length > ROW_MAX ? 40 : 48)} fill={d.tone === 'win' ? GLOW : WHITE}>
+        {d.headline}
+      </Sticker>
+      {line && (
+        <Words x={180} y={hasBoard ? 377 : 368} size={fit(line, 15, 320)} opacity={0.95}>
+          {line}
+        </Words>
       )}
-    </View>
+    </G>
   );
 }
 
-export function DesignSwatch({ colors }: { colors: readonly string[] }): ReactNode {
-  return <View style={{ width: '100%', height: '100%', ...gradient(`linear-gradient(135deg, ${colors.join(', ')})`) }} />;
+/** One player's cards, name and a capsule: your chips for you, their hand (or WON) for them. */
+function Side({ side, x, at, tag }: { side: ShareSide; x: number; at: Placed[]; tag?: string }) {
+  return (
+    <G>
+      {drawn(cardsAt(side.cards, at))}
+      <Words x={x} y={238} size={fit(side.name, 16, 120)} weight="900">
+        {side.name}
+      </Words>
+      {!!tag && <Capsule x={x} y={262} text={tag.toUpperCase()} max={140} fill={side.won ? GLOW : WHITE} />}
+    </G>
+  );
+}
+
+function ShowdownArt({ d }: { d: ShareData }) {
+  const m = d.matchup!;
+  const them = m.them;
+  const board = d.board ?? [];
+  const at = showdownLayout(m.you.cards.length, them?.cards.length ?? 0, board.length);
+  return (
+    <G>
+      <Capsule x={180} y={98} text={d.eyebrow} />
+      <Side side={m.you} x={SIDE_X[0]} at={at.you} tag={d.headline} />
+      {them && <Side side={them} x={SIDE_X[1]} at={at.them} tag={them.hand?.split(',')[0] ?? (them.won ? 'Won' : '')} />}
+      <Ink d={circle(VS.x, VS.y, VS.r)} fill={GLOW} />
+      <Text x={VS.x} y={VS.y + 6.5} fontFamily={FONT} fontSize={18} fontWeight="900" textAnchor="middle" fill={INK}>
+        VS
+      </Text>
+      {drawn(cardsAt(board, at.board, new Set(d.swing ?? [])))}
+      {d.moment && (
+        <Words x={180} y={377} size={fit(d.moment.headline, 15, 320)} opacity={0.95}>
+          {d.moment.headline}
+        </Words>
+      )}
+    </G>
+  );
+}
+
+const circle = (cx: number, cy: number, r: number) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${r * 2} 0a${r} ${r} 0 1 0 ${-r * 2} 0Z`;
+const STREET_SHORT: Record<Street, string> = { preflop: 'PRE', flop: 'FLOP', turn: 'TURN', river: 'RIVER' };
+
+/** Your chance street by street as one thick outlined line, like the beanstalk's stalk. */
+function OddsArt({ d }: { d: ShareData }) {
+  const odds = d.odds ?? [];
+  const left = 58, right = 302, top = 152, bottom = 312;
+  const step = odds.length > 1 ? (right - left) / (odds.length - 1) : 0;
+  const pts = odds.map((o, i) => [left + i * step, bottom - o.you * (bottom - top)] as const);
+  const path = 'M' + pts.map(([x, y]) => `${x} ${y}`).join('L');
+  const won = d.tone === 'win';
+  return (
+    <G>
+      <Capsule x={180} y={98} text={d.eyebrow} />
+      <Path d={path} fill="none" stroke={INK} strokeWidth={16} strokeLinejoin="round" strokeLinecap="round" opacity={SHADOW} transform="translate(0 3.4)" />
+      <Path d={path} fill="none" stroke={INK} strokeWidth={16} strokeLinejoin="round" strokeLinecap="round" />
+      <Path d={path} fill="none" stroke={WHITE} strokeWidth={10} strokeLinejoin="round" strokeLinecap="round" />
+      {pts.map(([x, y], i) => {
+        const last = i === pts.length - 1;
+        const below = y < top + 30;
+        return (
+          <G key={i}>
+            <Ink d={circle(x, y, last ? 12 : 8.5)} fill={last && won ? GLOW : WHITE} />
+            <Sticker x={x} y={below ? y + 34 : y - 20} size={17}>
+              {`${Math.round(odds[i].you * 100)}%`}
+            </Sticker>
+            <Words x={x} y={344} size={12} weight="900" opacity={0.85}>
+              {STREET_SHORT[odds[i].street]}
+            </Words>
+          </G>
+        );
+      })}
+      <Words x={180} y={376} size={fit(d.moment?.headline ?? d.subline ?? '', 15, 320)} opacity={0.95}>
+        {d.moment?.headline ?? `${d.headline} · ${d.subline ?? ''}`}
+      </Words>
+    </G>
+  );
+}
+
+/** A finished game: the game's own wide scene and a medal for your place. */
+function GameArt({ d }: { d: ShareData }) {
+  const first = d.tone === 'win';
+  return (
+    <G>
+      <G transform="translate(0 66) scale(1.8)">{drawn(gameScene(d.variant ?? 'holdem'))}</G>
+      <Ink d="M-30 26L-42 74L-25 66L-15 82L0 36Z" fill="#e8414f" t="translate(180 252)" />
+      <Ink d="M30 26L42 74L25 66L15 82L0 36Z" fill="#2f7de0" t="translate(180 252)" />
+      <Ink d={circle(0, 0, 40)} fill={first ? GLOW : '#e9edf5'} t="translate(180 252)" />
+      <Path d={circle(180, 252, 30)} fill="none" stroke={INK} strokeWidth={1.8} opacity={0.3} />
+      <Text x={180} y={263} fontFamily={FONT} fontSize={30} fontWeight="900" textAnchor="middle" fill={INK}>
+        {d.headline}
+      </Text>
+      <Sticker x={180} y={350} size={28}>
+        {first ? 'Won the table' : `${d.headline} place`}
+      </Sticker>
+      {d.subline && (
+        <Words x={180} y={376} size={14} opacity={0.92}>
+          {d.subline}
+        </Words>
+      )}
+    </G>
+  );
+}
+
+/** Your stats: the FlipUp spade as the sticker, your win rate on it, three numbers under it. */
+function StatsArt({ d, look }: { d: ShareData; look: { field: string } }) {
+  const stats = d.stats ?? [];
+  return (
+    <G>
+      <Capsule x={180} y={98} text={d.eyebrow} />
+      <Ink d={SPADE} fill={WHITE} t="translate(180 212) scale(1.35)" sw={OUTLINE / 1.35} />
+      <Sticker x={180} y={236} size={fit(d.headline, 46, 150)} fill={look.field}>
+        {d.headline}
+      </Sticker>
+      {d.subline && (
+        <Words x={180} y={318} size={15} opacity={0.95}>
+          {d.subline}
+        </Words>
+      )}
+      {stats.map((s, i) => {
+        const x = 70 + i * 110;
+        return (
+          <G key={s.label}>
+            <Sticker x={x} y={352} size={fit(s.value, 22, 100)}>
+              {s.value}
+            </Sticker>
+            <Words x={x} y={372} size={10} weight="900" opacity={0.8}>
+              {s.label}
+            </Words>
+          </G>
+        );
+      })}
+    </G>
+  );
+}
+
+/** The spade from the app icon (scripts/makeAppIcon.mjs), without the chevron: a sticker big enough to write on. */
+const SPADE =
+  'M0 -60 C6 -46 22 -34 38 -20 C52 -8 58 4 58 18 C58 37 44 49 27 49 C15 49 7 44 3.5 37 C5 48 12 57 25 62 C26 63 25.5 65 24 65 L-24 65 C-25.5 65 -26 63 -25 62 C-12 57 -5 48 -3.5 37 C-7 44 -15 49 -27 49 C-44 49 -58 37 -58 18 C-58 4 -52 -8 -38 -20 C-22 -34 -6 -46 0 -60 Z';
+
+/** A small live preview of a layout, for the composer's picker. */
+export function LayoutPreview({ data, layout, width }: { data: ShareData; layout: ShareLayout; width: number }): ReactNode {
+  const k = width / CARD_W;
+  return (
+    <View style={{ width, height: CARD_H * k, overflow: 'hidden' }}>
+      <View style={{ width: CARD_W, height: CARD_H, transform: [{ scale: k }], transformOrigin: 'top left' }}>
+        <ShareCard data={data} layout={layout} />
+      </View>
+    </View>
+  );
 }

@@ -20,6 +20,8 @@ import {
   dealNextStreet,
   showdown,
   endsAtOnce,
+  answerRunTwice,
+  anteChips,
   discardCard,
   resumeBetting,
   endDiscards,
@@ -80,6 +82,20 @@ export const BLIND_LEVELS: [number, number][] = [
 export const BLIND_CAP_CHOICES = [0, 100, 200, 500, 1000, 2000];
 
 export const STACK_CHOICES = [500, 1000, 2000, 5000, 10000];
+/** House rules: the ante as a share of the big blind, in percent (0 = none). */
+export const ANTE_CHOICES = [0, 10, 25, 50, 100];
+/** House rules: a bomb pot every this many hands (0 = never). */
+export const BOMB_CHOICES = [0, 5, 10, 20];
+
+/** The house rules that are on, in a few words each: "Antes 5", "Straddle", "Bomb pot every 10", "Run it twice". */
+export function houseRuleWords(s: Settings): string[] {
+  const out: string[] = [];
+  if (s.ante) out.push(`Antes ${anteChips(s).toLocaleString('en-US')}`);
+  if (s.straddle) out.push('Straddle');
+  if (s.bombEvery) out.push(`Bomb pot every ${s.bombEvery}`);
+  if (s.runTwice && (s.variant ?? 'holdem') === 'holdem') out.push('Run it twice');
+  return out;
+}
 export const TIMER_CHOICES = [0, 20, 30, 45, 90];
 
 export function cleanName(name: string): string {
@@ -102,6 +118,10 @@ export function validSettings(s: Settings): boolean {
     (s.showToBusted === undefined || typeof s.showToBusted === 'boolean') &&
     (s.replayEachHand === undefined || typeof s.replayEachHand === 'boolean') &&
     (s.variant === undefined || isVariant(s.variant)) &&
+    (s.ante === undefined || ANTE_CHOICES.includes(s.ante)) &&
+    (s.straddle === undefined || typeof s.straddle === 'boolean') &&
+    (s.bombEvery === undefined || BOMB_CHOICES.includes(s.bombEvery)) &&
+    (s.runTwice === undefined || typeof s.runTwice === 'boolean') &&
     (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
     (s.blindHands === undefined || (int(s.blindHands) && s.blindHands >= 0 && s.blindHands <= 100)) &&
     (s.blindMinutes === undefined || (int(s.blindMinutes) && s.blindMinutes >= 0 && s.blindMinutes <= 120)) &&
@@ -773,6 +793,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (error) return fail(error);
       me.timeouts = 0;
       return done();
+    }
+
+    case 'runTwice': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = answerRunTwice(game, me.id, action.yes, ctx);
+      return error ? fail(error) : done();
     }
 
     case 'discard': {

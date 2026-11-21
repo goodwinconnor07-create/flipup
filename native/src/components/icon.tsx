@@ -16,6 +16,7 @@ const WEB = {
   'suit.diamond.fill': 'diamond',
   'suit.club.fill': 'park',
   'qrcode.viewfinder': 'qr_code_scanner',
+  'doc.on.doc': 'content_copy',
   keyboard: 'keyboard',
   'hand.raised.slash.fill': 'block',
   'creditcard.fill': 'credit_card',

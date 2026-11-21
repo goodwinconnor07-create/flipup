@@ -1,9 +1,9 @@
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
-import Svg, { Defs, FeComposite, FeFlood, FeGaussianBlur, FeMerge, FeMergeNode, FeOffset, Filter, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import type { Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -12,7 +12,8 @@ import { motion, useScheme } from '@/theme';
 import { GrainBackground } from './grain-background';
 import { GameThumb } from './game-picture';
 import { GameBackdrop } from './home/game-backdrop';
-import { ICON_COLORS, ICON_COLORS_DARK, ICON_RADIUS, ICON_SIZE, MARK, PLACE } from './launch-mark';
+import { IconArt } from './app-icon-art';
+import { ICON_RADIUS } from './launch-mark';
 import { read, save } from '@/state/storage';
 
 /** The icon's size on the cover: a good deal bigger than the old 120, so it is the whole first impression. */
@@ -41,57 +42,23 @@ export function LaunchCover() {
   return <PrintCover total={returning ? RETURNING_MS : FIRST_MS} zIndex={1000} launch />;
 }
 
-/** The app icon on a `TILE` square, drawn on the icon's own 1024 canvas with the icon script's gradient, light and lift shadow. */
-function IconArt({ dark = false }: { dark?: boolean }) {
-  const S = ICON_SIZE;
-  // At night the icon is its dark look (the one iOS shows on a dark Home Screen), a night-blue gradient.
-  const top = dark ? ICON_COLORS_DARK.violetTop : ICON_COLORS.violetTop;
-  const bottom = dark ? ICON_COLORS_DARK.violetBottom : ICON_COLORS.violetBottom;
-  return (
-    <Svg width={TILE} height={TILE} viewBox={`0 0 ${S} ${S}`}>
-      <Defs>
-        <LinearGradient id="bg" x1="0.25" y1="0" x2="0.75" y2="1">
-          <Stop offset="0" stopColor={top} />
-          <Stop offset="1" stopColor={bottom} />
-        </LinearGradient>
-        <RadialGradient id="light" cx="0.5" cy="0.08" r="0.75">
-          <Stop offset="0" stopColor={dark ? ICON_COLORS_DARK.light : '#ffffff'} stopOpacity="0.22" />
-          <Stop offset="1" stopColor={dark ? ICON_COLORS_DARK.light : '#ffffff'} stopOpacity="0" />
-        </RadialGradient>
-        <LinearGradient id="spade" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={ICON_COLORS.spadeTop} />
-          <Stop offset="1" stopColor={ICON_COLORS.spadeBottom} />
-        </LinearGradient>
-        <Filter id="lift" x="-30%" y="-30%" width="160%" height="160%">
-          <FeGaussianBlur in="SourceAlpha" stdDeviation="28" result="b" />
-          <FeOffset in="b" dy="24" result="o" />
-          <FeFlood floodColor={ICON_COLORS.shadow} floodOpacity="0.5" />
-          <FeComposite in2="o" operator="in" result="s" />
-          <FeGaussianBlur in="SourceAlpha" stdDeviation="3" result="b2" />
-          <FeOffset in="b2" dy="4" result="o2" />
-          <FeFlood floodColor={ICON_COLORS.shadow} floodOpacity="0.25" />
-          <FeComposite in2="o2" operator="in" result="s2" />
-          <FeMerge>
-            <FeMergeNode in="s" />
-            <FeMergeNode in="s2" />
-            <FeMergeNode in="SourceGraphic" />
-          </FeMerge>
-        </Filter>
-      </Defs>
-      <Rect width={S} height={S} fill="url(#bg)" />
-      <Rect width={S} height={S} fill="url(#light)" />
-      <G filter="url(#lift)">
-        <Path d={MARK} transform={PLACE} fillRule="evenodd" fill="url(#spade)" />
-      </G>
-    </Svg>
-  );
-}
-
 /**
  * The cover itself, shared by the launch and the game's deal-in (`DealWipe`): `total` is how long the icon holds
  * before it eases out (the arrival and the shimmer scale with it), `zIndex` where it sits.
  */
-export function PrintCover({ total = FIRST_MS, zIndex = 1000, launch = false }: { total?: number; zIndex?: number; /** The app's opening screen: light or dark by the phone's look, with the words and the version. */ launch?: boolean }) {
+export function PrintCover({
+  total = FIRST_MS,
+  zIndex = 1000,
+  launch = false,
+  variant,
+}: {
+  total?: number;
+  zIndex?: number;
+  /** The app's opening screen: light or dark by the phone's look, with the words and the version. */
+  launch?: boolean;
+  /** A game's deal-in: its own icon on its own colours (as Home and the lobby), not the blue field. */
+  variant?: Variant;
+}) {
   const k = total / FIRST_MS;
   const dark = useScheme() === 'dark';
   const look = launch ? (dark ? DARK : LIGHT) : null;
@@ -139,10 +106,10 @@ export function PrintCover({ total = FIRST_MS, zIndex = 1000, launch = false }: 
   if (gone) return null;
   return (
     <Animated.View pointerEvents="none" style={[{ position: 'absolute', inset: 0, zIndex }, coverStyle]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <GrainBackground style={{ alignItems: 'center', justifyContent: 'center' }} {...(look ? { colors: look.base, glow: look.glow, glow2: look.glow2 } : {})}>
+      <Field variant={launch ? undefined : variant} look={look}>
         <Animated.View style={[{ width: TILE, height: TILE, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', boxShadow: look ? look.shadow : '0 22px 44px -16px rgba(0, 0, 0, 0.7)' }, tileStyle]}>
           <View style={{ flex: 1, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
-            <IconArt dark={!!look && dark} />
+            {variant && !launch ? <GameThumb variant={variant} size={TILE} /> : <IconArt size={TILE} dark={!!look && dark} />}
             {!reduce && (
               <Animated.View style={[{ position: 'absolute', top: -TILE * 0.1, bottom: -TILE * 0.1, left: 0, width: TILE * 0.7 }, bandStyle]}>
                 <Svg width="100%" height="100%" preserveAspectRatio="none">
@@ -165,8 +132,19 @@ export function PrintCover({ total = FIRST_MS, zIndex = 1000, launch = false }: 
             {VERSION}
           </Text>
         )}
-      </GrainBackground>
+      </Field>
     </Animated.View>
+  );
+}
+
+/** The cover's page: the game's colours for a game's deal-in, else the moving blue field (or the launch's own look). */
+function Field({ variant, look, children }: { variant?: Variant; look: typeof LIGHT | typeof DARK | null; children: ReactNode }) {
+  const centre = { alignItems: 'center', justifyContent: 'center' } as const;
+  if (variant) return <GameBackdrop variant={variant} style={centre}>{children}</GameBackdrop>;
+  return (
+    <GrainBackground style={centre} {...(look ? { colors: look.base, glow: look.glow, glow2: look.glow2 } : {})}>
+      {children}
+    </GrainBackground>
   );
 }
 

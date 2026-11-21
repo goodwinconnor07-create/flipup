@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
+
+import { LobbyScroll, NAV_H } from '../lobby/lobby-scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type PartySettings, type Settings } from '@/engine';
@@ -20,7 +22,7 @@ import { saveSettings, setDraft } from '@/state/setup-draft';
 import { unlockToHost } from '@/state/unlock';
 import { ForceScheme, spacing } from '@/theme';
 
-import { GrainBackground } from '../grain-background';
+import { LobbyBackdrop } from '../lobby/lobby-backdrop';
 import { LoadingCover } from '../launch-cover';
 import { CodeCard } from '../lobby/code-card';
 import { GameCard } from '../lobby/game-card';
@@ -32,19 +34,18 @@ import { labRowBot, randomBot, type RowBot } from './row-bot';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 import { lobbyRows, usePartyView } from '../party/panel';
 import { PartyCard, PartyRules, StartPartyButton } from './party-pieces';
-import { NavRow } from './setup-header';
 import { choose } from '@/components/choose';
 
 /**
- * Play with friends, laid out after the owner's reference video in FlipUp's own look (the deep blue moving field,
- * always dark). The online table opens in the background as the page opens, so its code is real from the start, and
- * the host deals from here; there's no separate lobby for the host. Top to bottom:
- *  1. `CodeCard`: the game code with Copy, QR and Change (the host's own code, `changeTableCode()`)
- *  2. `GameCard`: the game (Texas Hold'em unless one was passed), Change opens the `lobby-game` list, then How it plays
- *  3. "Want to play more than one game? Start a party." (`StartPartyButton`)
+ * Play with friends, laid out after the owner's reference video in FlipUp's own look (the game's colour, always
+ * dark). The online table opens in the background as the page opens, so its code is real from the start, and the host
+ * deals from here; there's no separate lobby for the host. Top to bottom (reordered 19 Nov 2026: who's here first):
+ *  1. `CodeCard`: the game code with Copy, QR and Share, a tap on the code changes it (`changeTableCode()`), and how friends join
+ *  2. `Players`: you, anyone who sat down with the code, the bots you added, and Add a bot
+ *  3. `GameCard`: the game (Texas Hold'em unless one was passed), Change opens the `lobby-game` list, How it plays
  *  4. `HouseRules`: each number with its − + stepper, then the switches
- *  5. `Players`: you, anyone who sat down with the code, the bots you added, and Add a bot
- * and Start game pinned at the bottom. Friends join with the code.
+ *  5. "Want to play more than one game? Start a party." (`StartPartyButton`)
+ * and Start game pinned at the bottom on its bar. Friends join with the code.
  *
  * Once a party's playlist is saved (state/party-draft.ts) the page is still this same lobby, with a party in it: the
  * party is made at that moment (so its game code is real), the playlist card takes the game card's place, the party's
@@ -236,7 +237,8 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
   };
 
   const inNow = 1 + others.length + bots.length;
-  const line = [`${inNow} in`, variantInfo(variant).name].join(' · ');
+  // The game card names the game and Players counts who's in, so a ready button is just "Start game": its line only
+  // says what's still missing.
 
   // The host's own code: the table moves to it (settings and seated bots come along) and the old one ends.
   const changeCode = async (code: string): Promise<string | null> => {
@@ -265,6 +267,10 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
     );
   };
 
+  const swapBot = (b: RowBot) => {
+    const next = randomBot(bots, profile.name || undefined, premium);
+    if (next) setBots((have) => have.map((x) => (x.key === b.key ? next : x)));
+  };
   const removeBot = (b: RowBot) => {
     const at = bots.findIndex((x) => x.key === b.key);
     setBots((have) => have.filter((x) => x.key !== b.key));
@@ -297,6 +303,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
       emoji: b.emoji,
       line: 'Bot',
       onRemove: () => removeBot(b),
+      onSwap: () => swapBot(b),
     })),
   ];
 
@@ -308,20 +315,19 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
   const partyReady = !!partyCode && Math.max(partyPeople, partyDraft?.fill ?? 0) >= 2;
 
   return (
-    <GrainBackground>
-      <ScrollView
-        contentInsetAdjustmentBehavior="never"
+    // In the game's colour; a party (several games) keeps the blue field.
+    <LobbyBackdrop variant={partyDraft ? null : variant}>
+      <LobbyScroll
+        title="Lobby"
         contentContainerStyle={{
           paddingHorizontal: spacing.md,
-          paddingTop: insets.top + spacing.xs,
+          paddingTop: insets.top + NAV_H + spacing.xs,
           paddingBottom: OPEN_BUTTON_ROOM + insets.bottom,
           gap: spacing.lg,
         }}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >
-        <NavRow title="Lobby" />
-
         {partyDraft ? (
           <>
             <CodeCard
@@ -357,14 +363,13 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
                   : undefined
               }
               onChange={changeCode}
+              hint={others.length ? undefined : 'Friends join from Join on the Play tab with this code. Bots fill in until they do.'}
             />
 
-            <View style={{ gap: spacing.md }}>
-              <GameCard variant={variant} host />
-              <StartPartyButton />
-            </View>
-
+            {/* Who's here first (the host's main question), then the game, the rules, and a party last: another way to play. */}
             <Players rows={rows} onAdd={addBot} onAddLab={(b) => !full && setBots((have) => [...have, labRowBot(b)])} />
+
+            <GameCard variant={variant} host />
 
             <HouseRules
               settings={s}
@@ -372,9 +377,11 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
               online
               bots={bots.filter((b) => !b.lab).length}
             />
+
+            <StartPartyButton />
           </>
         )}
-      </ScrollView>
+      </LobbyScroll>
       <OpenTableButton
         title={partyDraft ? 'Start party' : 'Start game'}
         line={
@@ -386,7 +393,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
                 : 'Wait for a friend or let bots fill in'
             : inNow < 2
               ? 'Add a bot or wait for a friend'
-              : line
+              : undefined
         }
         busy={busy}
         // A table needs two: nothing to deal until a friend sits down or you add a bot (a party: or bots fill in).
@@ -394,7 +401,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
         onPress={() => void open()}
       />
       <LoadingCover variant={variant} visible={held || (!lobby && !failed)} text="Creating your lobby" />
-    </GrainBackground>
+    </LobbyBackdrop>
   );
 }
 

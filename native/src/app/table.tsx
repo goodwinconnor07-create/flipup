@@ -83,7 +83,7 @@ function TableScreenInner() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <Lobby game={game} online={online} conn={t.conn} />
         {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
-        <DealWipe />
+        <DealWipe variant={game ? (game.settings.variant ?? 'holdem') : undefined} />
       </View>
     );
   }
@@ -100,7 +100,8 @@ function TableScreenInner() {
       {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
       <HandRecap />
       {t.rules && <RulesCard variant={t.rules} onDone={releaseRules} />}
-      <DealWipe />
+      {game?.status === 'playing' && !!game.code && <OnlineRules game={game} />}
+      <DealWipe variant={game ? (game.settings.variant ?? 'holdem') : undefined} />
       {!game && lost ? (
         <ConnectionLost variant="page" onRetry={retryConnection} onLeave={leave} />
       ) : !game ? (
@@ -442,6 +443,21 @@ function useOdds(hand: Hand | null, variant: Variant): Map<string, { win: number
   }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
+/**
+ * The first time you sit at an online mini game, its rules card comes up once (never again for that game): five
+ * seconds and an X, since an online table doesn't wait for anyone. Against bots the table screen shows it and holds
+ * the deal until Continue (`t.rules`). It's drawn from the screen's root, not from inside the hand, so its blur
+ * covers the whole screen: inside the hand it stopped under the top bar and above the home bar.
+ */
+function OnlineRules({ game }: { game: Game }) {
+  const variant = variantOf(game);
+  const [rulesCard, setRulesCard] = useState<Variant | null>(() => (rulesSeen(variant) ? null : variant));
+  useEffect(() => {
+    if (rulesCard) markRulesSeen(rulesCard);
+  }, [rulesCard]);
+  return rulesCard ? <RulesCard variant={rulesCard} timed onDone={() => setRulesCard(null)} /> : null;
+}
+
 /** A hand in play: seats, felt, actions and your cards, with pre-actions that play themselves when your turn comes. */
 function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const me = myPlayer(game, myDevice);
@@ -453,14 +469,6 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const [raiseTurn, setRaiseTurn] = useState('');
   const [selection, setSelection] = useState<{ street: string; action: PreAction } | null>(null);
 
-  // The first time you sit at an online mini game, its rules card comes up once (never again for that game): five
-  // seconds and an X, since an online table doesn't wait for anyone. Against bots the table screen shows it and holds
-  // the deal until Continue (`RulesGate`).
-  const variant = variantOf(game);
-  const [rulesCard, setRulesCard] = useState<Variant | null>(() => (game.code && !rulesSeen(variant) ? variant : null));
-  useEffect(() => {
-    if (rulesCard) markRulesSeen(rulesCard);
-  }, [rulesCard]);
   // A buzz when it's your turn; the raise panel closes when it isn't.
   const turnKey = myTurn ? `${game.id}-${hand!.number}-${hand!.seq}` : '';
   const raising = !!turnKey && raiseTurn === turnKey;
@@ -622,7 +630,6 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
           <PowerPanel game={game} meId={me?.id} inset={bottomInset} sending={sending} onClose={() => setPowerFor('')} />
         </>
       )}
-      {rulesCard && <RulesCard variant={rulesCard} timed={!!game.code} onDone={() => setRulesCard(null)} />}
     </View>
     </WildDeuces.Provider>
   );

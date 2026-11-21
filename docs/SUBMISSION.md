@@ -105,7 +105,7 @@ Version 1.0 page and App Information. Your App Store name and legal name: Connor
 > 13 WAYS TO PLAY
 > Texas Hold'em, plus 12 mini games with a twist. Throw a card away in Crazy Pineapple. Roll a die to swap the river
 > in Die on the River. Beat the ghost as well as your friends in Haunted Pot. Read the board as a cross in Crucifix.
-> Every game has its own table and a short How to Play.
+> Every game has its own table and a Demo: a quick hand with a guide that shows you what to tap.
 >
 > PARTY NIGHTS
 > Line up 4 to 12 games and see who tops the board at the end of the night.

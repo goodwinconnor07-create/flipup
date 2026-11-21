@@ -7,6 +7,18 @@
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
+> **21 Nov 2026 (owner): the Demo replaces How to Play.** Every game's Demo button (Home under the game's name, the
+> game sheet's picture, the lobby's game card, the games shelf, the profile's Demos, the Premium games list) opens one
+> hand of that game on the real table, against Luna and Max, with a coach over it (`docs/DEMO.md`). One step at a
+> time: everything but the part it's about sinks under a deep night-blue dim (`rgba(5, 16, 58, 0.84)`), the part is cut
+> out with rounded corners and the cut-out glides to the next part (320ms, ease-out). The caption is a white card with
+> a blue step count, a rounded bold title and one line, under or over the lit part, whichever has more room; a step to
+> read has a blue Next capsule, a step to do has a gold "Tap Call" line instead, and the thing to tap wears a breathing
+> gold ring and a gold pointing-hand badge (both still under Reduce Motion) and is the only thing that takes a tap; a
+> tap anywhere else lights the ring and buzzes. A capsule at the top names the demo, with Close on the right. The end
+> is a white card: the game's icon, "That's <game>!", three ticked lines, then Play <game> (blue), or Unlock with
+> Premium (gold, with a crown) for a Premium game without it, and Watch again and Done. Free for every game.
+>
 > **19 Nov 2026 (owner): shaded, not grey.** A card that isn't part of the hand that matters (a showdown's other cards,
 > your folded cards, a folded player's in a replay) keeps its white face and full-colour ink under a dark shade
 > (`dim` in `playing-card.tsx`), as the big poker apps do; the winning five lift with a gold ring. Grey faces with faded
@@ -31,12 +43,12 @@
 
 > **Home (owner, 2026-11-19, from a mock-up).** Two tabs: Play and Train (a Hands tab came and went the same day: once
 > Home had its shortcuts the owner had it removed). Home is the game
-> swiper a little bigger, the game's name, hook and a quiet "How it plays ›" link, then Play with friends on the big
+> swiper a little bigger, the game's name, hook and a Demo button (it was a quiet "How it plays ›" link until 21 Nov 2026), then Play with friends on the big
 > white button (it was Host <game> until the same day: the name was said twice), with Play bots and Join a game under
 > it. No "Tap me" hint pill and no page dots. Later the same day the owner brought back a row of round shortcuts over
 > the big button: Stats, Saved hands and Share cards (the game card a touch smaller to make room; the big name and
 > buttons stay). The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
-> of leaving a gap under the link. The profile keeps Settings, Premium and How to play.
+> of leaving a gap under the link. The profile keeps Settings, Premium and Demos.
 
 > **19 Nov 2026 (owner, from a mock-up): lobbies in the game's colour.** Play with bots, Play with friends and the
 > table lobby use Home's `GameBackdrop` (`LobbyBackdrop` in `components/lobby/lobby-backdrop.tsx`): a dark shade of
@@ -254,7 +266,7 @@ Range training, challenges, Premium, Settings and every sheet.
 4. No coloured icon squares in rows (the iPhone Settings look). Rows are text, an optional emoji or drawing, a
    value and a chevron.
 5. No explanation lines under rows or titles, except where a mistake costs something (Delete my data, leaving a
-   table) and in How to Play.
+   table) and in the Demo.
 6. Red means "do this": the main button, links, the selected tab. Gold means "you won": 1st place, streaks,
    Premium. Nothing else gets colour.
 7. One way to do each thing: one button style per job, one row style, one card style, one back button.

@@ -20,6 +20,7 @@ import { Swap } from '../swap';
 import { ThemedText } from '../themed-text';
 import { PlayingCard } from './playing-card';
 import { useTableNow } from './use-now';
+import { Spot } from '@/components/demo/spots';
 
 /** Ace down to two, for the bounty. */
 const RANKS = [14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2];
@@ -100,13 +101,13 @@ export function PowerPanel({ game, meId, inset, sending, onClose }: { game: Game
         bottom: -inset,
         padding: spacing.md,
         paddingBottom: inset + spacing.sm,
-        gap: spacing.md,
         backgroundColor: colors.background,
         borderTopLeftRadius: radius.lg,
         borderTopRightRadius: radius.lg,
         boxShadow: shadow.raised,
       }}
     >
+      <Spot id="power.panel" style={{ gap: spacing.md }}>
       {/* The power: its picture on a small gold card, its name, and close. */}
       <Animated.View entering={detail(0, reduce)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <View style={{ width: 44, height: 60, borderRadius: 9, borderCurve: 'continuous', padding: 2, backgroundColor: brand.gold }}>
@@ -209,6 +210,7 @@ export function PowerPanel({ game, meId, inset, sending, onClose }: { game: Game
 
       {ready && (
         <Animated.View entering={detail(3, reduce)}>
+          <Spot id="power.go">
           <PressableScale
             accessibilityRole="button"
             accessibilityState={{ disabled: !enough || busy }}
@@ -222,8 +224,10 @@ export function PowerPanel({ game, meId, inset, sending, onClose }: { game: Game
               </Text>
             </Swap>
           </PressableScale>
+          </Spot>
         </Animated.View>
       )}
+      </Spot>
     </Animated.View>
   );
 }

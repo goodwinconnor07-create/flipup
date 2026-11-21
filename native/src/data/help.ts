@@ -56,7 +56,7 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'How do the mini games work?',
-        a: 'Each game has its own rules and its own look. Pick it on the Play screen and tap How to play for a short walkthrough of a hand. The game’s name at the top of the table also opens its rules.',
+        a: 'Each game has its own rules and its own look. Pick it on the Play screen and tap Demo to play a hand of it with a guide showing you what to tap. Demos are free, Premium games too. The game’s name at the top of the table also opens its rules.',
       },
       {
         q: 'What are Casual and Challenge bots?',

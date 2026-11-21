@@ -154,7 +154,7 @@ async function showJoin(code: string, party: boolean): Promise<void> {
 
 /** The 13 games in the app. The rest of games-22.json is parked (parked/games/) and shows as "In the works". */
 const LIVE = new Set(['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem', 'power']);
-/** A real table screenshot for each game that has one (public/shots, from How to Play's pictures). */
+/** A real table screenshot for each game that has one (public/shots, shot on a simulator for the app's old How to Play). */
 const SHOT = new Set([...LIVE, 'imposter']);
 /** Each game's hook and mood line (src/design/gameArt.ts, and parked/games/src/design/gameArt.ts for the parked). */
 const WORDS: Record<string, [string, string]> = {

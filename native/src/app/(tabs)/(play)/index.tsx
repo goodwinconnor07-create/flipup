@@ -5,6 +5,7 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { gameLook } from '@design/gameArt';
+import { showDemo } from '@/components/demo/show';
 import { Avatar } from '@/components/avatar';
 import { haptic } from '@/components/haptics';
 import { GameBackdrop, shade } from '@/components/home/game-backdrop';
@@ -32,11 +33,11 @@ import { usePokerRecord } from '@/state/record';
 import { maybeAskForReview } from '@/state/review';
 import { me as myDevice, useTable } from '@/state/session';
 import { save, useStored } from '@/state/storage';
-import { ForceScheme, ROUNDED, spacing } from '@/theme';
+import { ForceScheme, radius, ROUNDED, spacing } from '@/theme';
 
 /** The tab bar's height over the bottom safe area. */
 const TAB_BAR = 49;
-/** The space between How it plays and the shortcuts. */
+/** The space between the Demo button and the shortcuts. */
 const GAP = 20;
 /** The round shortcuts' see-through fill and edge. */
 const GLASS = 'rgba(255, 255, 255, 0.12)';
@@ -46,13 +47,13 @@ const PICK = 'flipup.homegame';
 
 /**
  * Home as a game lobby. The page takes the colour of the chosen game (`GameBackdrop`). "Play" top left and your face
- * top right (a tap opens your profile, which holds Premium, How to play and Settings); the games as a line of cards
+ * top right (a tap opens your profile, which holds Premium, Demos and Settings); the games as a line of cards
  * across the whole screen, locked on one at a time (`GameSwiper`), a little bigger than before; the chosen one's
- * name, hook and a quiet "How it plays" link under it; a row of three round shortcuts (Stats, Saved hands, Share
+ * name, hook and a Demo button under it (an interactive hand of the game, `showDemo()`); a row of three round shortcuts (Stats, Saved hands, Share
  * cards; the owner brought them back on 19 Nov 2026 and kept the big game and buttons); then Play with friends
  * (`PlayButton`), with Play bots and Join a game under it. No hint pill, no dots. The leftover height sits mostly
  * above the game, so the buttons ride a little above the tab bar rather than
- * leaving a gap under the link. Nothing scrolls.
+ * leaving a gap under the Demo button. Nothing scrolls.
  */
 export default function Home() {
   const insets = useSafeAreaInsets();
@@ -139,7 +140,7 @@ export default function Home() {
           {/* Most of the spare height goes above the game, a little under the buttons. */}
           <View style={{ flex: 1 }} />
 
-          {/* The middle: the games in a line across the whole screen, the chosen one's name, hook and How it plays. */}
+          {/* The middle: the games in a line across the whole screen, the chosen one's name, hook and its Demo. */}
           <Animated.View entering={arrive(1)} style={{ alignItems: 'center', gap: spacing.xs }}>
             <GameSwiper variant={variant} onChange={(v) => save(PICK, v)} size={card} width={Math.min(width, 560 + spacing.md * 2)} />
             <View style={[pad, { alignItems: 'center', gap: 2 }]}>
@@ -159,11 +160,17 @@ export default function Home() {
                 </Swap>
               )}
             </View>
-            <PressableScale accessibilityRole="button" accessibilityLabel={`How ${info.name} plays`} onPress={go(`/how-to-play/${variant}`)} haptics={false} style={{ minHeight: 36, paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: 'rgba(255, 255, 255, 0.9)' }}>
-                How it plays
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel={`Demo: play a hand of ${info.name}`}
+              onPress={() => showDemo(variant)}
+              haptics={false}
+              style={{ minHeight: 36, paddingHorizontal: spacing.md, borderRadius: radius.full, borderWidth: 1, borderColor: EDGE, backgroundColor: GLASS, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <Icon name="play.fill" size={12} color="#ffffff" />
+              <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
+                Demo
               </Text>
-              <Icon name="chevron.right" size={12} color="rgba(255, 255, 255, 0.9)" />
             </PressableScale>
           </Animated.View>
 
@@ -219,7 +226,7 @@ function JoinOrLive({ join }: { join: ReactNode }) {
   const game = t.game;
   const partyRef = usePartyRef();
   // A table counts only once the server (or the phone, for a bots-only one) has shown it to us, and not once it's over.
-  const atTable = !!t.mode && !!game && !(game.status === 'ended' && !game.party);
+  const atTable = !!t.mode && !t.demo && !!game && !(game.status === 'ended' && !game.party);
   // A party that has closed or finished is checked for while Home is on screen, so its button goes and Join a game returns.
   const focused = useIsFocused();
   const [partyView] = usePartyView(partyRef?.code ?? '', forgetParty, focused && !!partyRef && !atTable);

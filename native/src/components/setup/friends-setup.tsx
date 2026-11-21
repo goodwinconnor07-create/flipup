@@ -42,7 +42,7 @@ import { choose } from '@/components/choose';
  * deals from here; there's no separate lobby for the host. Top to bottom (reordered 19 Nov 2026: who's here first):
  *  1. `CodeCard`: the game code with Copy, QR and Share, a tap on the code changes it (`changeTableCode()`), and how friends join
  *  2. `Players`: you, anyone who sat down with the code, the bots you added, and Add a bot
- *  3. `GameCard`: the game (Texas Hold'em unless one was passed), Change opens the `lobby-game` list, How it plays
+ *  3. `GameCard`: the game (Texas Hold'em unless one was passed), Change opens the `lobby-game` list, Demo
  *  4. `HouseRules`: each number with its − + stepper, then the switches
  *  5. "Want to play more than one game? Start a party." (`StartPartyButton`)
  * and Start game pinned at the bottom on its bar. Friends join with the code.

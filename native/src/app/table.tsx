@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { CrashScreen } from '@/components/crash-screen';
+import { DemoCoach } from '@/components/demo/coach';
+import { Spot } from '@/components/demo/spots';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actions';
@@ -63,7 +65,7 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
  * The table, laid out as on the web: the bar (menu, blinds, hand number), the other players along the top, the
  * felt with the pot and board, whose turn it is and your buttons, then your cards and your box at the bottom.
  */
-function TableScreenInner() {
+function TableScreenInner({ from, demoScreen = false }: { from?: string; demoScreen?: boolean }) {
   const t = useTable();
   const game = t.game;
   const online = t.mode === 'online';
@@ -77,6 +79,9 @@ function TableScreenInner() {
   // Every automatic retry passes through 'connecting', so that counts as down too or the 20 seconds would restart each time.
   const down = online && (t.conn === 'offline' || t.conn === 'connecting');
   const lost = useOfflineFor(down);
+  // A demo opened over this screen (from the lobby's game card, or the game pill's sheet) draws only on its own
+  // screen; this one stays blank under it, so nothing plays twice. Your table is back when the demo closes.
+  if (!!t.demo !== demoScreen) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
   // Before the first deal the lobby is the whole screen, on the same grain page as Play with friends.
   if (game?.status === 'lobby') {
     return (
@@ -91,9 +96,10 @@ function TableScreenInner() {
     <View
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}
     >
-      <TableBar game={game} online={online} code={t.code} />
-      <HandToolsTip />
-      <ScreenshotPrompt />
+      {/* The Demo draws its own bar (its name and Close) over this space. */}
+      {t.demo ? <View style={{ height: 56 }} /> : <TableBar game={game} online={online} code={t.code} />}
+      {!t.demo && <HandToolsTip />}
+      {!t.demo && <ScreenshotPrompt />}
       {game && <BlindNews game={game} />}
       {down && (game && lost ? <ConnectionLost variant="card" onRetry={retryConnection} onLeave={leave} /> : t.conn === 'offline' && !lost ? <Pill text="Reconnecting…" /> : null)}
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
@@ -130,6 +136,7 @@ function TableScreenInner() {
       )}
       {/* Die on the River's roll covers the whole screen, the bar and the notch included. */}
       {game?.status === 'playing' && <DiceRoll game={game} />}
+      {t.demo && game && <DemoCoach game={game} variant={t.demo.variant} started={t.demo.started} from={from} />}
     </View>
   );
 }
@@ -561,7 +568,9 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
           // Above the felt: on a short phone a seat's win or odds tag can touch the rail, and drawn under it was hidden.
           style={{ zIndex: 1 }}
         >
-          <SeatRow compact={compact} game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
+          <Spot id="seats">
+            <SeatRow compact={compact} game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
+          </Spot>
         </View>
         <View>
           <FeltOval game={game} me={me} heightLimit={feltBudget} />
@@ -575,6 +584,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
             <Discard game={game} seat={mySeat} pack={me?.cardPack} />
 
           ) : (
+            <Spot id="act">
             <ActionArea
               game={game}
               me={me}
@@ -588,8 +598,10 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
                 setRaiseTurn(turnKey);
               }}
             />
+            </Spot>
           )}
         </View>
+        <Spot id="mine">
         <MyArea
           compact={compact}
           game={game}
@@ -605,6 +617,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
             setPowerFor(handKey);
           }}
         />
+        </Spot>
       </View>
       <Confetti burst={winKey} origin={{ x: width / 2, y: height * 0.7 }} />
       {raising && myTurn && hand && mySeat && (
@@ -640,6 +653,15 @@ export default function TableScreen() {
   return (
     <TightText>
       <TableScreenInner />
+    </TightText>
+  );
+}
+
+/** The Demo's table screen (app/demo/[id].tsx), which says where it was opened from. */
+export function DemoTableView({ from }: { from?: string }) {
+  return (
+    <TightText>
+      <TableScreenInner from={from} demoScreen />
     </TightText>
   );
 }

@@ -44,6 +44,7 @@ import {
 } from './holdem';
 import { cryptoRng, newId } from './ids';
 import { botView, isVariant } from './variants';
+import { demoBotMove, demoHits } from './demo';
 import { botHits, variantDecide } from './botVariants';
 import { botPowerPlan, playablePower } from './powers';
 import { isReactionId } from './reactions';
@@ -725,9 +726,10 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.players.length < 2) return fail('You need at least two players. Add a bot or invite a friend.');
       game.status = 'playing';
       game.first = { settings: { ...game.settings }, bots: game.players.filter((p) => p.bot).length };
-      // A Scroll card deals straight away: the intro popup has already given the table its moment.
-      if (game.card) {
-        startHand(game, ctx);
+      // A demo deals after the usual short wait, with no hello: the coach does the talking.
+      if (game.demo) {
+        game.nextHandAt = ctx.now + TIMING.startDelayLocal;
+        schedule(game);
         return done();
       }
       // A few seconds to take the table in, with a word from a bot, before the first cards come.
@@ -849,7 +851,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       game.reactions = { ...game.reactions, [me.id]: { id: action.id, n: (game.reactions?.[me.id]?.n ?? 0) + 1 } };
       // A bot answers now and then: thanks for a compliment, a tease back, good luck to you too.
       const answer = ANSWER[action.id];
-      if (answer && !game.card && !game.pendingTalk && game.status === 'playing') {
+      if (answer && !game.demo && !game.pendingTalk && game.status === 'playing') {
         const ready = game.players.filter((p) => p.bot && !p.sittingOut && ctx.now - (game.talkAt?.[p.id] ?? -Infinity) > 3000);
         if (ready.length && ctx.rng() < ANSWER_CHANCE) {
           game.pendingTalk = {
@@ -1073,6 +1075,16 @@ function tick(game: Game, ctx: ActionContext): boolean {
     const player = playerById(game, hand.toAct);
     if (!seat || !player) return false;
     if (player.bot) {
+      // A demo's bots follow its script (demo.ts): no thinking, no talk, the same hand every time.
+      if (game.demo) {
+        while (canHit(game, hand, seat) && demoHits(game, hand, seat)) {
+          hitCard(game, ctx);
+          if (seat.folded) return true;
+        }
+        const scripted = demoBotMove(game, hand, seat);
+        if (makeMove(game, scripted.move, scripted.to, ctx)) makeMove(game, hand.currentBet > seat.bet ? 'call' : 'check', undefined, ctx);
+        return true;
+      }
       // Second half of a turn where the bot thought out loud first: make the move it settled on.
       const plan = game.botPlan;
       if (plan && plan.playerId === player.id && plan.seq === hand.seq) {

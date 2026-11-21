@@ -37,7 +37,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     streaks: undefined,
     minds: undefined,
     dialogue: undefined,
-    card: undefined,
+    demo: undefined,
     logs: [],
     hand: hand && {
       ...hand,

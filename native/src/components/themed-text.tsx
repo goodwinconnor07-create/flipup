@@ -23,7 +23,7 @@ const ROOMY: Record<TypeStyle, number> = {
 const Tight = createContext(false);
 
 /**
- * Around a screen whose layout is fixed (the table, the trainer, How to Play): text there keeps the lower caps in
+ * Around a screen whose layout is fixed (the table, the trainer): text there keeps the lower caps in
  * the type ramp. Everywhere else, which scrolls, text follows the person's size setting up to Apple's largest.
  */
 export function TightText({ children }: { children: ReactNode }) {

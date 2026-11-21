@@ -17,6 +17,7 @@ import { ThemedText } from '../themed-text';
 import { Dot } from './bubbles';
 import { RaiseSlider } from './raise-slider';
 import { useTableNow } from './use-now';
+import { Spot, type SpotId } from '@/components/demo/spots';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
@@ -26,7 +27,7 @@ export type PreAction = { kind: 'checkfold' | 'callany' | 'current'; bet: number
 type Tone = 'fold' | 'green' | 'blue' | 'raise' | 'dark' | 'pre' | 'preOn' | 'quietFold' | 'quietCall';
 
 /** One of the big table buttons: at least 60pt tall, in the three slots Fold, Check/Call and Raise share. */
-function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, big }: { label: string; sub?: string; tone: Tone; onPress: () => void; disabled?: boolean; fill?: number; height?: number; big?: boolean }) {
+function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, big, spot }: { label: string; sub?: string; tone: Tone; onPress: () => void; disabled?: boolean; fill?: number; height?: number; big?: boolean; /** The Demo's name for it. */ spot?: SpotId }) {
   const colors = useColors();
   const c = usePlainColors();
   // Apple's system blue (the owner's call for Call and Check; the rest of the app's actions stay violet).
@@ -44,6 +45,7 @@ function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, b
     quietCall: { bg: colors.cell as string, ink: blue },
   };
   return (
+    <Spot id={spot}>
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel={sub ? `${label} ${sub}` : label}
@@ -61,6 +63,7 @@ function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, b
         </Text>
       </Swap>
     </PressableScale>
+    </Spot>
   );
 }
 
@@ -274,22 +277,22 @@ function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand
       {o.canHit && (
         // Hit Me: take another card before your move. Over 21 folds your hand.
         <Row>
-          <TableButton label={`Hit · you're on ${count21(seat.cards)}`} tone="pre" height={48} disabled={sending} onPress={() => dispatch({ type: 'hit', hand: hand.number, seq: hand.seq })} />
+          <TableButton spot="act.hit" label={`Hit · you're on ${count21(seat.cards)}`} tone="pre" height={48} disabled={sending} onPress={() => dispatch({ type: 'hit', hand: hand.number, seq: hand.seq })} />
         </Row>
       )}
       <Row>
-        {o.canFold && <TableButton label="Fold" tone="fold" disabled={sending} onPress={() => act('fold')} />}
+        {o.canFold && <TableButton spot="act.fold" label="Fold" tone="fold" disabled={sending} onPress={() => act('fold')} />}
         {o.canCheck ? (
-          <TableButton label="Check" tone="blue" disabled={sending} onPress={() => act('check')} />
+          <TableButton spot="act.check" label="Check" tone="blue" disabled={sending} onPress={() => act('check')} />
         ) : (
-          <TableButton label={o.callIsAllIn ? 'All in' : 'Call'} sub={chips(o.toCall)} tone="blue" disabled={sending} onPress={() => act('call')} />
+          <TableButton spot="act.call" label={o.callIsAllIn ? 'All in' : 'Call'} sub={chips(o.toCall)} tone="blue" disabled={sending} onPress={() => act('call')} />
         )}
         {o.canRaise &&
           (o.minTo >= o.maxTo ? (
             // The smallest raise is already everything you have: no sizer, just All in.
             <TableButton label="All in" sub={chips(o.maxTo)} tone="raise" disabled={sending} onPress={() => dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move: 'allin' })} />
           ) : (
-            <TableButton label={o.word} tone="raise" disabled={sending} onPress={onRaise} />
+            <TableButton spot="act.raise" label={o.word} tone="raise" disabled={sending} onPress={onRaise} />
           ))}
       </Row>
     </View>
@@ -335,8 +338,9 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
       entering={rise(reduce)}
       exiting={sink(reduce)}
       accessibilityViewIsModal
-      style={{ transformOrigin: '50% 100%', position: 'absolute', left: 0, right: 0, bottom: -inset, padding: spacing.md, paddingBottom: inset + spacing.sm, gap: spacing.md, backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, boxShadow: shadow.raised }}
+      style={{ transformOrigin: '50% 100%', position: 'absolute', left: 0, right: 0, bottom: -inset, padding: spacing.md, paddingBottom: inset + spacing.sm, backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, boxShadow: shadow.raised }}
     >
+      <Spot id="raise.panel" style={{ gap: spacing.md }}>
       <Animated.View entering={detail(0, reduce)} style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: spacing.xs }}>
         <ThemedText tone="tertiaryLabel">{o.word} to</ThemedText>
         <ThemedText variant="title1" style={{ fontWeight: '800', fontVariant: ['tabular-nums'] }}>
@@ -347,6 +351,7 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
           <Icon name="xmark" size={20} color={colors.label} />
         </Pressable>
       </Animated.View>
+      <Spot id="raise.size" style={{ gap: spacing.md }}>
       <Animated.View entering={detail(1, reduce)}>
       <Row>
         {presets.map((p) => {
@@ -385,6 +390,7 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
           <Icon name="plus" size={22} color={colors.label} />
         </Pressable>
       </Animated.View>
+      </Spot>
       <Animated.View entering={detail(3, reduce)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
         {/* Imposter has no folding: the panel follows the action row and leaves Fold out. */}
         {o.canFold && (
@@ -393,12 +399,13 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
           </View>
         )}
         <View style={{ flex: 2 }}>
-          <TableButton big height={76} label={to >= o.maxTo ? 'All in' : o.word} sub={to >= o.maxTo ? undefined : chips(to)} tone="raise" onPress={() => onRaise(to)} />
+          <TableButton spot="raise.go" big height={76} label={to >= o.maxTo ? 'All in' : o.word} sub={to >= o.maxTo ? undefined : chips(to)} tone="raise" onPress={() => onRaise(to)} />
         </View>
         <View style={{ flex: 1 }}>
           <TableButton label={o.canCheck ? 'Check' : o.callIsAllIn ? 'All in' : 'Call'} sub={!o.canCheck && !o.callIsAllIn ? chips(o.toCall) : undefined} tone="quietCall" height={52} onPress={onCall} />
         </View>
       </Animated.View>
+      </Spot>
     </Animated.View>
   );
 }

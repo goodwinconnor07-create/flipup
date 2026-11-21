@@ -410,26 +410,33 @@ export interface Moment {
   value?: number;
 }
 
-/** One move played for a seat before anyone gets control, to set up a Scroll card's spot. `to` is the street total, as in an `act`. */
-export interface ScriptMove {
-  by: 'you' | 'bot';
+/** A bot's move in a demo hand: what it does the first time it acts on a street (`to` is the street total, as in an `act`). */
+export interface DemoMove {
   move: Move;
   to?: number;
 }
 
 /**
- * A Scroll card: a single hand dealt to order. Your cards and the board are fixed, the button is placed, and the
- * `script` moves are played before the first real decision. Such a table deals one hand only, and the bots stay quiet.
- * Never sent to phones.
+ * A demo hand (the app's Demo, see demo.ts): one hand dealt to order, with bots that follow a script, so every game's
+ * twist shows up the same way each time. The engine plays it by its own rules. Never sent to phones.
  */
-export interface CardScene {
-  /** Where you sit, counted clockwise from the button: 0 is the button, 1 the small blind, 2 the big blind, then under the gun. Heads up, 0 is the button (and small blind) and 1 the big blind. */
+export interface DemoDeal {
+  /** Where you sit, counted clockwise from the button: 0 is the button, 1 the small blind, 2 the big blind. */
   at: number;
-  /** Your two hole cards. */
-  hero: Card[];
-  /** The board, up to five cards, in the order they come. Anything missing is dealt at random. */
-  board: Card[];
-  script: ScriptMove[];
+  /** The whole deck in the order it's dealt (see `stackDeck()` in demo.ts). */
+  deck: Card[];
+  /** Memory Poker: the twenty cards everyone sees before they leave the deck. */
+  memory?: Card[];
+  /** Die on the River: what the die shows. */
+  roll?: number;
+  /** Power Cards: each seat's power, counted from the button like `at`. */
+  powers?: PowerId[];
+  /** A bot's moves on a street, in order, by `<seat from the button>:<street>`. Past the list it checks, or calls a bet. */
+  moves?: Record<string, DemoMove[]>;
+  /** Hit Me: how many cards a bot hits on the flop, by seat from the button. */
+  hits?: Record<number, number>;
+  /** How many of each `moves` list (and of each bot's `hits`) have been played. */
+  used?: Record<string, number>;
 }
 
 export interface Game {
@@ -519,8 +526,8 @@ export interface Game {
   minds?: Record<string, BotMind>;
   /** Bounded private dialogue memory. IDs refer only to authored, public-safe text. */
   dialogue?: Record<string, { recent: string[]; lastIntent: string }>;
-  /** A Scroll card's set-up. Its presence means one hand, dealt to order, with quiet bots. Never sent to phones. */
-  card?: CardScene;
+  /** A demo hand (see DemoDeal): one hand, dealt to order, with quiet bots that follow a script. Never sent to phones. */
+  demo?: DemoDeal;
   /** Haunted Pot: chips the ghost is holding, which go into the next hand's pot. */
   ghostPot?: number;
   /** Memory Poker: the cards being taken out for the next hand, shown to everyone until it's dealt at `until`. Public. */

@@ -2,7 +2,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { GameBackdrop, shade } from '@/components/home/game-backdrop';
+import { GameBackdrop } from '@/components/home/game-backdrop';
 import { PlayButton } from '@/components/home/play-button';
 import { SmallButton } from '@/components/home/small-button';
 import { SheetScroll } from '@/components/sheet-scroll';
@@ -68,7 +68,7 @@ export default function GameSheet() {
       {!rules && (
         <View style={{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.08)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
           <View style={{ padding: spacing.md, gap: spacing.sm }}>
-            <PlayButton label="Play with friends" line="Host a table · share the code" ink={shade(look.band, 0.35)} onPress={() => go('friends')} />
+            <PlayButton label="Play with friends" line="Host a table · share the code" onPress={() => go('friends')} />
             <View style={{ flexDirection: 'row' }}>
               <SmallButton icon="cpu.fill" label="Play bots" onPress={() => go('bots')} />
             </View>

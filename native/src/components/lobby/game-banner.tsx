@@ -57,7 +57,11 @@ function MovingLayer({ layer, box, unit, height, clock }: { layer: BannerLayer; 
     const TAU = Math.PI * 2;
     const phase = 'phase' in move ? (move.phase ?? 0) : 0;
     const wave = Math.sin(TAU * (t / move.period + phase));
-    const frac = (x: number) => x - Math.floor(x);
+    // How far through its loop it is, 0 to 1. Written out, never as a helper function: the React Compiler moves a
+    // function that captures nothing out of the worklet, and calling it on the UI thread crashed every lobby
+    // (TestFlight build 82; tests/worklet-functions.test.ts).
+    const loop = t / move.period + phase;
+    const through = loop - Math.floor(loop);
     switch (move.kind) {
       case 'bob':
         return { transform: [{ translateY: move.amp * unit * wave }] };
@@ -66,9 +70,9 @@ function MovingLayer({ layer, box, unit, height, clock }: { layer: BannerLayer; 
       case 'float':
         return { transform: [{ translateY: move.amp * unit * wave }, { rotate: `${move.deg * Math.sin(TAU * (t / move.period + phase + 0.25))}deg` }] };
       case 'spin':
-        return { transform: [{ rotate: `${360 * frac(t / move.period)}deg` }] };
+        return { transform: [{ rotate: `${360 * through}deg` }] };
       case 'flow':
-        return { transform: [{ translateX: -move.length * unit * frac(t / move.period) }] };
+        return { transform: [{ translateX: -move.length * unit * through }] };
       case 'drift':
         return { transform: [{ translateX: move.amp * unit * wave }] };
       case 'twinkle': {
@@ -77,8 +81,7 @@ function MovingLayer({ layer, box, unit, height, clock }: { layer: BannerLayer; 
         return { opacity: 0.45 + 0.55 * k, transform: [{ scale: 0.72 + 0.28 * k }] };
       }
       case 'pulse': {
-        const f = frac(t / move.period + phase);
-        return { opacity: 1 - f, transform: [{ scale: 0.84 + 0.16 * f }] };
+        return { opacity: 1 - through, transform: [{ scale: 0.84 + 0.16 * through }] };
       }
     }
   });

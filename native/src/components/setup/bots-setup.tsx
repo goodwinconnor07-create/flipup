@@ -31,7 +31,7 @@ const START_BOTS = 4;
  * Play with bots: the same page as Play with friends (the lobby's pieces, always dark, in the game's colour) with
  * no game code, and the bots up top where the code card sits. Top to bottom:
  *  1. `BotsCard`: At the table, everyone floating in a small group (`FloatTable`: Add pops a bot in, a tap on a bot opens Remove and Swap)
- *  2. `GameCard`: the game, Change opens the `lobby-game` list, then How it plays
+ *  2. `GameCard`: the game, Change opens the `lobby-game` list, then its Demo
  *  3. `HouseRules`: the table's numbers and switches, without the online ones
  * and Start game pinned at the bottom, which deals at once with exactly these bots.
  * `settings` is the draft the route started (app/play-bots.tsx).

@@ -639,8 +639,8 @@ function share(game: Game, playerId: string): number {
 export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () => number, now: number, owed = false, to?: string): number {
   const player = game.players.find((p) => p.id === playerId);
   if (!player?.bot) return 0;
-  // Scroll cards are quiet, so nothing muddies the lesson.
-  if (game.card) return 0;
+  // A demo's bots are quiet: the coach does the talking.
+  if (game.demo) return 0;
   const everyday = usesEverydayBots(game);
   // At ordinary tables the talk is spaced out a little more than at the old styles' tables.
   const tableLast = Math.max(-Infinity, ...Object.values(game.talkAt ?? {}));
@@ -763,7 +763,7 @@ export function dramaPause(
  */
 export function variantTalk(game: Game, rng: () => number, now: number): void {
   const v = variantOf(game);
-  if (v === 'holdem' || game.card) return;
+  if (v === 'holdem' || game.demo) return;
   const hand = game.hand;
   const botIds = game.players.filter((p) => p.bot).map((p) => p.id);
   if (!botIds.length) return;

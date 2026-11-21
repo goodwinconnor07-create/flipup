@@ -19,12 +19,13 @@ import { saveProfile, useProfile } from '@/state/profile';
 import { useStored } from '@/state/storage';
 import { brand, gradient, ROUNDED, spacing, useColors, useScheme } from '@/theme';
 import { Announce } from '@/components/announce';
+import { showDemo } from '@/components/demo/show';
 
 const PIC = 150;
 
 /**
  * Your profile, as on the web: your emoji (tap it to pick another) and your name, which everyone at the table sees;
- * then Settings, How to play (for the game Home shows) and FlipUp Premium. Your stats are Home's Stats shortcut. The name is
+ * then Settings, FlipUp Premium and Demos (the game Home shows). Your stats are Home's Stats shortcut. The name is
  * saved with Save; the emoji as you pick it.
  */
 export default function ProfileScreen() {
@@ -50,7 +51,7 @@ export default function ProfileScreen() {
   // Light mode: Apple's grouped grey, so the white list rows stand out from the page (white on white hid them).
   const page = dark || process.env.EXPO_OS !== 'ios' ? colors.background : Color.ios.systemGroupedBackground;
   const changed = clean !== profile.name;
-  // How to play opens the game Home has in the middle (`flipup.homegame`), else Texas Hold'em.
+  // Demos opens the game Home has in the middle (`flipup.homegame`), else Texas Hold'em.
   const homeGame = useStored<string | null>('flipup.homegame', null);
   const game = isVariant(homeGame) ? homeGame : 'holdem';
 
@@ -137,7 +138,7 @@ export default function ProfileScreen() {
             items: [
               { kind: 'link', id: 'settings', title: 'Settings', subtitle: 'Sound, looks and your data', onPress: () => router.push('/settings') },
               { kind: 'link', id: 'premium', title: 'FlipUp Premium', detail: premium ? 'Unlocked' : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`, trailingCrown: true, onPress: () => router.push('/premium') },
-              { kind: 'link', id: 'howto', title: 'How to play', subtitle: 'Every game, one hand at a time', onPress: () => router.push(`/how-to-play/${game}`) },
+              { kind: 'link', id: 'demo', title: 'Demos', subtitle: 'Play a hand of any game, with a guide', onPress: () => showDemo(game) },
             ],
           },
         ]}

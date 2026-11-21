@@ -93,7 +93,7 @@ The screen should sell Premium by showing it. Layout, top to bottom:
    "Get the Galaxy cards", or the default), and one line under it.
 2. **"Friends play free."** A strip right under the header: only the host needs Premium, everyone joins by code for
    free. This is the strongest argument, so it goes first.
-3. **The seven games.** The `GameThumb`s with their crowns, a one-line twist each, and a tap that opens How to Play for
+3. **The seven games.** The `GameThumb`s with their crowns, a one-line twist each, and a tap that opens the Demo for
    that game. The tapped game (if any) comes first.
 4. **Card packs.** A sideways strip of all eleven backs, each with its name. Tapping one shows a full-size card that
    flips, so people can see it before buying.

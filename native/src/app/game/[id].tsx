@@ -1,12 +1,12 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions, View } from 'react-native';
 
+import { DemoPicture } from '@/components/demo/demo-picture';
 import { Icon } from '@/components/icon';
 import { GameBackdrop } from '@/components/home/game-backdrop';
 import { PlayButton } from '@/components/home/play-button';
 import { SmallButton } from '@/components/home/small-button';
 import { SheetScroll } from '@/components/sheet-scroll';
-import { HowToPicture } from '@/components/how-to-picture';
 import { LockVeil } from '@/components/premium/lock-veil';
 import { ThemedText } from '@/components/themed-text';
 import { gameLook } from '@design/gameArt';
@@ -16,7 +16,7 @@ import { unlockToHost } from '@/state/unlock';
 import { brand, ForceScheme, radius, spacing } from '@/theme';
 
 /**
- * A game's sheet: its picture and mood, the two ways to start it, then how it plays. It's about one game, so it wears
+ * A game's sheet: its picture (a tap opens its Demo) and mood, the two ways to start it, then its rules. It's about one game, so it wears
  * that game's colour (the rule in docs/DESIGN.md): Home's `GameBackdrop` as a layer inside the scroll content (a sheet's
  * scroll view must be its root, see CLAUDE.md), always dark.
  * A Premium game
@@ -45,8 +45,8 @@ export default function GameSheet() {
       <Stack.Screen options={{ title: info.name, headerShown: false }} />
       {/* Reaches well past the top and bottom so a pull past either end still shows the game's colour. */}
       <GameBackdrop variant={variant} style={{ position: 'absolute', top: -600, bottom: -600, left: 0, right: 0, flex: 0 }} />
-      {/* The game's picture, with How to Play on it: a real hand of this game, recorded at the table. */}
-      <HowToPicture variant={variant} name={info.name} width={width - spacing.md * 2} />
+      {/* The game's picture, with its Demo on it: a hand of this game on the real table, with a coach. */}
+      <DemoPicture variant={variant} name={info.name} width={width - spacing.md * 2} />
       <View style={{ gap: spacing.xxs }}>
         <ThemedText variant="title1" accessibilityRole="header">
           {info.name}
@@ -63,7 +63,7 @@ export default function GameSheet() {
           </View>
         )}
       </View>
-      {/* Opened from a table's game pill: only how it plays. Otherwise the same buttons as Home, on the game's own
+      {/* Opened from a table's game pill: only the rules. Otherwise the same buttons as Home, on the game's own
           colour; without Premium a blur and a lock sit over them, and a tap anywhere on it opens the offer. */}
       {!rules && (
         <View style={{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.08)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
@@ -77,7 +77,7 @@ export default function GameSheet() {
         </View>
       )}
       <View style={{ gap: spacing.xs }}>
-        <ThemedText variant="headline">How it plays</ThemedText>
+        <ThemedText variant="headline">The rules</ThemedText>
         {info.rules.map((r) => (
           <ThemedText key={r} variant="body">
             {'•  '}

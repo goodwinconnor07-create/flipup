@@ -8,7 +8,7 @@ import { gameLook } from '@design/gameArt';
 import { brand } from './brand';
 
 export interface Tint {
-  /** Links and text buttons on the dark page (Back, Change, How it plays, Add Bot, Copy). */
+  /** Links and text buttons on the dark page (Back, Change, Demo, Add Bot, Copy). */
   link: string;
   /** Words on the white Start game button. */
   ink: string;

@@ -1,7 +1,7 @@
 // The Premium page's pictures, after the App Store's screenshots (the owner, 17 Nov 2026): each perk shown on an
 // iPhone, the way the store listing shows the app. The phone is drawn (a black titanium frame, the Dynamic Island,
-// a 9:41 status bar), and its screen is the app itself: a real screenshot where we have one (How to Play's), or
-// the app's own pieces laid out at the iPhone 17 Pro's 402 points and scaled to the frame, so it's the app's type,
+// a 9:41 status bar), and its screen is the app itself: the app's own pieces laid out at the iPhone 17 Pro's 402
+// points and scaled to the frame, so it's the app's type,
 // panels and colours, not a drawing of them. Nothing on these screens can be tapped.
 import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';

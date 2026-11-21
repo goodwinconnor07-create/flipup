@@ -44,6 +44,7 @@ import { TurnTimer } from './turn-timer';
 import { useMomentNow } from './use-moment';
 import { useTableNow } from './use-now';
 import { Announce } from '../announce';
+import { Spot } from '@/components/demo/spots';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
@@ -190,9 +191,10 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
   );
 
   const oval = (
+    // The Demo lights up the oval itself (its `felt` spot), so the margin is outside it.
+    <Spot id="felt" style={{ marginHorizontal: spacing.md, flexShrink: 0 }}>
     <View
       style={{
-        marginHorizontal: spacing.md,
         padding: 11,
         borderRadius: radius.full,
         // A fixed size for the whole game, so nothing on the table (cards shown under seats, the win banner) can
@@ -281,6 +283,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
           )}
         </View>
         {clock ? (
+          <Spot id="board">
           <Board
             game={game}
             width={width}
@@ -296,19 +299,23 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
               </View>
             }
           />
+          </Spot>
         ) : (
           <>
             {topRow}
             {game.memory ? (
               <MemoryPeek game={game} width={width} pack={pack} />
             ) : (
-              <Board game={game} width={width} space={natural - 22 - spacing.lg - spacing.md - 28 - 48 - spacing.xs * 3} dim={dim} glow={glow} pack={pack} now={now} recap={recap} peek={peekCard(hand, me?.id)} />
+              <Spot id="board">
+                <Board game={game} width={width} space={natural - 22 - spacing.lg - spacing.md - 28 - 48 - spacing.xs * 3} dim={dim} glow={glow} pack={pack} now={now} recap={recap} peek={peekCard(hand, me?.id)} />
+              </Spot>
             )}
             {bottomRow}
           </>
         )}
       </View>
     </View>
+    </Spot>
   );
   if (fit === 1) return oval;
   return (

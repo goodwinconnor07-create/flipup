@@ -11,6 +11,7 @@ import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { GameTile } from '../game-tile';
 import { PressableScale } from '../pressable-scale';
+import { showDemo } from '@/components/demo/show';
 
 const open = (v: Variant) => {
   haptic.tap();
@@ -18,7 +19,7 @@ const open = (v: Variant) => {
 };
 
 /**
- * Every game (Home's "See all"): Texas Hold'em as one big card with its How to Play a tap away, then the rest as
+ * Every game (Home's "See all"): Texas Hold'em as one big card with its Demo a tap away, then the rest as
  * `GameTile`s three to a row, with a crown on the Premium ones.
  */
 export function GameShelf() {
@@ -42,7 +43,7 @@ export function GameShelf() {
   );
 }
 
-/** Texas Hold'em: the wide picture, and under it a band in the game's darker colour with its name and How to play. */
+/** Texas Hold'em: the wide picture, and under it a band in the game's darker colour with its name and Demo. */
 function MainCard({ variant, name, width }: { variant: Variant; name: string; width: number }) {
   const shadow = useShadows();
   const look = gameLook(variant);
@@ -68,16 +69,14 @@ function MainCard({ variant, name, width }: { variant: Variant; name: string; wi
         </View>
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={`How to play ${name}`}
-          onPress={() => {
-            haptic.tap();
-            router.push(`/how-to-play/${variant}`);
-          }}
+          accessibilityLabel={`Demo: play a hand of ${name}`}
+          haptics={false}
+          onPress={() => showDemo(variant)}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: '#ffffff' }}
         >
           <Icon name="play.fill" size={12} color={look.band} />
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: look.band }}>
-            How to play
+            Demo
           </Text>
         </PressableScale>
       </View>

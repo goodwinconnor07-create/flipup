@@ -27,6 +27,7 @@ import { planWindow, type WindowAnchor } from './pod-window';
 import { moveSig } from './use-reactions';
 import { SeatBadge } from './variant-steps';
 import { choose } from '../choose';
+import { Spot } from '@/components/demo/spots';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 export const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -134,7 +135,9 @@ export function SeatRow({
     <View style={{ flexDirection: 'row', justifyContent: 'center', marginHorizontal: 4, paddingTop: compact ? 24 : 30, minHeight: compact ? 140 : 166 }}>
       {variantOf(game) === 'ghost' && (
         <>
-          <GhostSeat game={game} compact={compact} />
+          <Spot id="ghost">
+            <GhostSeat game={game} compact={compact} />
+          </Spot>
           <GhostDivider compact={compact} />
         </>
       )}
@@ -146,18 +149,20 @@ export function SeatRow({
           layout={reduce ? undefined : LinearTransition.duration(motion.base).easing(EASE_OUT)}
           style={{ flex: 1, maxWidth: 110 }}
         >
-          <SeatPod
-            game={game}
-            compact={compact}
-            player={p}
-            seat={seatFor(game.hand, p.id)}
-            talk={say[p.id]}
-            quiet={quiet[p.id]}
-            dimCard={dimCard}
-            glowCard={glowCard}
-            odds={odds?.get(p.id)}
-            n={shown.length}
-          />
+          <Spot id={`seat:${p.name}`}>
+            <SeatPod
+              game={game}
+              compact={compact}
+              player={p}
+              seat={seatFor(game.hand, p.id)}
+              talk={say[p.id]}
+              quiet={quiet[p.id]}
+              dimCard={dimCard}
+              glowCard={glowCard}
+              odds={odds?.get(p.id)}
+              n={shown.length}
+            />
+          </Spot>
         </Animated.View>
       ))}
       {hidden.length > 0 && <HiddenPlayers game={game} players={hidden} />}

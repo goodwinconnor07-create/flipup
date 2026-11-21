@@ -7,7 +7,7 @@ export function usesEverydayBots(game: Game): boolean {
     (!game.hand?.variant || game.hand.variant === 'holdem') &&
     !game.party &&
     !game.legacyBotSimulation &&
-    !game.card &&
+    !game.demo &&
     !game.players.some((p) => p.labStyle)
   );
 }

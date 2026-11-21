@@ -12,6 +12,7 @@ import { haptic } from '../haptics';
 import { PressableScale } from '../pressable-scale';
 import { ThemedText } from '../themed-text';
 import { PlayingCard } from './playing-card';
+import { Spot } from '@/components/demo/spots';
 
 /** Faces of the players the table is still waiting for. */
 function WaitingFaces({ game, ids, text }: { game: Game; ids: string[]; text: string }) {
@@ -38,12 +39,12 @@ export function Discard({ game, seat, pack }: { game: Game; seat: Seat; pack?: s
     return <WaitingFaces game={game} ids={waiting} text={waiting.length ? `Waiting for ${waiting.length === 1 ? 'one player' : `${waiting.length} players`} to throw a card away…` : 'Here come the thrown cards…'} />;
   }
   return (
-    <View style={{ alignItems: 'center', gap: spacing.xs }}>
+    <Spot id="discard" style={{ alignItems: 'center', gap: spacing.xs }}>
       <ThemedText variant="headline">Tap the card to throw away</ThemedText>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         {seat.cards.map((c) => (
+          <Spot key={c} id={`discard:${c}`}>
           <PressableScale
-            key={c}
             accessibilityRole="button"
             accessibilityLabel={`Throw away the ${cardName(c)}`}
             onPress={() => {
@@ -53,6 +54,7 @@ export function Discard({ game, seat, pack }: { game: Game; seat: Seat; pack?: s
           >
             <PlayingCard card={c} size="lg" pack={pack} />
           </PressableScale>
+          </Spot>
         ))}
       </View>
       {waiting.length > 1 && (
@@ -60,7 +62,7 @@ export function Discard({ game, seat, pack }: { game: Game; seat: Seat; pack?: s
           {waiting.length - 1} other{waiting.length === 2 ? '' : 's'} still choosing
         </ThemedText>
       )}
-    </View>
+    </Spot>
   );
 }
 

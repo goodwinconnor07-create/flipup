@@ -40,7 +40,7 @@ void startStore();
 /** Every screen that opens as a bottom sheet: each gets a light tap as it rises and as it goes, and a tick when its detent changes. */
 const SHEETS = new Set([
   'game/[id]', 'lobby-game', 'premium-perk', 'share-card', 'table-menu', 'table-standings', 'table-theme', 'table-settings', 'range-breakdown',
-  'range-how', 'hand-rankings', 'table-log', 'card-packs', 'blocked', 'your-name', 'emoji', 'join', 'party-sheet', 'how-to-play/[id]',
+  'range-how', 'hand-rankings', 'table-log', 'card-packs', 'blocked', 'your-name', 'emoji', 'join', 'party-sheet',
 ]);
 
 // The root: the tab bar, and the sheets that open over it. Sheets are real iOS form sheets with detents and a
@@ -119,13 +119,13 @@ export default function RootLayout() {
         {/* No swipe back here: a finger that just misses a slider and drifts sideways used to pull the whole page away (iOS 26 swipes back from anywhere). The page has its own Back, Save and Delete. */}
         <Stack.Screen name="bot-lab-edit" options={{ headerShown: false, gestureEnabled: false, title: 'Bot', statusBarStyle: 'light' }} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
-        {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. In the game's
+        {/* The Demo: the table with the coach over it, over everything (even a game's sheet); its X closes it. */}
+        <Stack.Screen name="demo/[id]" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false, animation: 'fade', animationDuration: 250 }} />
+        {/* Nearly full height (a gap at the top, still swipes away), so Play and the rules show at once. In the game's
             colour (drawn by the page), so it keeps a dark fill of its own rather than the glass. */}
         <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false, contentStyle: { backgroundColor: '#05070f' } }} />
         {/* Play with friends' Change on the game card: every game in a list, Premium under a gold line. */}
         <Stack.Screen name="lobby-game" options={{ ...sheet, sheetAllowedDetents: [0.6, 1], headerShown: false, title: 'Change the game' }} />
-        {/* How to Play: a story on black in a sheet at full height (a black page, so it keeps its own fill); the X closes it. */}
-        <Stack.Screen name="how-to-play/[id]" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
         {/* Range training's table: its own night room over the tabs, like Play with bots, so nothing covers the answers. */}
         {/* Premium is a full page (the owner, 17 Nov 2026: not a pull-up sheet); its round X closes it. */}
         <Stack.Screen name="premium" options={{ presentation: 'fullScreenModal', headerShown: false, title: 'FlipUp Premium', statusBarStyle: 'light', gestureEnabled: false }} />

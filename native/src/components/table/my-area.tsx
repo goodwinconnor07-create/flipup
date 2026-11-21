@@ -18,6 +18,7 @@ import { PowerCard, powerCardWidth } from './power-card';
 import { QuickMessages } from './quick-messages';
 import { pct, PositionChip } from './seats';
 import { moveSig } from './use-reactions';
+import { Spot } from '@/components/demo/spots';
 
 /** Four or five cards: how much of each card shows past the next one (its corner, rank and suit). */
 const SHOWING = 0.5;
@@ -147,9 +148,9 @@ export function MyArea({
             </View>
           ))}
         {powered && (
-          <View style={{ marginLeft: 8, justifyContent: 'center' }}>
+          <Spot id="power.card" style={{ marginLeft: 8, justifyContent: 'center' }}>
             <PowerCard game={game} meId={me?.id} width={powerCardWidth(w)} height={Math.round(w * 1.4)} onOpen={() => onPower?.()} />
-          </View>
+          </Spot>
         )}
       </View>
       <View

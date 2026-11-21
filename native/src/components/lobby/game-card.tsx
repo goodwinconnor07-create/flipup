@@ -12,6 +12,7 @@ import { Icon } from '../icon';
 import { Swap } from '../swap';
 import { ThemedText } from '../themed-text';
 import { GameBanner } from './game-banner';
+import { showDemo } from '../demo/show';
 
 /** Soft dark behind the words, so they read over the scene and anything drifting past. */
 const LIFT = { textShadowColor: 'rgba(0, 0, 0, 0.35)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 } as const;
@@ -20,8 +21,8 @@ const LIFT = { textShadowColor: 'rgba(0, 0, 0, 0.35)', textShadowOffset: { width
  * What the table plays, as a living scene (21 Nov 2026, the owner's ask, from a reference card where the picture is the
  * whole card and snow drifts over it): the game's own picture drawn big on the left in its world, with its parts
  * moving and its particles drifting over everything (`GameBanner`), and on the right a small GAME MODE over its name,
- * its mood line and "How it plays". The host's card is one big button with a chevron that opens the `lobby-game`
- * sheet; a guest's only offers How it plays.
+ * its mood line and Demo (the game's Demo, whose finish card comes back here). The host's card is one big button with
+ * a chevron that opens the `lobby-game` sheet; a guest's only offers the Demo.
  */
 export function GameCard({ variant, host, table = false }: { variant: Variant; host: boolean; /** Change sets the open table's game, not the setup draft. */ table?: boolean }) {
   const contrast = useIncreaseContrast();
@@ -35,18 +36,15 @@ export function GameCard({ variant, host, table = false }: { variant: Variant; h
     haptic.tap();
     router.push(table ? { pathname: '/lobby-game', params: { table: '1' } } : '/lobby-game');
   };
-  const howTo = () => {
-    haptic.tap();
-    router.push({ pathname: '/how-to-play/[id]', params: { id: variant, from: 'game' } });
-  };
+  const demo = () => showDemo(variant, 'lobby');
   return (
     <Pressable
       accessibilityRole={host ? 'button' : undefined}
       accessibilityLabel={`Game mode, ${info.name}. ${gameLook(variant).mood}`}
       accessibilityHint={host ? 'Change the game' : undefined}
-      // The card is one element to VoiceOver, so How it plays is offered as its action too.
-      accessibilityActions={[{ name: 'howto', label: `How ${info.name} plays` }]}
-      onAccessibilityAction={(e) => e.nativeEvent.actionName === 'howto' && howTo()}
+      // The card is one element to VoiceOver, so the Demo is offered as its action too.
+      accessibilityActions={[{ name: 'demo', label: `Demo of ${info.name}` }]}
+      onAccessibilityAction={(e) => e.nativeEvent.actionName === 'demo' && demo()}
       disabled={!host}
       onPress={change}
       onLayout={(e) => {
@@ -78,15 +76,15 @@ export function GameCard({ variant, host, table = false }: { variant: Variant; h
               </Swap>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`How ${info.name} plays`}
+                accessibilityLabel={`Demo: play a hand of ${info.name}`}
                 hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
-                onPress={howTo}
-                style={({ pressed: down }) => ({ flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-start', marginTop: spacing.xxs, opacity: down ? 0.5 : 1 })}
+                onPress={demo}
+                style={({ pressed: down }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', marginTop: spacing.xxs, opacity: down ? 0.5 : 1 })}
               >
+                <Icon name="play.fill" size={10} color={tint.link} weight="semibold" />
                 <ThemedText variant="footnote" style={{ ...LIFT, fontWeight: '600', color: tint.link }}>
-                  How it plays
+                  Demo
                 </ThemedText>
-                <Icon name="chevron.right" size={11} color={tint.link} weight="semibold" />
               </Pressable>
             </View>
             {host && <Icon name="chevron.right" size={17} color="rgba(255, 255, 255, 0.9)" weight="semibold" />}

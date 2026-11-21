@@ -32,6 +32,7 @@ export * from './clock';
 export * from './lifetime';
 export { PERSONALITIES, isPersonality, type PersonalityId } from '../bot_engine/personalities';
 export * from './streak';
+export * from './demo';
 export * from './reports';
 export * from './premiumGate';
 export { addedLine, voiceKind } from './botTalk';

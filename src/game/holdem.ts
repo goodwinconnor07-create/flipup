@@ -227,7 +227,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
   // Memory Poker: first 20 cards come out and everyone gets a look; the hand is dealt when the look is over.
   const picked = game.settings.variant ?? 'holdem';
   if (picked === 'memory' && !game.memory) {
-    game.memory = { cards: shuffle(fullDeck(), ctx.rng).slice(0, MEMORY_REMOVED), until: ctx.now + TIMING.memoryPeek };
+    game.memory = { cards: game.demo?.memory ?? shuffle(fullDeck(), ctx.rng).slice(0, MEMORY_REMOVED), until: ctx.now + TIMING.memoryPeek };
     game.nextHandAt = game.memory.until;
     schedule(game);
     return;
@@ -238,11 +238,11 @@ export function startHand(game: Game, ctx: ActionContext): void {
   const raised = raiseBlindsIfDue(game, ctx.now);
 
   // The button moves one seat clockwise to the next player who's in. The first one is random,
-  // like drawing for the button. A Scroll card places it.
-  const scene = game.card;
+  // like drawing for the button. A demo hand places it.
+  const demo = game.demo;
   const person = players.find((p) => !p.bot);
   let button: Player;
-  if (scene && person) button = players[(players.indexOf(person) - scene.at + players.length * 2) % players.length];
+  if (demo && person) button = players[(players.indexOf(person) - demo.at + players.length * 2) % players.length];
   else if (game.buttonSeat === null) button = players[Math.floor(ctx.rng() * players.length)];
   else button = players.find((p) => p.seat > game.buttonSeat!) ?? players[0];
   game.buttonSeat = button.seat;
@@ -264,11 +264,13 @@ export function startHand(game: Game, ctx: ActionContext): void {
   const sb = n === 2 ? b : (b + 1) % n;
   const bb = (sb + 1) % n;
 
-  const fixed = scene && person ? [...scene.hero, ...scene.board] : removed ?? [];
-  const deck = shuffle(
-    fullDeck().filter((c) => !fixed.includes(c)),
-    ctx.rng,
-  );
+  // A demo hand's deck is stacked (see demo.ts); every other deck is shuffled.
+  const deck = demo
+    ? demo.deck.slice()
+    : shuffle(
+        fullDeck().filter((c) => !removed?.includes(c)),
+        ctx.rng,
+      );
   // One card at a time, starting left of the button, until everyone has two (three in Crazy Pineapple).
   const variant: Variant = game.settings.variant ?? 'holdem';
   for (let round = 0; round < holeCount(variant); round++) for (let i = 1; i <= n; i++) seats[(b + i) % n].cards.push(deck.shift()!);
@@ -277,15 +279,6 @@ export function startHand(game: Game, ctx: ActionContext): void {
   // Whatever the ghost kept goes into this pot (even if the table has since switched to another game).
   const carry = game.ghostPot ?? 0;
   game.ghostPot = 0;
-  if (scene && person) {
-    // The set board comes out in its usual order (burn, flop, burn, turn, burn, river); anything unset is random.
-    seats[players.indexOf(person)].cards = [...scene.hero];
-    const spare = deck.splice(0, 8);
-    const [burn1, burn2, burn3, ...extra] = spare;
-    const board = [...scene.board, ...extra].slice(0, 5);
-    deck.unshift(burn1, ...board.slice(0, 3), burn2, board[3], burn3, board[4]);
-  }
-
   const hand: Hand = {
     number: (game.hand?.number ?? 0) + 1,
     seq: 0,
@@ -311,8 +304,10 @@ export function startHand(game: Game, ctx: ActionContext): void {
     ...(removed ? { removed } : {}),
     ...(ghost ? { ghost } : {}),
     ...(carry ? { carry } : {}),
-    // Power Cards: everyone dealt in gets one power at random, a fresh one every hand.
-    ...(variant === 'power' ? { powers: Object.fromEntries(seats.map((s) => [s.playerId, POWER_IDS[Math.floor(ctx.rng() * POWER_IDS.length)]])) } : {}),
+    // Power Cards: everyone dealt in gets one power at random, a fresh one every hand (a demo hand's are set).
+    ...(variant === 'power'
+      ? { powers: Object.fromEntries(seats.map((s, i) => [s.playerId, demo?.powers?.[(i - b + n) % n] ?? POWER_IDS[Math.floor(ctx.rng() * POWER_IDS.length)]])) }
+      : {}),
   };
   game.hand = hand;
   game.hands = (game.hands ?? 0) + 1;
@@ -362,17 +357,16 @@ export function startHand(game: Game, ctx: ActionContext): void {
   }
 
   continueFrom(game, last, ctx);
-  playScript(game, ctx);
 }
 
 /**
  * What the house rules ask of this hand, in chips: a bomb pot's buy-in (every `bombEvery`th hand, which then has no
- * blinds, antes or straddle), the ante and the straddle. A Scroll card plays none of them.
+ * blinds, antes or straddle), the ante and the straddle. A demo hand plays none of them.
  */
 export function houseRules(game: Game, players: number): { bomb: number; ante: number; straddle: number } {
   const s = game.settings;
   const none = { bomb: 0, ante: 0, straddle: 0 };
-  if (game.card || players < 2) return none;
+  if (game.demo || players < 2) return none;
   const every = s.bombEvery ?? 0;
   if (every > 0 && (game.hands ?? 0) % every === 0) return { ...none, bomb: s.bigBlind * 2 };
   return {
@@ -392,20 +386,6 @@ function putDead(seat: Seat, player: Player, amount: number): number {
   seat.total += chips;
   if (player.stack === 0) seat.allIn = true;
   return chips;
-}
-
-/**
- * A Scroll card's set-up moves, played at once so the first real decision is the one the card is about.
- * It stops early if a move doesn't fit (the card builder's tests make sure none of them do).
- */
-function playScript(game: Game, ctx: ActionContext): void {
-  const hand = game.hand!;
-  for (const step of game.card?.script ?? []) {
-    if (hand.nextStreetAt != null) dealNextStreet(game, ctx);
-    const actor = playerById(game, hand.toAct);
-    if (hand.result || !actor || actor.bot !== (step.by === 'bot')) return;
-    if (makeMove(game, step.move, step.to, ctx)) return;
-  }
 }
 
 // ── Moves ───────────────────────────────────────────────────────────────────
@@ -569,7 +549,7 @@ function setTurn(game: Game, idx: number, ctx: ActionContext): void {
     hand.actAt = hand.deadline;
   }
   // Someone slow to act gets a jab from a bot, if the clock isn't about to run out anyway.
-  if (!player.bot && !game.pendingTalk && !game.card && (!hand.deadline || hand.deadline - ctx.now > TIMING.tankJab + 3000)) {
+  if (!player.bot && !game.pendingTalk && !game.demo && (!hand.deadline || hand.deadline - ctx.now > TIMING.tankJab + 3000)) {
     const bots = game.players.filter((p) => p.bot && !p.sittingOut && hand.seats.some((s) => s.playerId === p.id));
     if (bots.length) game.pendingTalk = { at: ctx.now + TIMING.tankJab, playerId: bots[Math.floor(ctx.rng() * bots.length)].id, event: 'tank', forId: player.id, seq: hand.seq };
   }
@@ -625,7 +605,7 @@ function dealStreet(game: Game, hand: Hand, rng: () => number, now: number): voi
   let redExtra = 0;
   if (next === 'river' && variant === 'dice') {
     // Die on the River: a 1 to 5 swaps that board card (from the left) for a fresh one; a 6 leaves it.
-    const roll = 1 + Math.floor(rng() * 6);
+    const roll = game.demo?.roll ?? 1 + Math.floor(rng() * 6);
     if (roll <= 5 && hand.deck.length) {
       const out = hand.board[roll - 1];
       const fresh = hand.deck.shift()!;
@@ -1532,8 +1512,8 @@ function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
       record: handRecord(game, hand, ctx.now) ?? undefined,
     },
   ].slice(-MAX_LOGS);
-  // A Scroll card is one hand: the table just waits there for the result.
-  if (game.card) {
+  // A demo is one hand: the table just waits there for the result.
+  if (game.demo) {
     game.ready = [];
     game.nextHandAt = null;
     schedule(game);

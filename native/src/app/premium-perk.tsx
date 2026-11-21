@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { GameThumb } from '@/components/game-picture';
-import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { perkById, type PerkId } from '@/components/premium/perks';
 import { PressableScale } from '@/components/pressable-scale';
@@ -14,6 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { CARD_PACKS, FAMILIAR_COUNT, FREE_BOT_NAMES, FREE_VARIANTS, LAB_DIALS, VARIANTS } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
+import { showDemo } from '@/components/demo/show';
 
 /**
  * One Premium perk shown properly, from a tile on the Premium page: what it is and a look at it (the games, every
@@ -66,8 +66,8 @@ function Preview({ id }: { id: PerkId }) {
             <PressableScale
               key={g.id}
               accessibilityRole="button"
-              accessibilityLabel={`${g.name}. ${g.tagline}. See how it plays.`}
-              onPress={() => (haptic.select(), router.push(`/how-to-play/${g.id}`))}
+              accessibilityLabel={`${g.name}. ${g.tagline}. Play its demo.`}
+              onPress={() => showDemo(g.id)}
               style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.xs, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.06)' }}
             >
               <GameThumb variant={g.id} size={44} />

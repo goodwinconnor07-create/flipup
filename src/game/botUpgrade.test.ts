@@ -213,13 +213,13 @@ describe('local dialogue', () => {
     g.hand.seats[1].shown = true;
     expect(dialogueIntent(g, id, 'bluffWon', undefined, rng)).toBe('bluffWon');
   });
-  it('respects quiet lessons, cooldowns and table-wide pacing', () => {
+  it('respects quiet demos, cooldowns and table-wide pacing', () => {
     const g = table(),
       id = g.players[1].id;
     // It says how long the line takes to say and read (milliseconds), or 0 when the bot stays quiet.
     expect(botSays(g, id, 'welcome', rng, 0, true)).toBeGreaterThan(0);
     expect(botSays(g, id, 'raise', rng, 100)).toBe(0);
-    g.card = { at: 0, hero: ['As', 'Ad'], board: [], script: [] };
+    g.demo = { at: 0, deck: [] };
     expect(botSays(g, id, 'sweatWin', rng, 5000, true)).toBe(0);
   });
   it('queues a fast reply to a quick message and discards it if the source changes', () => {

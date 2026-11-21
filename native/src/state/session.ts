@@ -8,6 +8,7 @@ import { useSyncExternalStore } from 'react';
 import {
   applyAction,
   cleanName,
+  createDemoTable,
   createTable,
   cryptoRng,
   newId,
@@ -35,7 +36,7 @@ import { Connection, type ConnStatus } from './connection';
 import { deviceId } from './device';
 import { UserError } from './user-error';
 import { isFast } from './prefs';
-import { wornLook } from './profile';
+import { readProfile, wornLook } from './profile';
 import { noteGame, noteHand } from './record';
 import { recordFeel, rivalsFor } from './table-feel';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
@@ -68,13 +69,15 @@ export interface TableState {
   /** A mini game you've never played: its rules card is up on the table and a bots-only table's first deal waits for
    * Continue (`releaseRules()`). */
   rules: Variant | null;
+  /** The Demo on screen (see `openDemo()`): which game, and whether its hand has been dealt in (`startDemo()`). */
+  demo: { variant: Variant; started: boolean } | null;
 }
 
 export let me = deviceId();
 
 let session: Session | null = null;
 let identityVersion = 0;
-let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, recapEnds: null, review: false, rules: null };
+let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, recapEnds: null, review: false, rules: null, demo: null };
 let conn: Connection | null = null;
 let sendingId: string | null = null;
 let profile = { name: '', emoji: '' };
@@ -98,10 +101,12 @@ function set(next: Session | null): void {
     game: !next?.game ? null : maskBlocked(next.mode === 'local' ? redactForDevice(next.game, me) : next.game),
   });
   schedule();
+  syncLook();
+  // A demo hand is never counted, kept or saved: your real table waits aside (see openDemo()).
+  if (demo) return;
   noteDay(state.game);
   if (next) noteReplay(state.game, me, next.mode === 'local' ? 'bots' : 'online', next.mode === 'local' ? next.game : null);
   holdForRecap(next);
-  syncLook();
   // Writing the whole table on every move is a lot of work mid-hand, so it waits a moment and goes in one go.
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => save(KEY, session), next ? 600 : 0);
@@ -177,8 +182,8 @@ function schedule(minDelay = 0): void {
     () => {
       if (session?.mode !== 'local') return;
       const now = toTableTime(Date.now(), session.game.fast);
-      // The rules card is up on a first mini game: nothing moves until Continue.
-      if (rulesHeld) return;
+      // The rules card is up on a first mini game, or the Demo's welcome: nothing moves until it's closed.
+      if (rulesHeld || demoHeld) return;
       // Replay after every hand: the recap is up, so the deal waits for Next hand (bots may still talk).
       if (recapHeld && dealDue(session.game, now)) return;
       let r: ReturnType<typeof applyAction>;
@@ -291,8 +296,13 @@ export function releaseRules(): void {
   rulesHeld = false;
   if (v) markRulesSeen(v);
   publish({ rules: null });
+  shiftClock(rulesAt);
+}
+
+/** A bots-only table that waited before its first deal carries on from where it stopped, as if no time had passed. */
+function shiftClock(heldAt: number): void {
   if (session?.mode !== 'local') return;
-  const gap = Math.max(0, toTableTime(Date.now(), session.game.fast) - rulesAt);
+  const gap = Math.max(0, toTableTime(Date.now(), session.game.fast) - heldAt);
   const g = structuredClone(session.game);
   if (g.nextHandAt != null) g.nextHandAt += gap;
   if (g.wakeAt != null) g.wakeAt += gap;
@@ -310,6 +320,61 @@ function forgetRecap(): void {
   recapDone = '';
   clearTimeout(recapTimer);
   if (state.recap) publish({ recap: null, recapEnds: null, review: false });
+}
+
+// ── The Demo ────────────────────────────────────────────────────────────────
+// One hand of a game, dealt to order on this phone (demo.ts in the engine), with the coach on top of the table
+// (components/demo). Whatever table you were at is set aside and comes back as it was when the demo closes: a
+// bots-only one waits where it stopped, an online one keeps up to date in the background. Nothing about a demo is
+// counted in your record, kept as a hand or saved to the phone.
+
+/** While a demo is open: the table it set aside (null if none), and a note for when it closes (that table ended). */
+let demo: { stash: Session | null; note: string | null } | null = null;
+/** True while the demo's welcome is up and its deal waits. */
+let demoHeld = false;
+let demoHeldAt = 0;
+
+/** Opens the demo of a game over whatever table you're at. The deal waits for `startDemo()`. */
+export function openDemo(variant: Variant): void {
+  if (!demo) {
+    // Your own table is saved as it is now, before the demo takes the screen.
+    clearTimeout(saveTimer);
+    if (session) save(KEY, session);
+    demo = { stash: session, note: null };
+  }
+  clearTimeout(timer);
+  // A recap or a rules card waiting on your own table comes up again when it's back.
+  forgetRecap();
+  forgetRules();
+  const you = readProfile();
+  const now = toTableTime(Date.now(), false);
+  const table = createDemoTable({ variant, deviceId: me, name: cleanName(you.name) || 'You', emoji: you.emoji, now });
+  const r = applyAction(table, { type: 'start' }, { deviceId: me, now, rng: cryptoRng });
+  demoHeld = true;
+  demoHeldAt = now;
+  publish({ demo: { variant, started: false } });
+  set({ mode: 'local', code: null, game: r.ok ? r.game : table });
+}
+
+/** The demo's welcome is closed: the clock starts and the hand is dealt a moment later. */
+export function startDemo(): void {
+  if (!demo || !state.demo || state.demo.started) return;
+  demoHeld = false;
+  publish({ demo: { ...state.demo, started: true } });
+  shiftClock(demoHeldAt);
+}
+
+/** Closes the demo and puts back the table you were at, as it was (or as the server now has it). */
+export function closeDemo(): void {
+  if (!demo) return;
+  const { stash, note } = demo;
+  demo = null;
+  demoHeld = false;
+  clearTimeout(timer);
+  publish({ demo: null });
+  set(stash);
+  if (stash?.mode === 'online') conn?.send({ t: 'sync' });
+  if (note) notify(note);
 }
 
 /** How long the clock waits before looking again when a tick that was due changed nothing. */
@@ -436,6 +501,12 @@ function previewMove(action: Action): void {
 }
 
 function onServerMessage(msg: ServerMessage): void {
+  // A demo is on screen: the online table you're at keeps up to date behind it, and comes back as it is now.
+  if (demo) {
+    if (msg.t === 'state' && demo.stash?.mode === 'online') demo.stash = { ...demo.stash, game: msg.game };
+    if (msg.t !== 'log' && sendingId) sendingId = null;
+    return;
+  }
   if (session?.mode !== 'online') return;
   if (msg.t === 'state') {
     if (msg.ack && msg.ack === sendingId) {
@@ -487,6 +558,12 @@ function connect(code: string): void {
     },
     onGone: (message) => {
       closeConnection();
+      // Behind a demo: the table is gone when the demo closes, and the note waits for then.
+      if (demo) {
+        demo.stash = null;
+        demo.note = message;
+        return;
+      }
       set(null);
       notify(message);
     },
@@ -524,6 +601,7 @@ export function requestLogs(): void {
 
 /** Opens a bots-only table on this phone and seats you at it. */
 export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[], labs: LabBotSpec[] = []): void {
+  closeDemo();
   closeConnection();
   const fast = isFast();
   let game = createTable({
@@ -550,6 +628,7 @@ export function openLocalTable(settings: Settings, bots: number, name: string, e
 
 /** Opens a table on the server for friends to join with its code, seated as the host. Throws with a message. */
 export async function openOnlineTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[]): Promise<string> {
+  closeDemo();
   const version = identityVersion;
   profile = { name, emoji };
   const body = { deviceId: me, name: cleanName(name) || 'Host', emoji, settings, bots, ...(botNames?.length ? { botNames } : {}) };
@@ -573,6 +652,7 @@ export async function openOnlineTable(settings: Settings, bots: number, name: st
 
 /** Sits down at an online table by its code (or goes back to the one this phone is at). */
 export function joinOnlineTable(code: string, name: string, emoji: string): void {
+  closeDemo();
   profile = { name, emoji };
   if (session?.mode === 'online' && session.code === code) {
     if (!conn) connect(code);
@@ -582,8 +662,12 @@ export function joinOnlineTable(code: string, name: string, emoji: string): void
   connect(code);
 }
 
-/** Leaves the table. Online, you're taken off it first (a hand in play folds you on your turn). */
+/** Leaves the table. Online, you're taken off it first (a hand in play folds you on your turn). A demo just closes. */
 export function leaveTable(): void {
+  if (demo) {
+    closeDemo();
+    return;
+  }
   forgetLastHand();
   forgetRecap();
   forgetRules();
@@ -622,7 +706,9 @@ export function resetSessionIdentity(): void {
   me = deviceId();
   forgetRecap();
   forgetRules();
-  publish({ mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, recapEnds: null, review: false, rules: null });
+  demo = null;
+  demoHeld = false;
+  publish({ mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, recapEnds: null, review: false, rules: null, demo: null });
 }
 
 // A table you were at comes back after the app is closed: a bots-only one as it was, an online one by reconnecting.

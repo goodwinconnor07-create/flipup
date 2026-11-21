@@ -32,8 +32,8 @@ not marketing headlines). Emoji are only ever cut from real iPhone screenshots, 
 Remake them with `node store/scripts/slides.cjs` (add `CHROMIUM_PATH=/opt/pw-browsers/chromium` in a cloud
 session). The layouts are `scripts/slides.cjs` and `scripts/slides.html`; the pictures are in `scripts/sources/`:
 
-- `holdem-yourturn.png`, `pineapple-discard.png`, `pineapple-yourturn.png`, `dice-dice.png`: How to Play's iPhone 17
-  Pro simulator shots (`native/assets/howto`), which are 804 pixels wide, so the slides are a little soft.
+- `holdem-yourturn.png`, `pineapple-discard.png`, `pineapple-yourturn.png`, `dice-dice.png`: iPhone 17 Pro simulator
+  shots from the old How to Play (gone from the app since 21 Nov 2026), 804 pixels wide, so the slides are a little soft.
 - `lobby-sb.png`, `power-sb.png`, `power-panel.png`, `replay-sb.png`, `replay-controls.png`: the owner's own iPhone
   screenshots of the lobby, a Power Cards table and its Fold Tax panel, and a hand replay, with a clean 9:41 status bar drawn over the real one. They show the owner's name on
   their seat.

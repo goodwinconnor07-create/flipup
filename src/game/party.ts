@@ -21,9 +21,10 @@ export const PARTY_FILL = [0, 4, 6, 9];
 /** Seconds the leaderboard stays up before the next game starts by itself. */
 export const PARTY_BREAK_SECONDS = 25;
 
-/** Points for each finishing place among the people at the table (bots don't score). */
-export const PLACE_POINTS = [10, 7, 5, 4, 3, 2, 1];
-export const placePoints = (place: number): number => PLACE_POINTS[Math.min(place, PLACE_POINTS.length - 1)] ?? 1;
+/** Points for each finishing place among the people at the table (bots don't score): 4, 3, 2, 1, then nothing. */
+export const PLACE_POINTS = [4, 3, 2, 1];
+/** 1st 4, 2nd 3, 3rd 2, 4th 1, and nothing from 5th on (owner's call). */
+export const placePoints = (place: number): number => (place >= 0 ? (PLACE_POINTS[place] ?? 0) : 0);
 
 export interface PartySettings {
   games: Variant[];

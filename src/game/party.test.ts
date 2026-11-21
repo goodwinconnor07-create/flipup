@@ -14,7 +14,8 @@ function build(rng: () => number = seededRng(7)): Game {
 describe('party scoring', () => {
   it('pays more for a better finish and never less than a point', () => {
     expect(placePoints(0)).toBeGreaterThan(placePoints(1));
-    expect(placePoints(20)).toBe(1);
+    expect([0, 1, 2, 3, 4, 5].map(placePoints)).toEqual([4, 3, 2, 1, 0, 0]);
+    expect(placePoints(20)).toBe(0);
   });
 
   it('ranks by total, then by the latest round', () => {
@@ -36,8 +37,8 @@ describe('party scoring', () => {
     expect(done.map((r) => [r.id, r.move])).toEqual([['y', 1], ['x', -1]]);
     const running = partyStandings({ members: members.map((m) => ({ ...m })), live: [{ id: 'x', stack: 900, out: null }, { id: 'y', stack: 100, out: null }], status: 'playing', round: 2 });
     expect(running[0].id).toBe('x');
-    expect(running[0].provisional).toBe(10);
-    expect(running.find((r) => r.id === 'y')!.provisional).toBe(7);
+    expect(running[0].provisional).toBe(4);
+    expect(running.find((r) => r.id === 'y')!.provisional).toBe(3);
   });
 
   it('builds a shuffled playlist of the right length with no game twice in a row', () => {

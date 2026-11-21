@@ -12,7 +12,7 @@ import { PressableScale } from '../pressable-scale';
  */
 const INK = '#0b1220';
 
-export function PlayButton({ line, ink, label, onPress }: { line: string; label: string; onPress: () => void; /** Kept so callers needn't change; the button no longer has a band. */ tint?: string }) {
+export function PlayButton({ line, label, onPress }: { line: string; label: string; onPress: () => void; /** Kept so callers needn't change; the button no longer has a band. */ tint?: string }) {
   return (
     <PressableScale
       accessibilityRole="button"

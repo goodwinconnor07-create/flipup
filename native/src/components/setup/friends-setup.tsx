@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
 import { LobbyScroll, NAV_H } from '../lobby/lobby-scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,7 +17,7 @@ import { tableShareMessage } from '@/state/table-share';
 import { usePremium } from '@/state/premium';
 import { insertAt, offerUndo } from '@/state/undo';
 import { readProfile, useProfile } from '@/state/profile';
-import { abandonLobby, changeTableCode, currentTable, dispatch, me as myDevice, openOnlineTable, useTable } from '@/state/session';
+import { abandonLobby, currentTable, dispatch, me as myDevice, openOnlineTable, useTable } from '@/state/session';
 import { saveSettings, setDraft } from '@/state/setup-draft';
 import { unlockToHost } from '@/state/unlock';
 import { ForceScheme, spacing } from '@/theme';
@@ -40,7 +40,7 @@ import { choose } from '@/components/choose';
  * Play with friends, laid out after the owner's reference video in FlipUp's own look (the game's colour, always
  * dark). The online table opens in the background as the page opens, so its code is real from the start, and the host
  * deals from here; there's no separate lobby for the host. Top to bottom (reordered 19 Nov 2026: who's here first):
- *  1. `CodeCard`: the game code with Copy, QR and Share, a tap on the code changes it (`changeTableCode()`), and how friends join
+ *  1. `CodeCard`: the game code with Copy, QR and Share (the host can't change it: owner's call), and how friends join
  *  2. `Players`: you, anyone who sat down with the code, the bots you added, and Add a bot
  *  3. `GameCard`: the game (Texas Hold'em unless one was passed), Change opens the `lobby-game` list, How it plays
  *  4. `HouseRules`: each number with its − + stepper, then the switches
@@ -240,33 +240,6 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
   // The game card names the game and Players counts who's in, so a ready button is just "Start game": its line only
   // says what's still missing.
 
-  // The host's own code: the table moves to it (settings and seated bots come along) and the old one ends.
-  const changeCode = async (code: string): Promise<string | null> => {
-    const m = made.current;
-    if (!m.code) return 'Your table is still opening. Try again in a moment.';
-    const go = async () => {
-      try {
-        const fresh = await changeTableCode(code);
-        m.code = fresh;
-        setLobby(fresh);
-        return null;
-      } catch (e) {
-        return userMessage(e, "Couldn't change the code. Try again.");
-      }
-    };
-    if (!others.length) return go();
-    return new Promise((done) =>
-      Alert.alert(
-        'Change the code?',
-        `${others.length === 1 ? "The friend who's" : `The ${others.length} friends who are`} already here will need the new code.`,
-        [
-          { text: 'Cancel', style: 'cancel', onPress: () => done('') },
-          { text: 'Change', onPress: () => void go().then(done) },
-        ],
-      ),
-    );
-  };
-
   const swapBot = (b: RowBot) => {
     const next = randomBot(bots, profile.name || undefined, premium);
     if (next) setBots((have) => have.map((x) => (x.key === b.key ? next : x)));
@@ -362,7 +335,6 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
                     }
                   : undefined
               }
-              onChange={changeCode}
               hint={others.length ? undefined : 'Friends join from Join on the Play tab with this code. Bots fill in until they do.'}
             />
 

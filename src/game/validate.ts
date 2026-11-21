@@ -43,7 +43,7 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
     if (typeof r.showToBusted !== 'boolean') return null;
     out.showToBusted = r.showToBusted;
   }
-  for (const key of ['straddle', 'runTwice'] as const) {
+  for (const key of ['straddle', 'runTwice', 'rabbit'] as const) {
     if (r[key] === undefined) continue;
     if (typeof r[key] !== 'boolean') return null;
     out[key] = r[key];
@@ -107,6 +107,8 @@ export function parseAction(raw: unknown): Action | null {
       return isInt(a.hand) ? { type: 'next', hand: a.hand } : null;
     case 'hit':
       return isInt(a.hand) && isInt(a.seq) ? { type: 'hit', hand: a.hand, seq: a.seq } : null;
+    case 'stand':
+      return isInt(a.hand) ? { type: 'stand', hand: a.hand } : null;
     case 'power':
       if (!isInt(a.hand) || !isInt(a.seq)) return null;
       if (a.target !== undefined && !isId(a.target)) return null;

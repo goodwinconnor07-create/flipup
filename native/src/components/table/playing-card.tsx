@@ -1,5 +1,5 @@
 // A playing card drawn to the web's measurements (.pcard in table.css): 5:7, corners at a fifth of the width, the
-// rank at 54% of the width and the suit at 40%, in the four-colour deck. A card that's dealt turns over the way the
+// rank at 54% of the width and the suit at 40%, in the red and black deck. A card that's dealt turns over the way the
 // web's does: it starts face down (in the owner's card pack), lifts a little and grows 6% as it turns, and lands
 // face up, in 0.65s. Under Reduce Motion it fades in instead.
 import { createContext, useContext, useEffect, type ReactNode } from 'react';
@@ -17,6 +17,7 @@ import Animated, {
 import { cardBack } from '@design/premiumLooks';
 import { cardName, rankLabel, suitOf, type Card } from '@/engine';
 import { useDrift } from '@/motion/use-drift';
+import { popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { gradient, usePlainColors } from '@/theme';
 
@@ -24,7 +25,8 @@ import { gradient, usePlainColors } from '@/theme';
 export const CARD_W = { xl: 100, lg: 66, md: 48, sm: 26 } as const;
 export type CardSize = keyof typeof CARD_W;
 const SYMBOL = { s: '♠', h: '♥', d: '♦', c: '♣' } as const;
-const INK = { s: '#16161d', h: '#e5322d', d: '#2563eb', c: '#16a34a' } as const;
+// The classic deck: hearts and diamonds red, spades and clubs black (owner's call, November 2026).
+const INK = { s: '#16161d', h: '#e5322d', d: '#e5322d', c: '#16161d' } as const;
 
 /** True at a Crazy Deuces table: every 2 is wild there, so it's drawn in shining gold (set once by the table screen). */
 export const WildDeuces = createContext(false);
@@ -280,6 +282,53 @@ function Flip({ w, delay, pack, small, ghost, children }: { w: number; delay: nu
       <Animated.View style={faceStyle}>{children}</Animated.View>
     </View>
   );
+}
+
+/**
+ * A card as a wide tile, rank and suit side by side in big type: the Crucifix's cross, where nine cards five tall
+ * have to fit the felt. Dims and glows like a card; lands with a short pop (a fade under Reduce Motion).
+ */
+export function CardTile({ card, w, h, dim = false, glow = false, delay = 0 }: { card: Card; w: number; h: number; dim?: boolean; glow?: boolean; delay?: number }) {
+  const { edge, shadow, dark } = useCardLook();
+  const reduce = useReduceMotion();
+  const suit = suitOf(card);
+  const size = Math.round(h * 0.58);
+  const r = Math.round(h * 0.24);
+  return (
+    <Animated.View
+      entering={reduce ? FadeIn.delay(delay).duration(200) : popIn().delay(delay)}
+      accessibilityRole="image"
+      accessibilityLabel={cardName(card)}
+      style={{
+        width: w,
+        height: h,
+        borderRadius: r,
+        borderCurve: 'continuous',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 1,
+        backgroundColor: '#ffffff',
+        borderWidth: 1,
+        borderColor: edge,
+        transform: glow ? [{ translateY: -4 }] : undefined,
+        boxShadow: glow ? '0 0 0 3px #ff9f0a, 0 0 14px 2px rgba(245,158,11,0.55)' : shadow,
+      }}
+    >
+      <Text maxFontSizeMultiplier={1} style={{ color: INK[suit], fontSize: size, lineHeight: size + 2, fontWeight: '600', letterSpacing: -0.5 }}>
+        {rankLabel(card)}
+      </Text>
+      <Text maxFontSizeMultiplier={1} style={{ color: INK[suit], fontSize: size * 0.86, lineHeight: size + 2 }}>
+        {SYMBOL[suit]}
+      </Text>
+      {dim && <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: r - 1, backgroundColor: dark ? 'rgba(8,10,22,0.42)' : 'rgba(18,18,40,0.26)' }} />}
+    </Animated.View>
+  );
+}
+
+/** A tile's empty place on the felt. */
+export function TileSlot({ w, h }: { w: number; h: number }) {
+  return <View style={{ width: w, height: h, borderRadius: Math.round(h * 0.24), borderCurve: 'continuous', borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)' }} />;
 }
 
 /** Where a card will land: a faint outline on the felt. */

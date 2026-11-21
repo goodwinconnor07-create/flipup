@@ -112,7 +112,7 @@ const STEPS: Record<Variant, Step[]> = {
   redriver: [
     step('cards', 'mine', 'Your two cards', "Plain Hold'em, until the river. Then watch its colour."),
     step('flop', 'board', 'The flop', 'Three shared cards, then the turn.'),
-    step('river', 'bigBoard', 'Red keeps coming', 'A red river deals another card, then another, until a black one lands.', 'more'),
+    step('river', 'bigBoard', 'The river run', 'Ten cards, one by one. Red ones stay, black ones swap out the newest card. Then the river lands.', 'more'),
     step('showdown', 'showdown', 'Every card counts', 'Best five from your two and the whole board, however long it got.'),
   ],
   crucifix: [
@@ -120,14 +120,14 @@ const STEPS: Record<Variant, Step[]> = {
     step('flop', 'round', 'A cross', 'The flop is five cards: the middle and one on each arm.'),
     step('turn', 'round', 'The turn', 'Two more, on the top and right arms.'),
     step('river', 'round', 'The river', 'The last two finish the cross. Nine cards in all.'),
-    step('showdown', 'round', 'Pick a line', 'Your two cards plus one line, across or down. Never mix them.'),
+    step('showdown', 'round', 'Pick a line', 'Your two cards plus one line: across, down, or an L round the bottom-right or top-left.'),
   ],
   circle: [
-    step('cards', 'mine', 'Your two cards', 'Both always play here, so start strong.'),
-    step('flop', 'round', 'Round the clock', 'The board is a circle. The flop lands at 12 and 6.'),
-    step('turn', 'round', 'The turn', "Two more, at 2 and 8 o'clock."),
-    step('river', 'round', 'Close the circle', 'The river fills 4 and 10. Six cards round the clock.'),
-    step('showdown', 'round', 'Three in a row', 'Your two cards plus three board cards side by side.'),
+    step('cards', 'mine', 'Your two cards', 'They play with five in a row round the clock.'),
+    step('flop', 'round', 'Round the clock', 'Twelve cards round a clock. The flop lands at 12, 1, 2 and 3.'),
+    step('turn', 'round', 'The turn', "Four more, from 4 to 7 o'clock."),
+    step('river', 'round', 'Close the circle', 'The river fills 8 to 11. Twelve cards round the clock.'),
+    step('showdown', 'round', 'Five in a row', 'Your two cards plus five board cards side by side round the clock.'),
   ],
   memory: [
     step('peek', 'round', 'Remember these', 'Twenty cards flash up, then leave the deck. You get nine seconds.'),
@@ -145,7 +145,7 @@ const STEPS: Record<Variant, Step[]> = {
   ],
   bjholdem: [
     step('cards', 'mine', 'Count to 21', 'Count your cards like blackjack, play them like poker.'),
-    step('flop', 'hand', 'Hit or stand', "On the flop, tap Hit for another card. Go over 21 and you're out."),
+    step('flop', 'hand', 'Hit or stand', "On any street, tap Hit for another card. All in? You still get to hit. Over 21 and you're out."),
     step('hit', 'hand', 'It counts twice', 'A card you hit plays in your poker hand too.'),
     step('showdown', 'showdown', 'Two winners', "Half the pot to the best hand, half to whoever's closest to 21."),
   ],

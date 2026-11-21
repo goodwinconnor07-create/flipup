@@ -8,6 +8,8 @@ import {
   newLife,
   isNameBlocked,
   newCode,
+  knowsRules,
+  UPDATE_NEEDED,
   newId,
   PARTY_BREAK_SECONDS,
   PARTY_MAX_PLAYERS,
@@ -80,8 +82,10 @@ export class PartyRoom extends DurableObject<Env> {
     return data ? this.render(code, data, deviceId) : null;
   }
 
-  async join(code: string, deviceId: string, person: PartyPerson): Promise<Result> {
+  async join(code: string, deviceId: string, person: PartyPerson, rules = 1): Promise<Result> {
     const data = await this.load();
+    // A phone on older rules would draw some of the party's games wrong.
+    if (data && !knowsRules(rules, data.settings.games)) return { ok: false, error: UPDATE_NEEDED };
     if (!data) return { ok: false, error: 'No party with that code.' };
     const have = data.members.find((m) => m.deviceId === deviceId);
     if (have) {

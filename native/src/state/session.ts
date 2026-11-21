@@ -498,6 +498,14 @@ export function retryConnection(): void {
   conn?.retryNow();
 }
 
+/**
+ * Refresh on a player shown offline: checks this phone's link to the table (making a fresh one if it has gone quiet),
+ * and the server looks again at whose phones are connected, so a seat shown offline by mistake comes back.
+ */
+export function refreshTable(): void {
+  conn?.refresh();
+}
+
 function closeConnection(): void {
   conn?.close();
   conn = null;
@@ -561,33 +569,6 @@ export async function openOnlineTable(settings: Settings, bots: number, name: st
   set({ mode: 'online', code, game: null });
   connect(code);
   return code;
-}
-
-/**
- * The lobby's Change: the host picks their own game code. A table's code is its name on the server, so this opens
- * the same table again at the new code (the settings and the bots come along) and ends the old one; anyone who'd
- * sat down there sees it close. Throws with the server's sentence when the code is taken or can't be used.
- */
-export async function changeTableCode(code: string): Promise<string> {
-  const old = session?.mode === 'online' ? session.game : null;
-  if (!old || session?.mode !== 'online' || old.status !== 'lobby' || old.hostDeviceId !== me) throw new UserError('Only the host can change the code, before the deal.');
-  if (old.code === code) return code;
-  const host = old.players.find((p) => p.deviceId === me);
-  const fresh = await createOnlineTable({
-    deviceId: me,
-    name: cleanName(host?.name ?? profile.name) || 'Host',
-    emoji: host?.emoji ?? profile.emoji,
-    settings: old.settings,
-    bots: 0,
-    botNames: old.players.filter((p) => p.bot).map((p) => p.name),
-    code,
-  });
-  if (session?.mode !== 'online' || session.code !== old.code) return fresh;
-  conn?.send({ t: 'act', id: newId(8), a: { type: 'end' } });
-  // The old lobby stays on screen under the new code until the new table's first update replaces it.
-  set({ mode: 'online', code: fresh, game: { ...old, code: fresh } });
-  connect(fresh);
-  return fresh;
 }
 
 /** Sits down at an online table by its code (or goes back to the one this phone is at). */

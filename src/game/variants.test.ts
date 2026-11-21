@@ -5,11 +5,17 @@ import {
   createTable,
   count21,
   DEFAULT_SETTINGS,
+  handSets,
   holeCountAt,
   isPremiumVariant,
+  knowsRules,
+  redRun,
+  RULES_VERSION,
+  rulesFor,
   keepTwo,
   options,
   parseAction,
+  pendingChoosers,
   redactForDevice,
   runoutOdds,
   seededRng,
@@ -282,17 +288,37 @@ describe('the second batch', { timeout: TABLE_MS }, () => {
     expect(held).toBeGreaterThan(0);
   });
 
-  it('Red River keeps dealing until a black card', () => {
-    let rivers = 0;
-    play('redriver', 60, (g) => {
-      const b = g.hand?.board ?? [];
-      if (b.length < 5) return;
-      rivers++;
-      const extra = b.slice(4);
-      expect(['s', 'c']).toContain(extra[extra.length - 1][1]);
-      for (const c of extra.slice(0, -1)) expect(['h', 'd']).toContain(c[1]);
+  it('Red River: ten draws, red added and black swapped for the newest card, then the river', () => {
+    const board = h('As Ks Qs Js');
+    const cards = h('2h 3c 4d 5d 6s 7h 8c 9h Th Tc Jd 2s');
+    redRun(board, () => cards.shift());
+    expect(board).toEqual(h('As Ks Qs Js 3c 4d 6s 8c 9h Tc Jd'));
+    // The river itself, then nothing more.
+    expect(cards).toEqual(['2s']);
+    // A black first card takes the turn's place.
+    const early = h('As Ks Qs Js');
+    const more = ['2c', ...h('3h 4h 5h 6h 7h 8h 9h Th Jh Qh')];
+    redRun(early, () => more.shift());
+    expect(early.slice(0, 4)).toEqual(h('As Ks Qs 2c'));
+    expect(early).toHaveLength(4 + 9 + 1);
+  });
+
+  it('Red River deals its run with the river, then bets once on the whole board', () => {
+    let runs = 0;
+    play('redriver', 40, (g) => {
+      const hand = g.hand;
+      const run = hand?.redRun;
+      if (!hand || !run || hand.result) return;
+      runs++;
+      expect(run.base).toHaveLength(4);
+      expect(run.steps).toHaveLength(11);
+      expect(run.steps[10].kind).toBe('river');
+      // Each red draw that wasn't swapped out stays, plus the river.
+      expect(hand.board.length).toBeGreaterThanOrEqual(5);
+      // Nobody bets while the run is still being shown.
+      if (hand.moment?.kind === 'redriver' && hand.toAct) expect(hand.bettingAt ?? null).toBeNull();
     });
-    expect(rivers).toBeGreaterThan(0);
+    expect(runs).toBeGreaterThan(0);
   });
 
 });
@@ -300,31 +326,44 @@ describe('the second batch', { timeout: TABLE_MS }, () => {
 describe('Crucifix and Circle', { timeout: TABLE_MS }, () => {
   // Crucifix board in dealing order: middle, top, right, bottom, left, outer top, outer right, outer bottom, outer left.
   const cross = h('Ah 9c Kd 3s 8h Qs 7d 4c Jh');
-  it('Crucifix plays one line, across or down, never both', () => {
+  it('Crucifix plays one line: across, down, or one of the two Ls through the middle, never two at once', () => {
     // Down is Qs 9c Ah 3s 4c; across is Jh 8h Ah Kd 7d. With two hearts in hand, across makes a flush.
     expect(bestHand('crucifix', h('2h 5h'), cross).name).toBe('Flush');
-    // Q-J in hand: K from across and Q from down would be a pair of each, but only one line counts.
+    // Q-6 in hand: no line has both the K and the Q, so it's one pair.
     expect(bestHand('crucifix', h('Qc 6d'), cross).name).toBe('Pair');
-    expect(bestHand('crucifix', h('Tc 5d'), cross).name).toBe('High card');
+    expect(bestHand('crucifix', h('6s 2d'), cross).name).toBe('High card');
+    // The top and left L (Qs 9c Ah 8h Jh) is the only line with a straight for T-6.
+    expect(bestHand('crucifix', h('Tc 6c'), cross).name).toBe('Straight');
+    // The bottom and right L (4c 3s Ah Kd 7d) is the only line with both a 7 and a 4.
+    expect(bestHand('crucifix', h('7c 4h'), cross).name).toBe('Two pair');
+    // The top and right arms are not a line: no line holds both the Kd and the 9c, so K-9 in hand is one pair.
+    expect(bestHand('crucifix', h('Kc 9d'), cross).name).toBe('Pair');
   });
 
-  it('Circle uses both hole cards and three in a row round the clock', () => {
-    // Dealt at 12, 6, 8, 2, 10, 4: so round the clock it's 12 Ah, 2 Kd, 4 Jh, 6 2c, 8 7s, 10 Qs.
-    const circle = h('Ah 2c 7s Kd Qs Jh');
-    // 10-12-2 (Qs Ah Kd) with JT makes a straight, wrapping past 12.
-    expect(bestHand('circle', h('Jc Tc'), circle).name).toBe('Straight');
-    // Ace and king aren't next to the jack... Ah Kd Jh is 12-2-4: three in a row, so the jack plays with them.
-    expect(bestHand('circle', h('Jd Js'), circle).name).toBe('Three of a kind');
-    // Both hole cards must play: a pair in hand plus the board can't be just the board.
-    expect(bestHand('circle', h('3c 3d'), circle).best).toEqual(expect.arrayContaining(['3c', '3d']));
-    // Jh and Qs sit opposite (4 and 10 o'clock), never in a run together, so no two pair with Q-J.
-    expect(bestHand('circle', h('Qc Jc'), circle).name).toBe('Pair');
+  it('Circle: twelve cards round the clock, your two plus five in a row', () => {
+    // Dealt from 12 o'clock round to 11.
+    const circle = h('Ah 7d Qs 3h 9c Kd 4s Jh 2c 8s 5d Tc');
+    const ring = (c: string) => circle.indexOf(c);
+    // The board cards a hand uses always sit within five in a row round the clock (past 12 too).
+    for (const hole of ['Ac Ad', 'Kc Qd', '9h 9d', '2h 6c', 'Th Js', '5s 5h', '3c 8d']) {
+      const used = bestHand('circle', h(hole), circle).best.filter((c) => circle.includes(c)).map(ring);
+      const fits = Array.from({ length: 12 }, (_, p) => used.every((i) => (i - p + 12) % 12 < 5)).some(Boolean);
+      expect(fits, hole).toBe(true);
+    }
+    // Ah (12) and Kd (5 o'clock) are never in one run, so A-K in hand is a pair, not two pair.
+    expect(bestHand('circle', h('Ac Kc'), circle).name).toBe('Pair');
+    // Tc (11) and Ah (12) sit next to each other past the top: with A-T in hand that's two pair.
+    expect(bestHand('circle', h('As Ts'), circle).name).toBe('Two pair');
+    // Before the river a hand uses what's out: the flop's four, then four runs of five.
+    expect(handSets('circle', h('As Ts'), circle.slice(0, 4))).toHaveLength(1);
+    expect(handSets('circle', h('As Ts'), circle.slice(0, 8))).toHaveLength(4);
+    expect(handSets('circle', h('As Ts'), circle)).toHaveLength(12);
   });
 
-  it('deals the cross as 5, 2, 2 and the circle as 2, 2, 2', () => {
+  it('deals the cross as 5, 2, 2 and the circle as 4, 4, 4', () => {
     for (const [v, sizes] of [
       ['crucifix', [0, 5, 7, 9]],
-      ['circle', [0, 2, 4, 6]],
+      ['circle', [0, 4, 8, 12]],
     ] as const) {
       const seen = new Set<number>();
       play(v, 25, (g) => {
@@ -412,7 +451,7 @@ describe("Hit Me", { timeout: TABLE_MS }, () => {
     expect(count21(h('Qh 9c 5d'))).toBe(24);
   });
 
-  it('lets the player to act hit on the flop only, and a bust folds them', () => {
+  it('lets the player to act hit on any street, and a bust folds them', () => {
     let g = table('bjholdem', 3, 50_000);
     const rng = seededRng(4);
     let clock = 0;
@@ -425,12 +464,12 @@ describe("Hit Me", { timeout: TABLE_MS }, () => {
       const mine = hand?.seats.find((s) => s.playerId === host.id);
       let r;
       if (hand && !hand.result && hand.toAct === host.id && mine && !(hand.moment?.gate && clock < hand.moment.until)) {
-        if (hand.street === 'preflop' && !hitPreflop) {
-          // Not on the flop: turned down.
-          expect(applyAction(g, { type: 'hit', hand: hand.number, seq: hand.seq }, { deviceId: HOST, now: clock, rng }).ok).toBe(false);
+        if (hand.street === 'preflop' && !hitPreflop && count21(mine.cards) <= 11) {
+          // Before the flop too.
+          expect(applyAction(g, { type: 'hit', hand: hand.number, seq: hand.seq }, { deviceId: HOST, now: clock, rng }).ok).toBe(true);
           hitPreflop = true;
         }
-        if (hand.street === 'flop' && count21(mine.cards) < 19) {
+        if (hand.street !== 'preflop' && count21(mine.cards) < 19) {
           const before = mine.cards.length;
           r = applyAction(g, { type: 'hit', hand: hand.number, seq: hand.seq }, { deviceId: HOST, now: clock, rng });
           if (!r.ok) throw new Error(r.error);
@@ -458,6 +497,52 @@ describe("Hit Me", { timeout: TABLE_MS }, () => {
     }
     expect(hits).toBeGreaterThan(3);
     expect(busts).toBeGreaterThan(0);
+    expect(hitPreflop).toBe(true);
+  });
+
+  it('all in, a player still chooses to hit or stand on every street', () => {
+    let g = table('bjholdem', 1, 1000);
+    const rng = seededRng(9);
+    let clock = 0;
+    let windows = 0;
+    let allInHits = 0;
+    let stands = 0;
+    const total = chipsInPlay(g);
+    for (let i = 0; i < 20000 && (g.hands ?? 0) < 60 && g.status === 'playing'; i++) {
+      const hand = g.hand;
+      const host = g.players.find((p) => p.deviceId === HOST)!;
+      const mine = hand?.seats.find((s) => s.playerId === host.id);
+      let r;
+      if (hand && !hand.result && hand.choosing && mine && !mine.folded && !hand.choosing.stood.includes(host.id) && count21(mine.cards) < 21) {
+        windows++;
+        // Nobody bets while the street waits for the hits.
+        expect(hand.toAct).toBeNull();
+        if (count21(mine.cards) < 15) {
+          r = applyAction(g, { type: 'hit', hand: hand.number, seq: 0 }, { deviceId: HOST, now: clock, rng });
+          allInHits++;
+        } else {
+          r = applyAction(g, { type: 'stand', hand: hand.number }, { deviceId: HOST, now: clock, rng });
+          stands++;
+        }
+      } else if (hand && !hand.result && hand.toAct === host.id && mine) {
+        // Always all in, so the rest of the hand is played in the hit windows.
+        r = applyAction(g, { type: 'act', hand: hand.number, seq: hand.seq, move: 'allin' }, { deviceId: HOST, now: clock, rng });
+      } else if (g.status === 'playing' && !hand?.result && g.players.some((p) => p.stack === 0) && !hand) {
+        r = applyAction(g, { type: 'tick' }, { deviceId: 'server', now: (clock = (g.wakeAt ?? clock) + 1), rng });
+      } else r = applyAction(g, { type: 'tick' }, { deviceId: 'server', now: (clock = (g.wakeAt ?? clock) + 1), rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+      expect(chipsInPlay(g)).toBe(total);
+      if (g.players.some((p) => p.stack === 0) && g.status === 'playing' && g.hand?.result) {
+        const broke = g.players.find((p) => p.deviceId === HOST && p.stack === 0);
+        if (broke) {
+          const rb = applyAction(g, { type: 'rebuy' }, { deviceId: HOST, now: clock, rng });
+          if (rb.ok) g = rb.game;
+        }
+      }
+    }
+    expect(windows).toBeGreaterThan(0);
+    expect(allInHits + stands).toBeGreaterThan(0);
   });
 
   it('splits each pot: half to the best poker hand, half to closest to 21 (best hand breaks a tie)', () => {
@@ -484,6 +569,116 @@ describe("Hit Me", { timeout: TABLE_MS }, () => {
     });
     expect(settled).toBeGreaterThan(0);
     expect(botHits).toBeGreaterThan(0);
+  });
+});
+
+describe('all-in choices and the rabbit hunt', { timeout: TABLE_MS }, () => {
+  it('Crazy Pineapple: all in before the turn, you still choose the card to throw away', () => {
+    let g = table('pineapple', 1, 1000);
+    const rng = seededRng(11);
+    let clock = 0;
+    let chose = 0;
+    for (let i = 0; i < 6000 && chose < 3 && g.status === 'playing'; i++) {
+      const hand = g.hand;
+      const host = g.players.find((p) => p.deviceId === HOST)!;
+      const mine = hand?.seats.find((s) => s.playerId === host.id);
+      let r;
+      if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
+        expect(hand.runout || mine.allIn || hand.seats.some((s) => s.allIn)).toBe(true);
+        const throwing = mine.cards[2];
+        r = applyAction(g, { type: 'discard', hand: hand.number, card: throwing }, { deviceId: HOST, now: clock, rng });
+        if (!r.ok) throw new Error(r.error);
+        expect(r.game.hand!.seats.find((s) => s.playerId === host.id)!.cards).not.toContain(throwing);
+        if (hand.runout) chose++;
+      } else if (hand && !hand.result && hand.toAct === host.id && mine) {
+        r = applyAction(g, { type: 'act', hand: hand.number, seq: hand.seq, move: 'allin' }, { deviceId: HOST, now: clock, rng });
+      } else if (g.hand?.result && g.players.some((p) => p.stack === 0)) {
+        r = applyAction(g, { type: 'rebuy' }, { deviceId: HOST, now: clock, rng });
+        if (!r.ok) r = applyAction(g, { type: 'tick' }, { deviceId: 'server', now: (clock = (g.wakeAt ?? clock) + 1), rng });
+      } else r = applyAction(g, { type: 'tick' }, { deviceId: 'server', now: (clock = (g.wakeAt ?? clock) + 1), rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+    }
+    expect(chose).toBeGreaterThan(0);
+  });
+
+  it('shows the board that would have come once everyone folds, only with the house rule', () => {
+    for (const v of ['holdem', 'circle', 'redriver', 'pittsburgh'] as Variant[]) {
+      for (const rabbit of [true, false]) {
+        let g = table(v, 2, 1000);
+        const set = applyAction(g, { type: 'settings', settings: { rabbit } }, { deviceId: HOST, now: 0, rng: seededRng(1) });
+        if (set.ok) g = set.game;
+        let clock = 0;
+        const rng = seededRng(2);
+        let seen = 0;
+        for (let i = 0; i < 4000 && seen < 4 && g.status === 'playing'; i++) {
+          const hand = g.hand;
+          const host = g.players.find((p) => p.deviceId === HOST)!;
+          const mine = hand?.seats.find((s) => s.playerId === host.id);
+          const r =
+            hand && !hand.result && hand.toAct === host.id && mine
+              ? applyAction(g, { type: 'act', hand: hand.number, seq: hand.seq, move: options(g, hand, mine).canCheck && hand.street !== 'preflop' ? 'check' : 'fold' }, { deviceId: HOST, now: clock, rng })
+              : applyAction(g, { type: 'tick' }, { deviceId: 'server', now: (clock = (g.wakeAt ?? clock) + 1), rng });
+          if (!r.ok) throw new Error(r.error);
+          const was = g.hand;
+          g = r.game;
+          const res = g.hand?.result;
+          if (res && !res.showdown && was && !was.result && g.hand!.street !== 'river') {
+            seen++;
+            const seenBy = redactForDevice(g, HOST).hand!;
+            if (!rabbit) expect(seenBy.rabbit).toBeUndefined();
+            else {
+              const board = g.hand!.board;
+              const full = seenBy.rabbit!;
+              expect(full.slice(0, board.length)).toEqual(v === 'redriver' && g.hand!.street === 'turn' ? full.slice(0, board.length) : board);
+              expect(full.length).toBeGreaterThanOrEqual(v === 'circle' ? 12 : v === 'pittsburgh' ? 7 : 5);
+              // Real cards from the deck: none in anyone's hand.
+              for (const c of full.slice(board.length)) for (const s of g.hand!.seats) expect(s.cards).not.toContain(c);
+            }
+          }
+        }
+        expect(seen, `${v} ${rabbit}`).toBeGreaterThan(0);
+      }
+    }
+  });
+});
+
+describe('Power Cards when all in', { timeout: TABLE_MS }, () => {
+  it('a player all in is offered their power on the streets that follow, and can keep it', () => {
+    let g = table('power', 1, 1000);
+    const rng = seededRng(21);
+    let clock = 0;
+    let offered = 0;
+    for (let i = 0; i < 8000 && offered < 3 && g.status === 'playing'; i++) {
+      const hand = g.hand;
+      const host = g.players.find((p) => p.deviceId === HOST)!;
+      const mine = hand?.seats.find((s) => s.playerId === host.id);
+      let r;
+      if (hand && !hand.result && hand.choosing && mine && pendingChoosers(g).includes(mine)) {
+        offered++;
+        expect(hand.toAct).toBeNull();
+        r = applyAction(g, { type: 'stand', hand: hand.number }, { deviceId: HOST, now: clock, rng });
+      } else if (hand && !hand.result && hand.toAct === host.id && mine && !(hand.moment?.gate && clock < hand.moment.until)) {
+        r = applyAction(g, { type: 'act', hand: hand.number, seq: hand.seq, move: 'allin' }, { deviceId: HOST, now: clock, rng });
+      } else if (hand?.result && g.players.some((p) => p.deviceId === HOST && p.stack === 0)) {
+        r = applyAction(g, { type: 'rebuy' }, { deviceId: HOST, now: clock, rng });
+        if (!r.ok) r = applyAction(g, { type: 'tick' }, { deviceId: 'server', now: (clock = (g.wakeAt ?? clock) + 1), rng });
+      } else r = applyAction(g, { type: 'tick' }, { deviceId: 'server', now: (clock = (g.wakeAt ?? clock) + 1), rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+    }
+    expect(offered).toBeGreaterThan(0);
+  });
+});
+
+describe('rules versions', () => {
+  it('keeps an older app out of games whose rules changed, and lets it play the rest', () => {
+    expect(knowsRules(1, ['holdem', 'deuces', 'ghost'])).toBe(true);
+    for (const v of ['redriver', 'circle', 'crucifix', 'bjholdem', 'power'] as Variant[]) {
+      expect(knowsRules(1, [v])).toBe(false);
+      expect(rulesFor(v)).toBeLessThanOrEqual(RULES_VERSION);
+    }
+    expect(knowsRules(RULES_VERSION, VARIANTS.map((v) => v.id))).toBe(true);
   });
 });
 

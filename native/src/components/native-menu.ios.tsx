@@ -74,7 +74,7 @@ function row(item: MenuItem) {
     case 'button': {
       // Drawn by hand, not as a Label: a Label sizes each symbol by its own shape, so the icons sat at different widths and
       // kept the tint while the text went red. One fixed icon column and one colour for the glyph and its words.
-      const colour = item.destructive ? DESTRUCTIVE : PRIMARY;
+      const colour = item.destructive ? foregroundStyle(DESTRUCTIVE) : PRIMARY;
       return (
         <Button
           onPress={
@@ -90,10 +90,10 @@ function row(item: MenuItem) {
           <HStack spacing={12} modifiers={[contentShape(shapes.rectangle())]}>
             {item.symbol && (
               <HStack modifiers={[frame({ width: 28, alignment: 'center' })]}>
-                <Image systemName={sf(item.symbol)} size={20} modifiers={[foregroundStyle(colour)]} />
+                <Image systemName={sf(item.symbol)} size={20} modifiers={[colour]} />
               </HStack>
             )}
-            <Text modifiers={[foregroundStyle(colour)]}>{item.busy ? `${item.title}…` : item.title}</Text>
+            <Text modifiers={[colour]}>{item.busy ? `${item.title}…` : item.title}</Text>
             <Spacer />
           </HStack>
         </Button>

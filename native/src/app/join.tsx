@@ -14,7 +14,7 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
-import { isTableCode, normalizeTableCode, variantInfo, type TableInfo } from '@/engine';
+import { isTableCode, isVariant, knowsRules, normalizeTableCode, RULES_VERSION, UPDATE_NEEDED, variantInfo, type TableInfo } from '@/engine';
 import { fetchTableInfo } from '@/state/api';
 import { joinParty, readParty } from '@/state/party';
 import { askForName } from '@/state/ask-name';
@@ -221,6 +221,8 @@ function TableCard({ info, onSit, onBack }: { info: TableInfo; onSit: () => void
   const bots = info.players.length - people;
   const full = info.seatsLeft <= 0;
   const over = info.status === 'ended';
+  // A game this app doesn't know, or whose rules changed since it was built: the server would turn it away.
+  const stale = !isVariant(info.settings.variant ?? 'holdem') || !knowsRules(RULES_VERSION, [info.settings.variant]);
   const host = info.players.find((p) => !p.bot && p.name === info.hostName) ?? info.players.find((p) => !p.bot);
   return (
     <View style={{ gap: spacing.md }}>
@@ -254,7 +256,8 @@ function TableCard({ info, onSit, onBack }: { info: TableInfo; onSit: () => void
           {bots ? `, ${bots} ${bots === 1 ? 'bot' : 'bots'}` : ''} · {info.status === 'lobby' ? 'waiting to start' : over ? 'finished' : 'playing now'}
         </ThemedText>
       </View>
-      <Button title={over ? 'This table has finished' : full ? 'The table is full' : 'Sit down'} variant="party" tint="green" size="lg" disabled={over || full} onPress={onSit} />
+      {stale && <ThemedText tone="secondaryLabel">{UPDATE_NEEDED}</ThemedText>}
+      <Button title={over ? 'This table has finished' : full ? 'The table is full' : stale ? 'Update FlipUp to join' : 'Sit down'} variant="party" tint="green" size="lg" disabled={over || full || stale} onPress={onSit} />
       <Button title="Use another code" variant="secondary" onPress={onBack} />
     </View>
   );

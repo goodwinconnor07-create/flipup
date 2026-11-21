@@ -46,7 +46,10 @@ export function effectPlayable(hand: Hand, seat: Seat, effect: PowerId): boolean
 
 /** What the player to act could play right now, or null: their power, and for Copycat the one it copies. */
 export function playablePower(_game: Game, hand: Hand, seat: Seat): { power: PowerId; effect: PowerId } | null {
-  if (hand.variant !== 'power' || hand.result || hand.runout || hand.toAct !== seat.playerId || seat.folded || seat.allIn) return null;
+  if (hand.variant !== 'power' || hand.result || seat.folded) return null;
+  // All in (or everyone is): when a street comes, the table waits while they choose (`hand.choosing`).
+  const choosing = !!hand.choosing && (seat.allIn || !!hand.runout) && !hand.choosing.stood.includes(seat.playerId);
+  if (!choosing && (hand.runout || hand.toAct !== seat.playerId || seat.allIn)) return null;
   const power = hand.powers?.[seat.playerId];
   if (!power || hasPlayed(hand, seat.playerId)) return null;
   const effect = power === 'copycat' ? copyTarget(hand, seat.playerId) : power;
@@ -94,6 +97,9 @@ export interface PowerPlan {
   card?: Card;
   rank?: number;
 }
+
+/** Whether this seat could still play its power at some point this hand (it has one, unplayed). */
+export const holdsPower = (hand: Hand, seat: Seat): boolean => hand.variant === 'power' && !!hand.powers?.[seat.playerId] && !hasPlayed(hand, seat.playerId);
 
 /**
  * Whether a bot plays its power now, and how. Simple rules of thumb, using only what the bot can see (its cards, the

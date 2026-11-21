@@ -7,7 +7,7 @@ import type { Card } from './cards';
 import type { Hand, Moment } from './types';
 import { rankLabel, suitOf } from './cards';
 import { describeHand } from './evaluate';
-import { CIRCLE_RING, CROSS_LINES, handSets, bestHand, type Variant } from './variants';
+import { CIRCLE_HOURS, circleRuns, CROSS_LINE_NAMES, CROSS_LINES, handSets, bestHand, redBoardAt, RED_DRAWS, type Variant } from './variants';
 
 /** Slower, so each twist can be seen. When only bots are left in the hand it all runs at this share of the time. */
 export const MOMENT_TIMING = {
@@ -17,8 +17,8 @@ export const MOMENT_TIMING = {
   settle: 800,
   /** Pittsburgh: gap between the three rivers. */
   riverStep: 1000,
-  /** Red River: gap before each extra card, long enough to say "another one". */
-  redStep: 1500,
+  /** Red River: gap between the cards of the river run (ten draws and the river), long enough to see each one. */
+  redStep: 900,
   /** A beat before the showdown, with the ghost or the 21 count hanging in the air. */
   suspenseGhost: 3200,
   suspenseBlackjack: 2400,
@@ -49,7 +49,7 @@ export function dealMoment(variant: Variant, now: number, from: number, count: n
   if (variant === 'pittsburgh' && from >= 4 && count === 3) {
     kind = 'rivers';
     offsets = [0, T.riverStep, T.riverStep * 2];
-  } else if (variant === 'redriver' && redExtra > 0) {
+  } else if (variant === 'redriver' && from >= 4 && redExtra > 0) {
     kind = 'redriver';
     offsets = Array.from({ length: count }, (_, i) => i * T.redStep);
   } else if (variant === 'dice' && from >= 4) {
@@ -71,6 +71,8 @@ export function dealMoment(variant: Variant, now: number, from: number, count: n
 export function visibleBoard(hand: Hand, now: number): (Card | null)[] {
   const m = hand.moment;
   if (!m || hand.result || now >= m.until) return hand.board;
+  // Red River: the run replays step by step (a red card added, a black one swapping out the newest card).
+  if (m.kind === 'redriver' && hand.redRun) return redBoardAt(hand.redRun.base, hand.redRun.steps, redStepsShown(hand, now));
   const from = m.from ?? hand.board.length;
   return hand.board.map((card, i) => {
     if (i >= from) {
@@ -81,14 +83,26 @@ export function visibleBoard(hand: Hand, now: number): (Card | null)[] {
   });
 }
 
+/** Red River: how many steps of the run have landed by now. */
+export function redStepsShown(hand: Hand, now: number): number {
+  const m = hand.moment;
+  if (!m || m.kind !== 'redriver' || !hand.redRun) return hand.redRun?.steps.length ?? 0;
+  return (m.offsets ?? []).filter((o) => now >= m.at + o).length;
+}
+
 /** A line for the felt while a moment plays. */
 export function momentCaption(variant: Variant, hand: Hand, now: number): string | null {
   const m = hand.moment;
   if (!m || hand.result || now >= m.until) return null;
   switch (m.kind) {
     case 'redriver': {
-      const shown = visibleBoard(hand, now).filter(Boolean).length;
-      return shown > 5 ? '🟥 Red again! Another card…' : '🟥 Is the river red?';
+      if (!hand.redRun) return '🟥 The river run';
+      const n = redStepsShown(hand, now);
+      const st = hand.redRun.steps[n - 1];
+      if (!st) return `🟥 The river run: ${RED_DRAWS} cards, then the river`;
+      const name = (c: Card) => `${rankLabel(c)}${({ s: '♠', h: '♥', d: '♦', c: '♣' } as const)[suitOf(c)]}`;
+      if (st.kind === 'river') return `🏁 The river: ${name(st.card)}`;
+      return st.kind === 'add' ? `🟥 ${name(st.card)} stays · ${n} of ${RED_DRAWS}` : `⬛ ${name(st.card)} swaps out ${name(st.out!)} · ${n} of ${RED_DRAWS}`;
     }
     case 'rivers':
       return '🌉 Three rivers. Your hand uses one';
@@ -117,7 +131,6 @@ export interface HandExplain {
   wilds?: { card: Card; as: string }[];
 }
 
-const HOURS = [12, 6, 8, 2, 10, 4];
 
 /** Which line, river or run a player's best hand uses, and what their wild cards became. */
 export function explainHand(v: Variant, hole: Card[], board: Card[]): HandExplain {
@@ -134,7 +147,7 @@ export function explainHand(v: Variant, hole: Card[], board: Card[]): HandExplai
         at = i;
       }
     });
-    return { board: CROSS_LINES[at].filter((i) => i < board.length), note: at === 0 ? 'the column' : 'the row' };
+    return { board: CROSS_LINES[at].filter((i) => i < board.length), note: CROSS_LINE_NAMES[at] };
   }
   if (v === 'pittsburgh' && board.length > 5) {
     const used = board.slice(4).findIndex((c) => best.best.includes(c));
@@ -142,19 +155,18 @@ export function explainHand(v: Variant, hole: Card[], board: Card[]): HandExplai
     return { board: [0, 1, 2, 3, 4 + river], note: `river ${river + 1}` };
   }
   if (v === 'circle') {
-    if (board.length < 6) return { board: [] };
-    let at = 0;
+    const runs = circleRuns(board.length);
+    if (!runs.length) return { board: [] };
+    let run = runs[0];
     let top = -1;
-    for (let p = 0; p < 6; p++) {
-      const run = [0, 1, 2].map((k) => CIRCLE_RING[(p + k) % 6]);
-      const sc = describeHand([...hole, ...run.map((i) => board[i])]).score;
+    for (const r of runs) {
+      const sc = describeHand([...hole, ...r.map((i) => board[i])]).score;
       if (sc > top) {
         top = sc;
-        at = p;
+        run = r;
       }
     }
-    const run = [0, 1, 2].map((k) => CIRCLE_RING[(at + k) % 6]);
-    return { board: run, note: `${run.map((i) => HOURS[i]).join('-')} o'clock` };
+    return { board: run, note: `${CIRCLE_HOURS[run[0]]} to ${CIRCLE_HOURS[run[run.length - 1]]} o'clock` };
   }
   if (v === 'deuces') {
     const wilds = (best.wilds ?? []).map((w) => ({ card: w.card, as: w.as }));

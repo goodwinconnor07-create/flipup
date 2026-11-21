@@ -12,7 +12,7 @@ import { radius, spacing, useColors, useShadows } from '@/theme';
 
 const SYMBOL = { s: '♠', h: '♥', d: '♦', c: '♣' } as const;
 
-/** A log line with its cards ([Ah]) written as a rank and a suit in the deck's four colours. */
+/** A log line with its cards ([Ah]) written as a rank and a suit in the deck's red and black. */
 function CardLine({ text, bold, tone }: { text: string; bold?: boolean; tone?: string }) {
   const colors = useColors();
   const parts = text.split(/\[([2-9TJQKA][shdc])\]/);

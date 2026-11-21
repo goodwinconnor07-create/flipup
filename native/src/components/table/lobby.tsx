@@ -1,6 +1,5 @@
-import { userMessage } from '@/state/user-error';
 import { router } from 'expo-router';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
 import { LobbyScroll } from '../lobby/lobby-scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +9,7 @@ import { joinLink } from '@/state/api';
 import { seatKey } from '@/state/blocks';
 import { labSpec } from '@/state/bot-lab';
 import { tableShareMessage } from '@/state/table-share';
-import { changeTableCode, dispatch, me as myDevice, type TableState } from '@/state/session';
+import { dispatch, me as myDevice, type TableState } from '@/state/session';
 import { ForceScheme, spacing } from '@/theme';
 
 import { LobbyBackdrop } from '../lobby/lobby-backdrop';
@@ -44,7 +43,6 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
   const s = game.settings;
   const variant = s.variant ?? 'holdem';
   const hostName = game.players.find((p) => p.deviceId === game.hostDeviceId)?.name ?? '';
-  const people = game.players.filter((p) => !p.bot);
 
   const remove = (id: string) => dispatch({ type: 'remove', playerId: id });
   const rows: PlayerLine[] = game.players.map((p) => {
@@ -70,25 +68,6 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
                 : choose(p.name, undefined, [...removeOption, { text: 'Cancel', style: 'cancel' }]),
     };
   });
-
-  const changeCode = async (code: string): Promise<string | null> => {
-    const go = async () => {
-      try {
-        await changeTableCode(code);
-        return null;
-      } catch (e) {
-        return userMessage(e, "Couldn't change the code. Try again.");
-      }
-    };
-    const others = people.length - 1;
-    if (!others) return go();
-    return new Promise((done) =>
-      Alert.alert('Change the code?', `${others === 1 ? "The friend who's" : `The ${others} friends who are`} already here will need the new code.`, [
-        { text: 'Cancel', style: 'cancel', onPress: () => done('') },
-        { text: 'Change', onPress: () => void go().then(done) },
-      ]),
-    );
-  };
 
   // A mini game you've never played shows its rules card on the table itself (bots-only: the deal waits for Continue;
   // online: everyone gets the timed card once it deals).
@@ -125,7 +104,6 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
           <CodeCard
             code={game.code}
             share={{ message: tableShareMessage({ host: hostName, game: variantInfo(variant).name, code: game.code }), url: joinLink(game.code) }}
-            onChange={host ? changeCode : undefined}
             hint={host && game.players.every((p) => p.bot || p.deviceId === game.hostDeviceId) ? 'Friends join from Join on the Play tab with this code.' : undefined}
           />
         )}

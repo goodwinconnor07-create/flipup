@@ -2,7 +2,7 @@ import { Children, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, Text, useColorScheme, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { count21, lastStanding, options, pot, TIMING, type Game, type Hand, type Player, type Seat } from '@/engine';
+import { count21, lastStanding, options, pendingChoosers, pot, TIMING, type Game, type Hand, type Player, type Seat } from '@/engine';
 import { detail, rise, sink } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { lastHand } from '@/state/replays';
@@ -105,7 +105,7 @@ const Row = ({ children }: { children: ReactNode }) => (
 );
 
 /** Everything under the felt: whose turn it is, your buttons, pre-actions, and what happens between hands. */
-export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRaise }: { game: Game; me?: Player; seat?: Seat; myTurn: boolean; sending: boolean; pre: PreAction; setPre: (p: PreAction) => void; onRaise: () => void }) {
+export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRaise, onPower }: { game: Game; me?: Player; seat?: Seat; myTurn: boolean; sending: boolean; pre: PreAction; setPre: (p: PreAction) => void; onRaise: () => void; /** Power Cards: opens your power. */ onPower?: () => void }) {
   const hand = game.hand;
   const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
   const now = useTableNow(game.fast, hand?.moment?.gate || waiting || hand?.twice?.until != null ? 200 : 60_000);
@@ -128,6 +128,32 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
     // Power Cards: a power on show has its own banner over the felt (power-banner.tsx). The buttons stay where they
     // are, greyed until it's been seen, so the bottom of the table never changes height.
     const onShow = !!hand.moment?.gate && now < hand.moment.until;
+    // Hit Me, Power Cards: a new street, and the players who can't bet on it (all in) choose first.
+    if (hand.choosing) {
+      const mine = !!seat && pendingChoosers(game).includes(seat);
+      if (mine && seat && hand.variant === 'bjholdem')
+        return (
+          <View style={{ gap: spacing.sm }}>
+            <Note strong>{`You're all in · on ${count21(seat.cards)}`}</Note>
+            <Row>
+              <TableButton label="Stand" tone="pre" disabled={sending || onShow} onPress={() => dispatch({ type: 'stand', hand: hand.number })} />
+              <TableButton label="Hit" sub="another card" tone="raise" disabled={sending || onShow} onPress={() => dispatch({ type: 'hit', hand: hand.number, seq: hand.seq })} />
+            </Row>
+          </View>
+        );
+      if (mine && seat)
+        return (
+          <View style={{ gap: spacing.sm }}>
+            <Note strong>{"You're all in · your power"}</Note>
+            <Row>
+              <TableButton label="Keep it" tone="pre" disabled={sending || onShow} onPress={() => dispatch({ type: 'stand', hand: hand.number })} />
+              <TableButton label="Play power" tone="raise" disabled={sending || onShow || !onPower} onPress={() => onPower?.()} />
+            </Row>
+          </View>
+        );
+      const waiting = pendingChoosers(game).length;
+      return <Note>{waiting ? `Waiting for ${waiting === 1 ? 'one player' : `${waiting} players`} who are all in…` : '…'}</Note>;
+    }
     if (myTurn && onShow && hand.moment?.kind === 'bust') {
       const who = game.players.find((p) => p.id === hand.moment!.who)?.name ?? 'Someone';
       return <Note strong>{`💥 ${who} busts with ${hand.moment.value}`}</Note>;

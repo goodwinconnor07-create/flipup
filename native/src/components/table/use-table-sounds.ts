@@ -4,7 +4,8 @@
 import { useEffect, useRef } from 'react';
 
 import { gameLook } from '@design/gameArt';
-import { toTableTime, variantOf, type Game, type Seat } from '@/engine';
+import { redStepsShown, toTableTime, variantOf, type Game, type Seat } from '@/engine';
+import { useMomentNow } from './use-moment';
 
 import { haptic } from '../haptics';
 import { playSound, setSoundMood, type SoundName } from './sounds';
@@ -99,7 +100,11 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
   const busted = hand?.moment?.kind === 'bust' ? `${hand.number}:${hand.moment.at}` : '';
   // Crazy Deuces: five of a kind is the best hand there is.
   const five = hand?.variant === 'deuces' && Object.values(hand.result?.names ?? {}).some((n) => n.startsWith('Five of a kind')) ? `${hand.number}` : '';
-  const reds = hand?.variant === 'redriver' && hand.board.length > 5 ? `${hand.number}:${hand.board.length}` : '';
+  // Red River: a splash for every red card that stays in the river run, as it lands.
+  const clock = useMomentNow(game);
+  const redShown = hand?.redRun ? redStepsShown(hand, clock) : 0;
+  const redLast = hand?.redRun?.steps[redShown - 1];
+  const reds = redLast?.kind === 'add' ? `${hand!.number}:${redShown}` : '';
   const seen = useRef<Record<string, string> | null>(null);
   useEffect(() => {
     const now = { dice, kept, reds, busted, five };

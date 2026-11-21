@@ -43,8 +43,8 @@ export const GAME_LOOK: Record<Variant, GameLook> = {
 
 export const gameLook = (v: Variant): GameLook => GAME_LOOK[v] ?? GAME_LOOK.holdem;
 
-/** The deck's four colours: spades black, hearts red, diamonds blue, clubs green. */
-export const SUIT_COLOUR: Record<string, string> = { '♠': '#16161d', '♥': '#e5322d', '♦': '#2563eb', '♣': '#16a34a' };
+/** The deck's two colours: hearts and diamonds red, spades and clubs black (owner's call). */
+export const SUIT_COLOUR: Record<string, string> = { '♠': '#16161d', '♥': '#e5322d', '♦': '#e5322d', '♣': '#16161d' };
 export const GLOW = '#ffc933';
 /** The outline every shape in a picture shares, and how thick it is on the 100-wide square. */
 export const INK = '#14141c';

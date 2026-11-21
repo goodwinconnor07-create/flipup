@@ -38,18 +38,21 @@ function run(variant: Variant, seed: number, until: (g: Game, clock: number) => 
 }
 
 describe('moments', () => {
-  it('Red River deals each extra card on its own beat', () => {
+  it('Red River replays its run a card at a time: red ones added, black ones swapped in', () => {
     let found = null as ReturnType<typeof run>;
     for (let seed = 1; seed < 30 && !found; seed++) found = run('redriver', seed, (g) => g.hand?.moment?.kind === 'redriver' && !g.hand.result);
     expect(found).not.toBeNull();
     const hand = found!.game.hand!;
     const m = hand.moment!;
-    expect(hand.board.length).toBeGreaterThan(5);
     const offsets = m.offsets!;
-    expect(offsets.length).toBe(hand.board.length - 4);
-    expect(offsets[1] - offsets[0]).toBeGreaterThanOrEqual(1000);
-    expect(visibleBoard(hand, m.at + 100).filter(Boolean).length).toBe(5);
-    expect(visibleBoard(hand, m.at + offsets[1] + 100).filter(Boolean).length).toBe(6);
+    // Ten draws and the river, each on its own beat.
+    expect(offsets).toHaveLength(hand.redRun!.steps.length);
+    expect(hand.redRun!.steps).toHaveLength(11);
+    expect(offsets[1] - offsets[0]).toBeGreaterThanOrEqual(800);
+    // Before the first card lands, the board is the four from the turn; once it's over, the whole board.
+    expect(visibleBoard(hand, m.at + offsets[0] - 1)).toEqual(hand.redRun!.base);
+    expect(visibleBoard(hand, m.at + offsets[0] + 1).length).toBe(hand.redRun!.steps[0].kind === 'add' ? 5 : 4);
+    expect(visibleBoard(hand, m.until)).toEqual(hand.board);
   });
 
   it('Pittsburgh deals its three rivers one at a time', () => {

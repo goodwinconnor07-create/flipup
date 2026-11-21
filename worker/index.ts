@@ -2,8 +2,6 @@ import {
   createTable,
   isTableCode,
   newTableCode,
-  normalizeTableCode,
-  tableCodeProblem,
   isDeviceId,
   isEmoji,
   isNameBlocked,
@@ -14,6 +12,9 @@ import {
   type CreateTableResponse,
   isVariant,
   validPartySettings,
+  knowsRules,
+  parseRules,
+  UPDATE_NEEDED,
   type PartySettings,
   type Settings,
   newId,
@@ -132,6 +133,8 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
   if (!isEmoji(body.emoji)) return json({ error: 'Pick an emoji.' }, 400);
   const settings = parseSettings(body.settings, false);
   if (!settings) return json({ error: "Those table settings don't work." }, 400);
+  // An app on older rules would draw this game wrong.
+  if (!knowsRules(parseRules(body.rules), [settings.variant])) return json({ error: UPDATE_NEEDED, update: true }, 426);
   if (gamesNeedPremium([settings.variant ?? 'holdem']) && !(await mayHostPremium(env, body.deviceId))) {
     return json({ error: 'Hosting this game needs FlipUp Premium.', premium: true }, 402);
   }
@@ -148,16 +151,10 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
     bots = botNames.length;
   }
 
-  // The host's own code (the lobby's Change): exactly that one, or an answer saying why not.
-  let own: string | undefined;
-  if (body.code !== undefined) {
-    own = typeof body.code === 'string' ? normalizeTableCode(body.code) : '';
-    const problem = tableCodeProblem(own) ?? (isNameBlocked(own) ? 'Pick a different code.' : null);
-    if (problem) return json({ error: problem }, 400);
-  }
-  // Random codes are a poker word and two numbers, so a clash is rare. Try a few before giving up.
-  for (let attempt = 0; attempt < (own ? 1 : 8); attempt++) {
-    const code = own ?? newTableCode();
+  // The server picks the code and the host can't change it (owner's call, November 2026). Random codes are a poker
+  // word and two numbers, so a clash is rare. Try a few before giving up.
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const code = newTableCode();
     const game = createTable({
       hostDeviceId: body.deviceId,
       name,
@@ -171,7 +168,6 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
     const created = await env.TABLE_ROOM.getByName(code).create(game);
     if (created) return json({ code } satisfies CreateTableResponse, 201);
   }
-  if (own) return json({ error: 'That code is taken. Try another.' }, 409);
   return json({ error: "Couldn't find a free code. Try again." }, 503);
 }
 
@@ -200,6 +196,7 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
     if ('error' in look) return json({ error: look.error }, 400);
     const settings = body.settings as PartySettings | undefined;
     if (!settings || !validPartySettings(settings, isVariant)) return json({ error: "Those party settings don't work." }, 400);
+    if (!knowsRules(parseRules(body.rules), settings.games)) return json({ error: UPDATE_NEEDED, update: true }, 426);
     if (gamesNeedPremium(settings.games) && !(await mayHostPremium(env, body.deviceId))) {
       return json({ error: 'Hosting these games needs FlipUp Premium.', premium: true }, 402);
     }
@@ -236,12 +233,13 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
   if (action === 'join') {
     const look = lookFields(body);
     if ('error' in look) return json({ error: look.error }, 400);
-    result = await room.join(code, body.deviceId, { ...look });
+    result = await room.join(code, body.deviceId, { ...look }, parseRules(body.rules));
   } else if (action === 'leave') result = await room.leave(code, body.deviceId);
   else if (action === 'settings') {
     // The host changes the playlist and rules while everyone is still in the lobby.
     const settings = body.settings as PartySettings | undefined;
     if (!settings || !validPartySettings(settings, isVariant)) return json({ error: "Those party settings don't work." }, 400);
+    if (!knowsRules(parseRules(body.rules), settings.games)) return json({ error: UPDATE_NEEDED, update: true }, 426);
     if (gamesNeedPremium(settings.games) && !(await mayHostPremium(env, body.deviceId))) {
       return json({ error: 'Hosting these games needs FlipUp Premium.', premium: true }, 402);
     }

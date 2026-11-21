@@ -9,13 +9,13 @@ export const GAME_BASICS: Record<Exclude<Variant, 'holdem'>, string[]> = {
   ghost: ['A ghost gets two hidden cards each hand.', 'To win at a showdown you also have to beat the ghost.', 'If it wins, the pot rolls over to the next hand.'],
   pittsburgh: ['Three rivers come instead of one.', 'Your hand uses the flop, the turn and one river.', 'The app picks the river that suits you best.'],
   dice: ["Normal Hold'em until the river.", 'Then a die rolls: 1 to 5 swaps that board card.', 'Roll a 6 and the board stays.'],
-  redriver: ["Normal Hold'em until the river.", 'A red river means another card, until a black one lands.', 'Every board card counts.'],
-  crucifix: ['The board is a cross of nine cards.', 'Use one line: the five across or the five down.', 'Plus your two cards. The app picks the line.'],
-  circle: ['Six board cards sit round a clock.', 'Use both your cards and three in a row.', 'The app picks the best three for you.'],
+  redriver: ["Normal Hold'em until the river.", 'Then ten cards: red ones stay, black ones swap out the newest.', 'Then the river. Every board card counts.'],
+  crucifix: ['The board is a cross of nine cards.', 'Use one line of five: across, down, or an L.', 'Plus your two cards. The app picks the line.'],
+  circle: ['Twelve board cards sit round a clock.', 'Use your two cards and five in a row.', 'The app picks the best run for you.'],
   memory: ['Before each hand, 20 cards are shown, then taken out.', "Nobody can have them and they can't come.", 'Remember what\'s gone to work out your odds.'],
   beanstalk: ['You start with two cards.', 'You get one more on the flop, the turn and the river.', 'Best five from your five and the board.'],
-  bjholdem: ['On the flop you can Hit for another card.', 'Over 21 and you bust: your hand folds.', 'Half the pot to the best hand, half to closest to 21.'],
-  power: ['Everyone gets a secret power each hand.', 'Tap your power card to play it on your turn.', "Once a hand. Unplayed, it's gone."],
+  bjholdem: ['On any street you can Hit for another card.', 'Over 21 and you bust: your hand folds.', 'Half the pot to the best hand, half to closest to 21.'],
+  power: ['Everyone gets a secret power each hand.', 'Tap your power card to play it on your turn, or when a card comes while you\'re all in.', "Once a hand. Unplayed, it's gone."],
 };
 
 /** The short rundown for a game, or nothing for Texas Hold'em. */

@@ -38,7 +38,7 @@ import { Icon } from '../icon';
 import { bubblePop } from './bubbles';
 import { PotChips } from './pot-chips';
 import { Count } from './count';
-import { CardSlot, PlayingCard } from './playing-card';
+import { CardSlot, CardTile, PlayingCard, TileSlot } from './playing-card';
 import { FELT_WEAVE, WOOD_GRAIN } from './textures';
 import { TurnTimer } from './turn-timer';
 import { useMomentNow } from './use-moment';
@@ -88,7 +88,9 @@ export function useHighlight(game: Game, me: Player | undefined) {
 
 /** The felt's height for a game on this phone. It depends only on the game and the screen, never on what's shown. */
 export function feltHeight(variant: string, screen: number): number {
-  if (variant === 'crucifix' || variant === 'circle' || variant === 'memory') return 330;
+  // The cross and the twelve-card clock get room to be read; a short phone scales the whole oval down to fit.
+  if (variant === 'crucifix' || variant === 'circle') return 360;
+  if (variant === 'memory') return 330;
   // Two boards, or a strip of fallen or burned cards under the board.
   if (variant === 'plo') return 290;
   if (variant === 'belt' || variant === 'chain') return 262;
@@ -142,6 +144,51 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
   const natural = Math.min(feltHeight(variant, height), Math.max(floor, heightLimit ?? Infinity));
   const fit = heightLimit && heightLimit > 0 && heightLimit < natural ? Math.max(0.6, heightLimit / natural) : 1;
 
+  // The clock puts the game, the pot and the hand in its middle, so its twelve cards get the whole felt.
+  const clock = variant === 'circle' && !game.memory;
+  const topRow = (
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, minHeight: 28, maxWidth: '100%', paddingHorizontal: clock ? 0 : spacing.md, flexWrap: clock ? 'wrap' : 'nowrap' }}>
+          {variant !== 'holdem' && (
+            <Pressable
+              style={{ flexShrink: 1 }}
+              // The pill is 24pt tall: the slop makes it a full-size target without moving anything.
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={`${info.name}: how it plays`}
+              onPress={() => router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } })}
+            >
+              <VariantPill
+                text={hand?.dice ? `🎲 Rolled ${hand.dice.roll}` : (powerPill(hand, width < 350) ?? `${info.emoji} ${info.name}`)}
+              />
+            </Pressable>
+          )}
+          {hand && !game.memory && <PotPill value={potNow} bigBlind={game.settings.bigBlind} />}
+        </View>
+  );
+  const bottomRow = (
+        <View style={{ minHeight: 32, justifyContent: 'center' }}>
+          {game.memory ? (
+            <MemoryCountdown game={game} />
+          ) : hand?.result ? (
+            <View style={{ alignItems: 'center', gap: 4 }}>
+              {!!hand.rabbit && <VariantPill text="🐇 What would have come" />}
+              <WinBanner key={hand.number} game={game} me={me} />
+              {variant === 'memory' && !!hand.removed?.length && (
+                <Pressable accessibilityRole="button" onPress={() => setRecapHand(recap ? null : recapKey)} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+                  <VariantPill text={recap ? '🧠 Back to the board' : '🧠 The 20 that were out'} />
+                </Pressable>
+              )}
+            </View>
+          ) : momentLine(game, now) ? (
+            <MomentLine game={game} now={now} reduce={reduce} meId={me?.id} />
+          ) : pillName ? (
+            <Animated.View key={pillName} entering={reduce ? FadeIn : bubblePop}>
+              <HandPill text={pillName} />
+            </Animated.View>
+          ) : null}
+        </View>
+  );
+
   const oval = (
     <View
       style={{
@@ -167,12 +214,12 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
           flex: 1,
           borderRadius: radius.full,
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent: clock ? 'center' : 'space-between',
           gap: spacing.xs,
           // Clear of the inner line (9pt in), so the pot and the hand pill sit with room round them.
-          paddingTop: spacing.lg,
-          paddingBottom: spacing.md,
-          paddingHorizontal: spacing.lg,
+          paddingTop: clock ? spacing.xs : spacing.lg,
+          paddingBottom: clock ? spacing.xs : spacing.md,
+          paddingHorizontal: clock ? spacing.xs : spacing.lg,
         }}
       >
         {/* The felt itself, on its own layer: what's on it isn't clipped to the oval, so when a board runs long (Red
@@ -233,49 +280,33 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
             </View>
           )}
         </View>
-        {/* The pot always shows whole: a long game pill (a power's name, a roll) gives way and is cut short instead. */}
-        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, minHeight: 28, maxWidth: '100%', paddingHorizontal: spacing.md }}>
-          {variant !== 'holdem' && (
-            <Pressable
-              style={{ flexShrink: 1 }}
-              // The pill is 24pt tall: the slop makes it a full-size target without moving anything.
-              hitSlop={10}
-              accessibilityRole="button"
-              accessibilityLabel={`${info.name}: how it plays`}
-              onPress={() => router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } })}
-            >
-              <VariantPill
-                text={hand?.dice ? `🎲 Rolled ${hand.dice.roll}` : (powerPill(hand, width < 350) ?? `${info.emoji} ${info.name}`)}
-              />
-            </Pressable>
-          )}
-          {hand && !game.memory && <PotPill value={potNow} bigBlind={game.settings.bigBlind} />}
-        </View>
-        {game.memory ? (
-          <MemoryPeek game={game} width={width} pack={pack} />
+        {clock ? (
+          <Board
+            game={game}
+            width={width}
+            space={natural - 22 - spacing.xs * 2}
+            dim={dim}
+            glow={glow}
+            pack={pack}
+            now={now}
+            center={
+              <View style={{ alignItems: 'center', gap: spacing.xs, maxWidth: '100%' }}>
+                {topRow}
+                {bottomRow}
+              </View>
+            }
+          />
         ) : (
-          <Board game={game} width={width} dim={dim} glow={glow} pack={pack} now={now} recap={recap} peek={peekCard(hand, me?.id)} />
+          <>
+            {topRow}
+            {game.memory ? (
+              <MemoryPeek game={game} width={width} pack={pack} />
+            ) : (
+              <Board game={game} width={width} space={natural - 22 - spacing.lg - spacing.md - 28 - 48 - spacing.xs * 3} dim={dim} glow={glow} pack={pack} now={now} recap={recap} peek={peekCard(hand, me?.id)} />
+            )}
+            {bottomRow}
+          </>
         )}
-        <View style={{ minHeight: 32, justifyContent: 'center' }}>
-          {game.memory ? (
-            <MemoryCountdown game={game} />
-          ) : hand?.result ? (
-            <View style={{ alignItems: 'center', gap: 4 }}>
-              <WinBanner key={hand.number} game={game} me={me} />
-              {variant === 'memory' && !!hand.removed?.length && (
-                <Pressable accessibilityRole="button" onPress={() => setRecapHand(recap ? null : recapKey)} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
-                  <VariantPill text={recap ? '🧠 Back to the board' : '🧠 The 20 that were out'} />
-                </Pressable>
-              )}
-            </View>
-          ) : momentLine(game, now) ? (
-            <MomentLine game={game} now={now} reduce={reduce} meId={me?.id} />
-          ) : pillName ? (
-            <Animated.View key={pillName} entering={reduce ? FadeIn : bubblePop}>
-              <HandPill text={pillName} />
-            </Animated.View>
-          ) : null}
-        </View>
       </View>
     </View>
   );
@@ -289,20 +320,26 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
 
 /**
  * The board: a row of five (smaller and wrapping when a game deals more, with a gap before Pittsburgh's three
- * rivers), the Crucifix's cross of nine, or the Circle's six cards round a clock face.
+ * rivers), Red River's run in one row, the Crucifix's cross of nine as tiles, or twelve cards round a clock face.
  */
 function Board({
   game,
   width,
+  space,
   dim,
   glow,
   pack,
   now,
   recap,
   peek,
+  center,
 }: {
   game: Game;
   width: number;
+  /** The height the board can take on the felt. */
+  space: number;
+  /** The clock's middle: the game, the pot and the hand. */
+  center?: ReactNode;
   dim: (c: Card) => boolean;
   glow: (c: Card) => boolean;
   pack?: string;
@@ -315,24 +352,29 @@ function Board({
   const variant = variantOf(game);
   // A Peek's card waits in the next slot, which an Extra Card can push past the usual five.
   const peekAt = peek && hand ? hand.board.length : -1;
-  const slots = Math.max(boardSize(variant), hand?.board.length ?? 0, peekAt + 1);
   // Cards land on the clock while a street's twist plays (see moments.ts): not-yet-dealt ones are empty slots.
-  const shown = hand ? visibleBoard(hand, now) : [];
+  // Rabbit hunt: once everyone has folded, the board that would have come, the cards never dealt drawn faded.
+  const real = hand?.board ?? [];
+  const shown: (Card | null)[] = hand?.result && hand.rabbit ? hand.rabbit : hand ? visibleBoard(hand, now) : [];
+  const unseen = (c: Card) => !!hand?.result && !!hand.rabbit && !real.includes(c);
+  const slots = Math.max(boardSize(variant), shown.length, peekAt + 1);
   if (recap && hand?.removed) return <MemoryPeek game={{ ...game, memory: { cards: hand.removed, until: 0 } }} width={width} pack={pack} />;
   const card = (i: number, w: number, style?: ViewStyle) => {
     const c = shown[i];
     return (
       <View key={c ? `${hand!.number}-${c}` : `slot-${i}`} style={style}>
         {c ? (
-          <PlayingCard
-            card={c}
-            width={w}
-            flip
-            dim={dim(c)}
-            glow={glow(c)}
-            pack={pack}
-            delay={!hand?.moment && i < streetCards(variant, 'flop') ? i * 160 : 0}
-          />
+          <View style={{ opacity: unseen(c) ? 0.5 : 1 }}>
+            <PlayingCard
+              card={c}
+              width={w}
+              flip
+              dim={unseen(c) || dim(c)}
+              glow={glow(c)}
+              pack={pack}
+              delay={unseen(c) ? (i - real.length) * 120 : !hand?.moment && i < streetCards(variant, 'flop') ? i * 160 : 0}
+            />
+          </View>
         ) : i === peekAt && peek ? (
           <PeekGhost card={peek} width={w} />
         ) : (
@@ -341,33 +383,61 @@ function Board({
       </View>
     );
   };
+  const room = width - spacing.md * 2 - 22 - spacing.lg * 2;
   if (variant === 'crucifix') {
-    // A five-by-five grid with the nine cards in a cross.
-    const w = 27;
-    const gap = 3;
-    const h = Math.round(w * 1.4);
+    // A five-by-five grid with the nine cards in a cross. Five cards tall won't fit the felt at a size you can read,
+    // so each is a wide tile with its rank and suit side by side in big type, as large as the felt allows.
+    const gap = 4;
+    const h = Math.max(24, Math.min(44, Math.floor((space - gap * 4) / 5)));
+    const w = Math.min(Math.round(h * 1.45), Math.floor((room - gap * 4) / 5));
     return (
       <View accessibilityLabel="Board, laid out in a cross" style={{ width: w * 5 + gap * 4, height: h * 5 + gap * 4 }}>
-        {Array.from({ length: slots }, (_, i) =>
-          card(i, w, { position: 'absolute', top: (CROSS_CELLS[i][0] - 1) * (h + gap), left: (CROSS_CELLS[i][1] - 1) * (w + gap) }),
-        )}
+        {Array.from({ length: slots }, (_, i) => {
+          const c = shown[i];
+          const at: ViewStyle = { position: 'absolute', top: (CROSS_CELLS[i][0] - 1) * (h + gap), left: (CROSS_CELLS[i][1] - 1) * (w + gap) };
+          return (
+            <View key={c ? `${hand!.number}-${c}` : `slot-${i}`} style={[at, { opacity: c && unseen(c) ? 0.5 : 1 }]}>
+              {c ? (
+                <CardTile card={c} w={w} h={h} dim={unseen(c) || dim(c)} glow={glow(c)} delay={unseen(c) ? (i - real.length) * 120 : !hand?.moment && i < streetCards(variant, 'flop') ? i * 120 : 0} />
+              ) : (
+                <TileSlot w={w} h={h} />
+              )}
+            </View>
+          );
+        })}
       </View>
     );
   }
   if (variant === 'circle') {
-    // Six cards round a clock, each at its hour.
-    const w = 34;
+    // Twelve cards round a clock, each at its hour, with the game, the pot and the hand in the middle. Cards are
+    // sized so neighbours never touch (between 2 and 3 o'clock they sit half a radius apart).
+    const boxW = width - spacing.md * 2 - 22 - spacing.xs * 2;
+    const boxH = space;
+    const w = Math.max(28, Math.min(44, Math.floor(boxW / 7.4), Math.floor(boxH / 7.2)));
     const h = Math.round(w * 1.4);
-    const rx = w * 1.9;
-    const ry = h + 4;
-    const boxW = w * 4.8;
-    const boxH = h * 3 + 16;
+    const rx = (boxW - w) / 2 - 6;
+    const ry = (boxH - h) / 2 - 2;
     return (
       <View accessibilityLabel="Board, laid out round a clock" style={{ width: boxW, height: boxH }}>
+        <View pointerEvents="box-none" style={{ position: 'absolute', top: h * 0.9, bottom: h * 0.9, left: w * 1.2, right: w * 1.2, alignItems: 'center', justifyContent: 'center' }}>
+          {center}
+        </View>
         {Array.from({ length: slots }, (_, i) => {
           const a = (CIRCLE_HOURS[i] / 12) * 2 * Math.PI;
           return card(i, w, { position: 'absolute', left: boxW / 2 + Math.sin(a) * rx - w / 2, top: boxH / 2 - Math.cos(a) * ry - h / 2 });
         })}
+      </View>
+    );
+  }
+  if (variant === 'redriver') {
+    // Red River: one row that keeps going card by card (no empty places for cards that may never come). Past what
+    // fits side by side the cards overlap, newest on top, each still showing its corner.
+    const n = Math.max(5, shown.length);
+    const w = Math.min(52, Math.floor((room - 4 * 6) / 5));
+    const step = Math.min(w + 6, Math.floor((room - w) / (n - 1)));
+    return (
+      <View accessibilityLabel={`Board: ${shown.filter((c): c is Card => !!c).map(short).join(' ')}`} style={{ flexDirection: 'row' }}>
+        {Array.from({ length: n }, (_, i) => card(i, w, i === 0 ? undefined : { marginLeft: step - w }))}
       </View>
     );
   }
@@ -402,8 +472,7 @@ function Board({
   const perRow = Math.min(slots, 7);
   const gap = wide ? 4 : 6;
   // Five cards across the felt, smaller on a narrow phone; boards with more cards use the smaller size and wrap.
-  const room = width - spacing.md * 2 - 22 - spacing.lg * 2 - (variant === 'pittsburgh' ? 8 : 0);
-  const w = Math.min(wide ? 44 : 56, Math.floor((room - (perRow - 1) * gap) / perRow));
+  const w = Math.min(wide ? 44 : 56, Math.floor((room - (variant === 'pittsburgh' ? 8 : 0) - (perRow - 1) * gap) / perRow));
   const row = (
     <View accessibilityLabel="Board" style={{ flexDirection: 'row', gap, rowGap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
       {Array.from({ length: slots }, (_, i) => card(i, w, variant === 'pittsburgh' && i === 4 ? { marginLeft: 8 } : undefined))}

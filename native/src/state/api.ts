@@ -1,6 +1,6 @@
 // HTTP calls to the FlipUp server (the Cloudflare Worker that also serves playflipup.com). The address is APP_INFO.apiOrigin;
 // EXPO_PUBLIC_API_ORIGIN points a development build at a local server instead.
-import type { CreateTableRequest, CreateTableResponse, PartySettings, PartyView, ReportRequest, TableInfo } from '@/engine';
+import { RULES_VERSION, type CreateTableRequest, type CreateTableResponse, type PartySettings, type PartyView, type ReportRequest, type TableInfo } from '@/engine';
 
 import { APP_INFO } from '../../appInfo';
 import { deviceId } from './device';
@@ -55,7 +55,7 @@ export class PremiumRequiredError extends UserError {}
 
 /** Opens a table on the server and returns its join code. */
 export async function createOnlineTable(body: CreateTableRequest): Promise<string> {
-  const res = await request('/api/tables', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const res = await request('/api/tables', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, rules: RULES_VERSION }) });
   if (res.status === 402) throw new PremiumRequiredError(await errorText(res, 'Hosting this game needs FlipUp Premium.'));
   if (!res.ok) throw new UserError(await errorText(res, "Couldn't open a table. Try again."));
   return ((await answerJson(res)) as CreateTableResponse).code;

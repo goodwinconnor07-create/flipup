@@ -11,12 +11,12 @@
 import type { BotThought } from './botPlay';
 import { score, toInt } from './botEval';
 import { playerStyle } from './botStyles';
-import { fullDeck, isRed, type Card } from './cards';
+import { fullDeck, type Card } from './cards';
 import { potTotal } from './holdem';
 import { recalledRemoved } from './botGames';
 import { options } from './selectors';
 import type { Game, Hand, Seat } from './types';
-import { boardSize, count21, handSets, holeCountAt, isWild, keepTwoQuick, startValue, variantOf, wildHand, type Variant, cardsToCome } from './variants';
+import { boardSize, count21, handSets, holeCountAt, isWild, keepTwoQuick, startValue, variantOf, wildHand, type Variant, cardsToCome, redRun } from './variants';
 
 /** Seats that play the way bots did before the game-mode upgrade (the lab compares the two). */
 export const lab = { legacy: new Set<string>() };
@@ -45,12 +45,18 @@ export function finishBoard(v: Variant, board: Card[], deck: Card[], rng: () => 
   // Power Cards: an Extra Card makes the board longer, so the cards still to come are counted by street instead.
   const target = toCome !== undefined ? board.length + toCome : boardSize(v);
   const hadRiver = out.length >= 5;
+  if (v === 'redriver') {
+    // The river run: ten draws, then the river (a board of five or more is already finished).
+    if (hadRiver) return out;
+    while (out.length < 4 && deck.length) out.push(deck.pop()!);
+    redRun(out, () => deck.pop());
+    return out;
+  }
   while (out.length < target && deck.length) out.push(deck.pop()!);
   if (!hadRiver && v === 'dice') {
     const roll = 1 + Math.floor(rng() * 6);
     if (roll <= 5 && deck.length) out[roll - 1] = deck.pop()!;
   }
-  if (v === 'redriver') while (isRed(out[out.length - 1]) && deck.length) out.push(deck.pop()!);
   return out;
 }
 
@@ -158,7 +164,8 @@ function blackjackEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, 
   const known = new Set([...seat.cards, ...hand.board]);
   const pool = fullDeck().filter((c) => !known.has(c));
   // The hitting is still to come before (and during) the flop betting; after it, everyone's cards are set.
-  const stillHitting = hand.street === 'preflop' || hand.street === 'flop';
+  // Hits can come on every street, so until the river anyone who hasn't hit may still.
+  const stillHitting = hand.street !== 'river';
   let won = 0;
   for (let n = 0; n < samples; n++) {
     const deck = pool.slice();

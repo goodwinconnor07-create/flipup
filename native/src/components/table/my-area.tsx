@@ -89,6 +89,13 @@ export function MyArea({
   // Bean Stalk: how many more cards your hand will get this hand (none once you've folded or the hand is over).
   const dealtIn = seat && !seat.folded && !hand?.result;
   const growing = variant === 'beanstalk' && (dealtIn || !seat?.cards.length) ? Math.max(0, room - (seat?.cards.length || count)) : 0;
+  // Bean Stalk: the room for five is kept, but the cards you have sit side by side while they fit (with two or three
+  // there's no reason to cover any), and the faint slots still to come tuck in behind them (the owner's call).
+  const span = many ? w + (room - 1) * (w + overlap) : 0;
+  const realN = seat?.cards.length || count;
+  const stalk = variant === 'beanstalk' && many;
+  const realStep = stalk && realN > 1 ? Math.min(w + 4, Math.floor((span - w - growing * 12) / (realN - 1))) : w + overlap;
+  const growStep = stalk && growing ? Math.max(8, Math.floor((span - (w + (realN - 1) * realStep)) / growing)) : w + overlap;
   // The box's room for the count (less its padding and border), and a size that fits the number in it: the digits of
   // SF Pro bold are about 0.62 of the font size wide. Worked out here rather than with adjustsFontSizeToFit: on iOS
   // that drew nothing at all in a box whose text has no set width (Bean Stalk on TestFlight, 13 Nov 2026).
@@ -115,7 +122,7 @@ export function MyArea({
       <View style={{ flexDirection: 'row', paddingBottom: fan ? 6 : 0, minWidth: many ? w + (room - 1) * (w + overlap) : undefined }}>
         {seat?.cards.length
           ? seat.cards.map((card, i) => (
-              <View key={`${hand!.number}-${card}`} style={{ marginLeft: i === 0 ? 0 : overlap, transform: fanned(i, seat.cards.length) }}>
+              <View key={`${hand!.number}-${card}`} style={{ marginLeft: i === 0 ? 0 : realStep - w, transform: fanned(i, seat.cards.length) }}>
                 <PlayingCard
                   card={card}
                   width={w}
@@ -128,14 +135,14 @@ export function MyArea({
               </View>
             ))
           : Array.from({ length: count }, (_, i) => (
-              <View key={i} style={{ marginLeft: i === 0 ? 0 : overlap, transform: fanned(i, count) }}>
+              <View key={i} style={{ marginLeft: i === 0 ? 0 : realStep - w, transform: fanned(i, count) }}>
                 <CardSlot width={w} fill={c.background} />
               </View>
             ))}
         {/* Bean Stalk: the cards your hand will grow into this hand, as faint dashed slots in the room kept for them. */}
         {growing > 0 &&
           Array.from({ length: growing }, (_, i) => (
-            <View key={`grow-${i}`} accessible={false} style={{ marginLeft: overlap }}>
+            <View key={`grow-${i}`} accessible={false} style={{ marginLeft: growStep - w, zIndex: -1 }}>
               <CardSlot width={w} fill={c.background} dashed />
             </View>
           ))}

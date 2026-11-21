@@ -1,5 +1,5 @@
 // How Range training's ways to train look on their tiles, drawn exactly like the games' tiles (gameArt.ts): a flat
-// field, one bold subject in the shared sticker style (white cards in the four-colour deck, the dark outline and the
+// field, one bold subject in the shared sticker style (white cards in the red and black deck, the dark outline and the
 // hard flat shadow), a softer spot behind it, and the name on a band in a darker shade of the field. The colours
 // stay in the app's blues, so the Train tab reads as a calmer cousin of Play.
 // Drawn by native/src/components/range/mode-tiles.tsx.

@@ -85,7 +85,7 @@ export function myPower(game: Game, meId: string | undefined): MyPower {
   const effect = power === 'copycat' ? copyTarget(hand, meId) : power;
   if (hand.result) return { state: 'over', power, effect, note: "You didn't play it this hand" };
   if (seat.folded) return { state: 'out', power, effect, note: 'You folded, so it goes unplayed' };
-  if (seat.allIn) return { state: 'out', power, effect, note: "You're all in, so it can't be played" };
+  if (seat.allIn && !hand.choosing) return { state: 'waiting', power, effect, note: "You're all in. When the next card comes you can still play it" };
   if (power === 'copycat' && (!effect || effect === 'copycat'))
     return { state: 'waiting', power, effect: null, note: 'Nothing to copy yet. It copies the last power someone else plays.' };
   const copied = power === 'copycat' ? `Copies ${powerInfo(effect!).name}. ` : '';
@@ -97,10 +97,12 @@ export function myPower(game: Game, meId: string | undefined): MyPower {
     if (info.needs === 'player') return { state: 'waiting', power, effect, note: `${copied}There's nobody to aim it at right now.` };
     return { state: 'waiting', power, effect, note: `${copied}It can't be played right now.` };
   }
-  const myTurn = hand.toAct === meId && !hand.runout;
+  // All in: when a street comes the table waits while you choose (play it or keep it).
+  const choosing = !!hand.choosing && (seat.allIn || !!hand.runout) && !hand.choosing.stood.includes(meId);
+  const myTurn = (hand.toAct === meId && !hand.runout) || choosing;
   if (!myTurn) return { state: 'waiting', power, effect, note: `${copied}Play it on your turn, before your move.` };
   if (!playablePower(game, withDeck, seat)) return { state: 'waiting', power, effect, note: `${copied}It can't be played right now.` };
-  return { state: 'ready', power, effect, note: `${copied}Play it now, then make your move.` };
+  return { state: 'ready', power, effect, note: choosing ? `${copied}You're all in: play it now, or keep it.` : `${copied}Play it now, then make your move.` };
 }
 
 /** True while a played power is on show: the table waits and nobody acts. */

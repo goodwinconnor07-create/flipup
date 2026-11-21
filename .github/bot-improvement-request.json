@@ -1,0 +1,8 @@
+{
+  "requestId": "multiplayer-v7-improvement-2",
+  "durationMinutes": 300,
+  "deadlineAt": "2026-11-09T20:14:22.473Z",
+  "initialRealismHands": 1000,
+  "purpose": "Evaluate multiplayer planning, hand continuity and realism on baseline-7, then continue offline calibration until the original five-hour cutoff.",
+  "automaticProductionWeightChanges": false
+}

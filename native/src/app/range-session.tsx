@@ -1,0 +1,295 @@
+// A Range training set, full screen over the tabs: five hands, one at a time, then how the set went. The top bar has
+// Back and the set's progress (a dot a hand, coloured by its grade once answered); the trainer's answer bar and result
+// card pin to the bottom of the screen, as they did on the tab. Opened from the Train tab (params: `daily=1` for the
+// daily hand, free for everyone, which shows your answer once it's done; `endless=1`, hand after hand with no end and
+// your run of best plays in the header; or `focus`, a JSON list of kinds of spot or 'id:<hand>' entries to practise;
+// everything but the daily hand is Premium).
+// Always dark, on Range training's light field: it stands still while you read a hand, warms or cools for a moment
+// with each answer, and drifts again on the finish page.
+import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode, type RefObject } from 'react';
+import { ScrollView, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Button } from '@/components/button';
+import { RangeTrainer } from '@/components/range-trainer';
+import { SetSummary, useGradeInk, type SetAnswer } from '@/components/range/set-summary';
+import { TrainBackground, type TrainMood } from '@/components/range/train-background';
+import { shareDaily } from '@/components/range/train-home';
+import { BackText } from '@/components/setup/setup-header';
+import { FooterContext } from '@/components/tab-screen';
+import { PressableScale } from '@/components/pressable-scale';
+import { ThemedText, TightText } from '@/components/themed-text';
+import { EASE_OUT } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { usePremium } from '@/state/premium';
+import { noteDailyAnswer, readDaily } from '@/state/range-daily';
+import { SET_SIZE } from '@/state/range-result';
+import { unlockToTrain } from '@/state/unlock';
+import { ForceScheme, spacing, useColors } from '@/theme';
+import type { Grade } from '@train/ranges/model';
+
+/** How long the room stays warm or cool after an answer. */
+const MOOD_MS = 2600;
+
+function RangeSessionScreenInner() {
+  const premium = usePremium();
+  const { daily, endless } = useLocalSearchParams<{ daily?: string; endless?: string }>();
+  // Without Premium only the daily hand opens here, however the screen was reached.
+  if (!premium && daily !== '1') return <Redirect href={{ pathname: '/premium', params: { reason: 'training' } }} />;
+  return (
+    <ForceScheme scheme="dark">
+      {endless === '1' && daily !== '1' ? <EndlessSession /> : <RangeSession premium={premium} daily={daily === '1'} />}
+    </ForceScheme>
+  );
+}
+
+/**
+ * Endless mode: hand after hand until you go back, no set and no summary. The header counts the hands and your run of
+ * best plays in a row (and the best run this sitting), so there's still something to chase.
+ */
+function EndlessSession() {
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const insets = useSafeAreaInsets();
+  const [played, setPlayed] = useState(0);
+  const [{ run, bestRun }, setRuns] = useState({ run: 0, bestRun: 0 });
+  const [mood, setMood] = useState<TrainMood>('idle');
+  useEffect(() => {
+    if (mood === 'idle') return;
+    const t = setTimeout(() => setMood('idle'), MOOD_MS);
+    return () => clearTimeout(t);
+  }, [mood]);
+  const top = () => scroll.current?.scrollTo({ y: 0, animated: false });
+  return (
+    <TrainBackground mood={mood} still>
+      <Stack.Screen options={{ headerShown: false, title: 'Endless' }} />
+      <View style={{ paddingTop: insets.top, paddingHorizontal: spacing.md }}>
+        <View style={{ height: 52, flexDirection: 'row', alignItems: 'center' }}>
+          <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 2 }}>
+            <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600', fontVariant: ['tabular-nums'] }} accessibilityRole="header">
+              Endless · {played} {played === 1 ? 'hand' : 'hands'}
+            </ThemedText>
+            <ThemedText variant="caption1" tone="tertiaryLabel" style={{ fontVariant: ['tabular-nums'] }}>
+              {run > 0 ? `${run} best in a row` : 'No run yet'}
+              {bestRun > 1 ? ` · best ${bestRun}` : ''}
+            </ThemedText>
+          </View>
+          <BackText />
+        </View>
+      </View>
+      <PinnedPage scrollRef={scroll}>
+        <RangeTrainer
+          onStopFocus={() => router.back()}
+          onNext={top}
+          onTop={top}
+          onScrollTo={(y) => scroll.current?.scrollTo({ y, animated: true })}
+          onAnswer={(_scenario, _pick, grade) => {
+            setMood(grade);
+            setPlayed((n) => n + 1);
+            setRuns((r) => {
+              const next = grade === 'best' ? r.run + 1 : 0;
+              return { run: next, bestRun: Math.max(r.bestRun, next) };
+            });
+          }}
+        />
+      </PinnedPage>
+    </TrainBackground>
+  );
+}
+
+function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const ink = useGradeInk();
+  const params = useLocalSearchParams<{ focus?: string }>();
+  const focus = useMemo(() => {
+    if (daily) return undefined;
+    try {
+      const f = params.focus ? (JSON.parse(params.focus) as unknown) : null;
+      return Array.isArray(f) && f.every((x) => typeof x === 'string') && f.length ? (f as string[]) : undefined;
+    } catch {
+      return undefined;
+    }
+  }, [params.focus, daily]);
+  // The daily quiz: today's hands, and the answers you'd already given (as they were, so the dots and summary match).
+  const [quiz] = useState(() => (daily ? readDaily() : null));
+  const prior = useMemo<SetAnswer[]>(
+    () => (quiz ? quiz.answers.flatMap((a) => quiz.hands.filter((h) => h.id === a.id).map((scenario) => ({ scenario, pick: a.pick, grade: a.grade }))) : []),
+    [quiz],
+  );
+  const queue = quiz ? quiz.hands.slice(prior.length) : undefined;
+  const size = quiz ? quiz.hands.length : SET_SIZE;
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const [round, setRound] = useState(0);
+  const [answers, setAnswers] = useState<SetAnswer[]>(prior);
+  const [done, setDone] = useState(() => !!quiz?.finished);
+  // The hand on screen (1-based): it moves on with Next hand, not with the answer, so the header never runs ahead.
+  const [dealt, setDealt] = useState(prior.length + 1);
+  const [mood, setMood] = useState<TrainMood>(quiz?.finished ? 'done' : 'idle');
+  useEffect(() => {
+    if (done || mood === 'idle') return;
+    const t = setTimeout(() => setMood('idle'), MOOD_MS);
+    return () => clearTimeout(t);
+  }, [mood, done]);
+  const top = () => scroll.current?.scrollTo({ y: 0, animated: false });
+  const again = () => {
+    if (!unlockToTrain(false, premium)) return;
+    if (daily) {
+      router.replace('/range-session');
+      return;
+    }
+    setAnswers([]);
+    setDealt(1);
+    setDone(false);
+    setRound(round + 1);
+    top();
+  };
+  const at = Math.min(dealt, size);
+  const full = answers.length >= size;
+  const best = answers.filter((a) => a.grade === 'best').length;
+  const shareQuiz = () => shareDaily({ ...readDaily(), answers: answers.map((a) => ({ id: a.scenario.id, pick: a.pick, grade: a.grade })) });
+
+  const finish = daily ? (
+    <View style={{ gap: spacing.xs }}>
+      <Button title={premium ? 'Play a set' : 'Come back tomorrow'} variant="primary" onPress={premium ? again : () => router.back()} />
+      {!premium && (
+        <PressableScale accessibilityRole="button" onPress={() => router.push({ pathname: '/premium', params: { reason: 'training' } })} hitSlop={8} outerStyle={{ alignSelf: 'center' }} style={{ paddingVertical: 6 }}>
+          <ThemedText variant="subhead" style={{ color: colors.accent as string, fontWeight: '600' }}>
+            Play more with Premium
+          </ThemedText>
+        </PressableScale>
+      )}
+    </View>
+  ) : (
+    <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+      <View style={{ flex: 1 }}>
+        <Button title="Done" variant="secondary" onPress={() => router.back()} />
+      </View>
+      <View style={{ flex: 1.4 }}>
+        <Button title="Another 5" variant="primary" onPress={again} />
+      </View>
+    </View>
+  );
+
+  return (
+    <TrainBackground mood={done ? 'done' : mood} still={!done}>
+      <Stack.Screen options={{ headerShown: false, title: daily ? 'Daily hand' : 'Range training' }} />
+      {/* Back on the left, the set's progress in the middle. */}
+      <View style={{ paddingTop: insets.top, paddingHorizontal: spacing.md }}>
+        <View style={{ height: 52, flexDirection: 'row', alignItems: 'center' }}>
+          <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 6 }}>
+            <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600', fontVariant: ['tabular-nums'] }} accessibilityRole="header">
+              {daily && size === 1
+                ? 'Daily hand'
+                : done
+                  ? daily
+                    ? `Daily quiz · ${best} of ${size} best plays`
+                    : 'Set done'
+                  : `${daily ? 'Daily quiz · ' : ''}Hand ${at} of ${size}`}
+            </ThemedText>
+            <View accessible accessibilityLabel={`${answers.length} of ${size} hands played`} style={{ flexDirection: 'row', gap: 6 }}>
+              {Array.from({ length: size }, (_, i) => {
+                const a = answers[i];
+                const current = !done && i === at - 1;
+                return <ProgressDot key={i} grade={a?.grade} ink={a ? ink[a.grade] : (colors.cellPressed as string)} current={current} ring={colors.accent as string} />;
+              })}
+            </View>
+          </View>
+          <BackText />
+        </View>
+      </View>
+
+      <PinnedPage scrollRef={scroll} fixed={done ? finish : undefined}>
+        {done ? (
+          <SetSummary answers={answers} still={!!quiz?.finished} onShare={daily ? shareQuiz : undefined} />
+        ) : (
+          <RangeTrainer
+            key={round}
+            focus={focus}
+            queue={queue}
+            onStopFocus={() => router.back()}
+            finishTitle={daily && size === 1 ? 'Done' : undefined}
+            onNext={() => {
+              setDealt((d) => d + 1);
+              top();
+            }}
+            onTop={top}
+            onScrollTo={(y) => scroll.current?.scrollTo({ y, animated: true })}
+            onAnswer={(scenario, pick, grade) => {
+              if (daily) noteDailyAnswer({ id: scenario.id, pick, grade });
+              setMood(grade);
+              setAnswers((xs) => [...xs, { scenario, pick, grade }]);
+            }}
+            onFinish={
+              full
+                ? () => {
+                    setDone(true);
+                    top();
+                  }
+                : undefined
+            }
+          />
+        )}
+      </PinnedPage>
+    </TrainBackground>
+  );
+}
+
+/**
+ * One hand in the header's progress: grey to come, ringed while it's on screen, its grade's colour once answered.
+ * A best play pulses as it fills (rule 8: out to 108% and back, ease-out, never a bounce; still under Reduce Motion).
+ */
+function ProgressDot({ grade, ink, current, ring }: { grade?: Grade; ink: string; current: boolean; ring: string }) {
+  const reduce = useReduceMotion();
+  const scale = useSharedValue(1);
+  const was = useRef(grade);
+  useEffect(() => {
+    if (grade === 'best' && was.current !== 'best' && !reduce) {
+      scale.set(withSequence(withTiming(1.08, { duration: 100, easing: EASE_OUT }), withTiming(1, { duration: 160, easing: EASE_OUT })));
+    }
+    was.current = grade;
+  }, [grade, reduce, scale]);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+  return <Animated.View style={[{ width: 22, height: 6, borderRadius: 3, backgroundColor: ink, borderWidth: current ? 1.5 : 0, borderColor: ring }, style]} />;
+}
+
+/**
+ * The page under the top bar, with a bar pinned to the bottom of the screen: the trainer's own (through
+ * `useTabFooter`), or `fixed` when given. The footer's state lives here, not in the screen, so a new footer only
+ * redraws this frame and never the trainer that set it (that would loop).
+ */
+function PinnedPage({ children, fixed, scrollRef }: { children: ReactNode; fixed?: ReactNode; scrollRef: RefObject<ComponentRef<typeof ScrollView> | null> }) {
+  const insets = useSafeAreaInsets();
+  const [footer, setFooter] = useState<ReactNode>(null);
+  const [footerH, setFooterH] = useState(0);
+  return (
+    <FooterContext.Provider value={setFooter}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xxxl + footerH, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center' }}
+      >
+        {children}
+      </ScrollView>
+      <View
+        pointerEvents="box-none"
+        onLayout={(e) => setFooterH(e.nativeEvent.layout.height)}
+        // The set's own buttons sit on the page colour, so the list never shows through them; the trainer's bar is glass.
+        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: Math.max(insets.bottom, spacing.sm), backgroundColor: fixed ? '#040816' : undefined }}
+      >
+        <View pointerEvents="box-none" style={{ width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
+          {fixed ?? footer}
+        </View>
+      </View>
+    </FooterContext.Provider>
+  );
+}
+
+// Fixed layout: text keeps its lower Dynamic Type caps here (TightText).
+export default function RangeSessionScreen() {
+  return (
+    <TightText>
+      <RangeSessionScreenInner />
+    </TightText>
+  );
+}

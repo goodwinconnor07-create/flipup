@@ -2,11 +2,10 @@
 //   native/assets/expo.icon/          the layered iOS 26 icon (Icon Composer format: a gradient fill and one glass
 //                                     layer, with a dark look); iOS builds the older flat icons from it
 //   native/assets/images/icon.png     the same icon flattened, 1024 × 1024, no transparency (web build, older tools)
-//   native/assets/images/splash-icon.png        the rounded icon on a clear background, for the launch screen
-//   native/assets/images/splash-icon-dark.png   the same in the dark look, for the launch screen in dark mode
 //   native/assets/images/favicon.png  the web build's tab icon
-// The mark is one white spade with an up chevron cut through it ("flip up"), on the brand violet
-// (native/src/theme/brand.ts). The spade is drawn here, not an SF Symbol: Apple doesn't allow those in app icons.
+// The mark is one white spade with an up chevron cut through it ("flip up"), on the brand's deep blue
+// (native/src/theme/brand.ts; it was violet until November 2026). The launch cover (components/launch-cover.tsx)
+// prints the same mark, so the paths there must match SPADE and CHEVRON here. The spade is drawn here, not an SF Symbol: Apple doesn't allow those in app icons.
 // Run after changing the art:  node scripts/makeAppIcon.mjs   (PREVIEW=dir also saves a sheet of every size and look)
 // (Needs Playwright's Chromium; in the cloud sandbox set CHROMIUM_PATH=/opt/pw-browsers/chromium if it can't find it.)
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -17,13 +16,13 @@ const S = 1024;
 
 // The brand's colours (native/src/theme/brand.ts and its cardColors).
 const C = {
-  violetTop: '#8f72f5',
-  violetBottom: '#3a2796',
-  nightTop: '#33247f',
-  nightBottom: '#0c0826',
+  violetTop: '#4a7bf0',
+  violetBottom: '#152f86',
+  nightTop: '#16285c',
+  nightBottom: '#070e26',
   spadeTop: '#ffffff',
-  spadeBottom: '#e9e3ff',
-  shadow: '#1a0f5c',
+  spadeBottom: '#e3ecff',
+  shadow: '#0b1a5c',
 };
 
 /** A spade about 116 wide and 125 tall, centred on 0,0: a slim curve off the tip, full lobes and a flared foot. */
@@ -68,7 +67,7 @@ const DEFS = `
     <stop offset="0" stop-color="#fff" stop-opacity="0.22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
   </radialGradient>
   <radialGradient id="lightDark" cx="0.5" cy="0.08" r="0.75">
-    <stop offset="0" stop-color="#a58cff" stop-opacity="0.22"/><stop offset="1" stop-color="#a58cff" stop-opacity="0"/>
+    <stop offset="0" stop-color="#8fb0ff" stop-opacity="0.22"/><stop offset="1" stop-color="#8fb0ff" stop-opacity="0"/>
   </radialGradient>
   <linearGradient id="spade" x1="0" y1="0" x2="0" y2="1">
     <stop offset="0" stop-color="${C.spadeTop}"/><stop offset="1" stop-color="${C.spadeBottom}"/>
@@ -140,11 +139,7 @@ writeFileSync(new URL('icon.json', iconDir), JSON.stringify(ICON_JSON, null, 2) 
 
 // The flat icons. The App Store icon must have no transparency, so icon.png is drawn on an opaque square.
 writeFileSync(new URL('images/icon.png', ROOT), await png(svg(flat()), S));
-writeFileSync(new URL('images/splash-icon.png', ROOT), await png(svg(flat({ rounded: true }), 600), 600, { transparent: true }));
-writeFileSync(
-  new URL('images/splash-icon-dark.png', ROOT),
-  await png(svg(flat({ rounded: true, dark: true }), 600), 600, { transparent: true }),
-);
+// (No splash pictures: the native splash is plain night blue and the launch cover draws the mark itself.)
 writeFileSync(new URL('images/favicon.png', ROOT), await png(svg(flat({ rounded: true }), 96), 96, { transparent: true }));
 
 // A sheet of every look and size, to check by eye.
@@ -165,4 +160,5 @@ if (process.env.PREVIEW) {
 }
 
 await browser.close();
-console.log('App icon and splash written to native/assets');
+console.log('App icon written to native/assets');
+console.log(`Mark for the launch cover: ${SPADE} ${CHEVRON}`);

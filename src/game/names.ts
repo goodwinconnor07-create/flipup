@@ -57,8 +57,12 @@ const WHOLE_WORD = [
 
 const LEET: Record<string, string> = { '0': 'o', '1': 'i', '!': 'i', '3': 'e', '4': 'a', '@': 'a', '5': 's', $: 's', '7': 't', '8': 'b' };
 
+/** Zero-width, soft-hyphen and direction-control characters: they can split a word without showing ("a\u200Bss"). */
+const INVISIBLE = /[\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180B-\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\u3164\uFE00-\uFE0F\uFEFF\uFFA0]/g;
+
 function letters(s: string): string {
   return s
+    .replace(INVISIBLE, '')
     .toLowerCase()
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')

@@ -1,11 +1,26 @@
 // Fun versions of Hold'em the host can pick for a table. The betting is the same no-limit Hold'em everywhere
 // (pot limit at a Ghost table); what changes is how many cards you get, what's wild and how a hand is scored.
 
-import { rankName, rankOf, suitOf, SUITS, type Card } from './cards';
+import { score, toInt } from './botEval';
+import { fullDeck, rankLabel, rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
+import { POWERS } from './powerList';
 
-export type Variant = 'holdem' | 'pineapple' | 'deuces' | 'ghost' | 'pittsburgh' | 'dice' | 'redriver' | 'imposter' | 'crucifix' | 'circle' | 'memory' | 'beanstalk' | 'bjholdem';
+export type Variant =
+  | 'holdem'
+  | 'pineapple'
+  | 'deuces'
+  | 'ghost'
+  | 'pittsburgh'
+  | 'dice'
+  | 'redriver'
+  | 'crucifix'
+  | 'circle'
+  | 'memory'
+  | 'beanstalk'
+  | 'bjholdem'
+  | 'power';
 
 export interface VariantInfo {
   id: Variant;
@@ -33,7 +48,7 @@ export const VARIANTS: VariantInfo[] = [
     rules: [
       'You get three cards instead of two.',
       'After the betting on the flop, everyone still in throws one card away.',
-      'From the turn on it\'s normal Hold\'em with the two you kept.',
+      "From the turn on it's normal Hold'em with the two you kept.",
       'All in before then? The app keeps your best two for you.',
     ],
   },
@@ -50,12 +65,12 @@ export const VARIANTS: VariantInfo[] = [
   },
   {
     id: 'ghost',
-    name: "Ghost Hold'em",
+    name: 'Haunted Pot',
     emoji: '👻',
     tagline: 'Beat your friends, then beat the ghost, or the pot stays.',
     rules: [
       'A ghost is dealt two cards too. Nobody sees them until the showdown.',
-      'At a showdown, whoever wins a pot also has to beat the ghost. A tie isn\'t enough.',
+      "At a showdown, whoever wins a pot also has to beat the ghost. A tie isn't enough.",
       'If the ghost wins, that pot stays in the middle and goes to the winner of the next hand.',
       'If everyone folds to you, you win the pot (and anything the ghost was holding) without facing the ghost.',
       'Bets are pot limit: you can raise at most the size of the pot. Deep stacks work best.',
@@ -78,7 +93,7 @@ export const VARIANTS: VariantInfo[] = [
     emoji: '🎲',
     tagline: 'When the river comes, a die swaps out one board card.',
     rules: [
-      'Normal Hold\'em until the river.',
+      "Normal Hold'em until the river.",
       'As soon as the river is dealt, a die is rolled. Roll a 1 to 5 and that card on the board (counting from the left) is replaced by a new card from the deck.',
       'Roll a 6 and the board stays as it is.',
       'Then the river betting starts with the new board.',
@@ -90,24 +105,10 @@ export const VARIANTS: VariantInfo[] = [
     emoji: '🟥',
     tagline: 'A red river keeps the cards coming until a black one lands.',
     rules: [
-      'Normal Hold\'em until the river.',
+      "Normal Hold'em until the river.",
       'If the river is red (a heart or a diamond), another card is dealt, and another, until a black card (a spade or a club) comes.',
       'Every card on the board counts: make your best five from your two and all of them.',
-      'Then there\'s one round of river betting.',
-    ],
-  },
-  {
-    id: 'imposter',
-    name: 'Imposter',
-    emoji: '🕵️',
-    tagline: 'Everyone has the same hand but one. Find the imposter.',
-    rules: [
-      'Everyone gets the same two cards, except the imposter, who gets a different hand. You\'re told whether you\'re the imposter or innocent.',
-      'How strong your cards are doesn\'t matter, and nobody can fold: everyone plays every hand to the end. Bet, raise and call to read the table (or, as the imposter, to blend in).',
-      'Everyone antes a big blind each hand, so there\'s money in the middle from the start.',
-      'After the river everyone votes for who they think the imposter is.',
-      'If the most votes go to the imposter, the innocent players still in split the pot. If not (a tie counts as not), the imposter takes it all.',
-      'Needs three or more players: with two, the hand is plain Hold\'em.',
+      "Then there's one round of river betting.",
     ],
   },
   {
@@ -119,17 +120,17 @@ export const VARIANTS: VariantInfo[] = [
       'The board is dealt as a cross of nine cards: one in the middle and two on each arm.',
       'The flop is the middle card and one card on each arm. The turn adds one to the top arm and one to the right arm, and the river finishes the cross.',
       'Your hand is your two cards with one line: either the five across or the five down (the middle card is in both). Make your best five from those seven.',
-      'You can\'t mix cards from the two lines. The app picks the line that gives you the best hand.',
+      "You can't mix cards from the two lines. The app picks the line that gives you the best hand.",
     ],
   },
   {
     id: 'circle',
-    name: "Circle Hold'em",
+    name: 'Round the Clock',
     emoji: '⭕',
     tagline: 'Six cards round a clock. Use three in a row with both of yours.',
     rules: [
       'The board is six cards in a circle, like the hours on a clock.',
-      'The flop is two cards, at 12 and 6 o\'clock. The turn adds 8 and 2 o\'clock, and the river adds 10 and 4 o\'clock to close the circle.',
+      "The flop is two cards, at 12 and 6 o'clock. The turn adds 8 and 2 o'clock, and the river adds 10 and 4 o'clock to close the circle.",
       'Your hand is both of your cards plus three board cards that sit next to each other round the circle (12, 2 and 4, or 10, 12 and 2, and so on).',
       'You must use both of your cards. The app picks the best three in a row for you.',
     ],
@@ -141,9 +142,9 @@ export const VARIANTS: VariantInfo[] = [
     tagline: '20 cards come out of the deck. Remember which.',
     rules: [
       'Before every hand, 20 random cards are taken out of the deck and shown to everyone for a few seconds.',
-      'Then they\'re hidden and the hand is dealt from the 32 cards left. Nobody can have them and they can\'t come on the board.',
-      'Remember what\'s gone to work out your odds: if three aces are out, nobody has a set of aces.',
-      'Everything else is normal Texas Hold\'em.',
+      "Then they're hidden and the hand is dealt from the 32 cards left. Nobody can have them and they can't come on the board.",
+      "Remember what's gone to work out your odds: if three aces are out, nobody has a set of aces.",
+      "Everything else is normal Texas Hold'em.",
     ],
   },
   {
@@ -152,23 +153,37 @@ export const VARIANTS: VariantInfo[] = [
     emoji: '🌱',
     tagline: 'Your hand grows: a new card for you on every street.',
     rules: [
-      'You start with two cards, like normal Hold\'em.',
+      "You start with two cards, like normal Hold'em.",
       'When the flop comes, everyone still in gets another card of their own. The same again on the turn and on the river.',
       'By the river you have five cards of your own and five on the board. Make your best five from all ten.',
     ],
   },
   {
     id: 'bjholdem',
-    name: "Blackjack Hold'em",
+    name: 'Hit Me',
     emoji: '♠️',
     tagline: 'Hit on the flop. Half the pot to the best hand, half to closest to 21.',
     rules: [
-      'Normal Hold\'em: two cards each, then the flop, the turn and the river.',
+      "Normal Hold'em: two cards each, then the flop, the turn and the river.",
       'On the flop, on your turn, you can Hit as many times as you like to take another card, face down, before you check, bet or call.',
       'Your 21 count is your own cards: your two plus your hits (not the board). Aces are 1 or 11, picture cards 10.',
       'Go over 21 and you bust: your hand is folded straight away.',
       'Hit cards count in your poker hand too: make your best five from your cards, your hits and the board.',
       'At the showdown half the pot goes to the best poker hand and half to whoever is closest to 21. If players tie on 21, that half goes to the best poker hand among them.',
+    ],
+  },
+  {
+    id: 'power',
+    name: 'Power Cards',
+    emoji: '⚡',
+    tagline: 'A secret power for everyone, every hand. Play it at the right moment.',
+    rules: [
+      "Normal Texas Hold'em, plus powers.",
+      'At the start of every hand everyone is dealt one power at random. Nobody else knows what yours is.',
+      "Play it on your turn, before your move (then check, bet, call or fold as usual). Once per hand, and if you don't play it, it's gone when the hand ends.",
+      'When a power is played the whole table sees which one, who played it and who it was aimed at. What a Peek or an X-ray shows stays with the player who played it.',
+      'Some powers only work on certain streets, and none can be played during an all-in run-out.',
+      ...POWERS.map((p) => `${p.emoji} ${p.name}: ${p.rule}`),
     ],
   },
 ];
@@ -178,10 +193,10 @@ export const variantOf = (game: Game): Variant => game.hand?.variant ?? game.set
 export const variantInfo = (v: Variant | undefined): VariantInfo => VARIANTS.find((x) => x.id === v) ?? VARIANTS[0];
 
 /**
- * In the iPhone app the first five games in VARIANTS are free; the rest need Premium to host, and
+ * In the iPhone app only the first game in VARIANTS, normal Texas Hold'em, is free; the rest need Premium to host, and
  * only the host of a table needs the unlock (docs/APP_STORE.md). The web doesn't lock any game yet.
  */
-export const FREE_VARIANTS = 5;
+export const FREE_VARIANTS = 1;
 export const isPremiumVariant = (v: Variant): boolean => VARIANTS.findIndex((x) => x.id === v) >= FREE_VARIANTS;
 export const isVariant = (v: unknown): v is Variant => VARIANTS.some((x) => x.id === v);
 
@@ -192,7 +207,7 @@ export function holeCountAt(v: Variant, boardLength: number): number {
   if (v !== 'beanstalk') return holeCount(v);
   return 2 + (boardLength >= 5 ? 3 : boardLength === 4 ? 2 : boardLength === 3 ? 1 : 0);
 }
-/** Blackjack Hold'em: your own cards counted like blackjack (aces 1 or 11, picture cards 10). */
+/** Hit Me: your own cards counted like blackjack (aces 1 or 11, picture cards 10). */
 export function count21(cards: Card[]): number {
   let total = 0;
   let aces = 0;
@@ -214,16 +229,12 @@ export function streetCards(v: Variant, street: 'flop' | 'turn' | 'river'): numb
   if (v === 'circle') return 2;
   return street === 'flop' ? 3 : street === 'river' && v === 'pittsburgh' ? 3 : 1;
 }
+/** Power Cards: board cards still to come, by street (an Extra Card makes the board longer than five). */
+export const cardsToCome = (street: 'preflop' | 'flop' | 'turn' | 'river'): number => (street === 'preflop' ? 5 : street === 'flop' ? 2 : street === 'turn' ? 1 : 0);
 /** Board cards once the river is out (Red River can add more). */
 export const boardSize = (v: Variant) => streetCards(v, 'flop') + streetCards(v, 'turn') + streetCards(v, 'river');
 /** Bets are capped at the size of the pot. */
 export const potLimit = (v: Variant) => v === 'ghost';
-/** Win odds can be worked out for the all-in run-out (only plain Hold'em: the others score hands differently). */
-export const showsOdds = (v: Variant) => v === 'holdem';
-/** Everyone puts in this many big blinds before the blinds (dead money in the middle). */
-export const anteBigBlinds = (v: Variant) => (v === 'imposter' ? 1 : 0);
-/** Imposter needs three players to be a guessing game. */
-export const IMPOSTER_MIN = 3;
 
 // ── Wild deuces ─────────────────────────────────────────────────────────────
 
@@ -247,6 +258,7 @@ export function wildHand(cards: Card[]): HandValue {
         name: 'Five of a kind',
         detail: `Five of a kind, ${plural}`,
         best: [...same, ...wilds].slice(0, 5),
+        wilds: [...same, ...wilds].slice(0, 5).filter(isWild).map((card) => ({ card, as: rankLabel(same[0]) })),
       };
     }
   }
@@ -257,6 +269,7 @@ export function wildHand(cards: Card[]): HandValue {
   const suits = flushSuits.length ? flushSuits : [natural.length ? suitOf(natural[0]) : SUITS[0]];
   let bestScore = -1;
   let bestSet: Card[] = cards;
+  let bestRanks: number[] = [];
   const ranks = new Array(wilds.length).fill(0);
   for (const s of suits) {
     ranks.fill(0);
@@ -266,6 +279,7 @@ export function wildHand(cards: Card[]): HandValue {
       if (score > bestScore) {
         bestScore = score;
         bestSet = concrete;
+        bestRanks = [...ranks];
       }
       let i = 0;
       while (i < ranks.length && ranks[i] === 12) i++;
@@ -274,15 +288,29 @@ export function wildHand(cards: Card[]): HandValue {
       for (let j = 0; j < i; j++) ranks[j] = ranks[i];
     }
   }
+  // With no flush in play a wild card's suit doesn't matter, so give each one a suit that isn't already in the set
+  // (two of the same card would make the best five lose one).
+  if (!flushSuits.length) {
+    const taken = new Set(natural);
+    bestSet = natural.concat(
+      bestRanks.map((r) => {
+        const pick = SUITS.find((su) => !taken.has(RANK_CHARS[r] + su)) ?? SUITS[0];
+        taken.add(RANK_CHARS[r] + pick);
+        return RANK_CHARS[r] + pick;
+      }),
+    );
+  }
   const value = describeHand(bestSet);
   // Point the best five back at the real cards: a wild card stands in for whatever it became.
   const pool = bestSet.map((c, i) => ({ c, real: i < natural.length ? natural[i] : wilds[i - natural.length], used: false }));
+  const became: { card: Card; as: string }[] = [];
   const best = value.best.map((c) => {
     const hit = pool.find((p) => !p.used && p.c === c)!;
     hit.used = true;
+    if (isWild(hit.real)) became.push({ card: hit.real, as: rankLabel(c) });
     return hit.real;
   });
-  return { ...value, best };
+  return { ...value, best, ...(became.length ? { wilds: became } : {}) };
 }
 
 // ── Crucifix and Circle boards ──────────────────────────────────────────────
@@ -351,14 +379,14 @@ export function bestHand(v: Variant, hole: Card[], board: Card[]): HandValue {
 // ── Crazy Pineapple ─────────────────────────────────────────────────────────
 
 /** A rough preflop value for two cards: pairs first, then high, suited and connected cards. */
-function startValue(a: Card, b: Card): number {
+export function startValue(a: Card, b: Card): number {
   const [hi, lo] = rankOf(a) >= rankOf(b) ? [rankOf(a), rankOf(b)] : [rankOf(b), rankOf(a)];
   if (hi === lo) return 100 + hi * 2;
   return hi * 2 + lo + (suitOf(a) === suitOf(b) ? 3 : 0) + (hi - lo <= 2 ? 2 : 0);
 }
 
-/** The two of three cards worth keeping: the best hand with the board, or the best start before the flop. */
-export function keepTwo(hole: Card[], board: Card[]): Card[] {
+/** The quick keep, for run-outs that do it thousands of times: the best made hand now, then the best start. */
+export function keepTwoQuick(hole: Card[], board: Card[]): Card[] {
   if (hole.length <= 2) return hole;
   const pairs: Card[][] = [
     [hole[0], hole[1]],
@@ -369,6 +397,40 @@ export function keepTwo(hole: Card[], board: Card[]): Card[] {
   return pairs.reduce((a, b) => (value(b) > value(a) ? b : a));
 }
 
+/**
+ * The two of three cards worth keeping. Before the flop, the best start. On the flop, the pair that ends up best on
+ * average over every turn and river still to come (by hand category, then what it holds now), so a flush or straight
+ * draw can beat a weak pair: about three thousand quick evaluations.
+ */
+export function keepTwo(hole: Card[], board: Card[]): Card[] {
+  if (hole.length <= 2) return hole;
+  const pairs: Card[][] = [
+    [hole[0], hole[1]],
+    [hole[0], hole[2]],
+    [hole[1], hole[2]],
+  ];
+  if (board.length < 3) return pairs.reduce((a, b) => (startValue(b[0], b[1]) > startValue(a[0], a[1]) ? b : a));
+  const flop = board.slice(0, 3);
+  const seen = new Set([...hole, ...flop]);
+  const rest = fullDeck()
+    .filter((c) => !seen.has(c))
+    .map(toInt);
+  const value = (p: Card[]) => {
+    const base = [...p, ...flop].map(toInt);
+    let sum = 0;
+    let n = 0;
+    for (let i = 0; i < rest.length; i++)
+      for (let j = i + 1; j < rest.length; j++) {
+        sum += Math.floor(score([...base, rest[i], rest[j]]) / 1048576);
+        n++;
+      }
+    // Now: the made hand's category and kickers, then the preflop value, so ties fall to the stronger cards.
+    return sum / n + describeHand([...p, ...flop]).score * 1e-9 + startValue(p[0], p[1]) * 1e-12;
+  };
+  const scored = pairs.map((p) => ({ p, v: value(p) }));
+  return scored.reduce((a, b) => (b.v > a.v ? b : a)).p;
+}
+
 // ── What a bot sees ─────────────────────────────────────────────────────────
 
 /**
@@ -377,6 +439,8 @@ export function keepTwo(hole: Card[], board: Card[]): Card[] {
  * (or its own) cards, so it never learns anything a player in its seat couldn't.
  */
 export function botView(game: Game, hand: Hand, seat: Seat): { game: Game; hand: Hand; seat: Seat } {
+  // The everyday bots' observer memory is private even from the game-mode bot brains.
+  if (game.botTable) game = { ...game, botTable: undefined };
   const v = variantOf(game);
   let cards = v === 'pineapple' && seat.cards.length > 2 ? keepTwo(seat.cards, hand.board.slice(0, 3)) : seat.cards;
   if (cards.length > 2) {
@@ -397,24 +461,3 @@ export function botView(game: Game, hand: Hand, seat: Seat): { game: Game; hand:
   return { game: { ...game, hand: view }, hand: view, seat: mine };
 }
 
-// ── Imposter votes ──────────────────────────────────────────────────────────
-
-/** How pushy each player has been this hand: bets, raises and all-ins count, calls a little. */
-function pushiness(hand: Hand): Map<string, number> {
-  const score = new Map(hand.seats.map((s) => [s.playerId, 0]));
-  for (const a of hand.actions ?? []) score.set(a.playerId, (score.get(a.playerId) ?? 0) + (a.move === 'bet' || a.move === 'raise' || a.move === 'allin' ? 2 : a.move === 'call' ? 1 : 0));
-  return score;
-}
-
-/**
- * A bot's vote. Innocent, it suspects whoever played most differently from itself (it holds the same cards as every
- * other innocent). As the imposter it points at whoever stood out most, to throw the others off.
- */
-export function botVote(hand: Hand, botId: string): string | null {
-  const others = hand.seats.map((s) => s.playerId).filter((id) => id !== botId);
-  if (!others.length) return null;
-  const push = pushiness(hand);
-  const mine = push.get(botId) ?? 0;
-  const odd = (id: string) => (botId === hand.imposter ? (push.get(id) ?? 0) : Math.abs((push.get(id) ?? 0) - mine));
-  return others.reduce((a, b) => (odd(b) > odd(a) ? b : a));
-}

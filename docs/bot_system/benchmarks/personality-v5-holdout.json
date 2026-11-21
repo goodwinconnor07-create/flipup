@@ -1,0 +1,2020 @@
+{
+  "protocol": "personality-behavior-1",
+  "model": "baseline-5",
+  "partition": "holdout",
+  "handsPerSession": 200,
+  "seeds": [
+    262111,
+    273127,
+    284131
+  ],
+  "totalHands": 6720,
+  "summaries": [
+    {
+      "personality": "patient",
+      "rates": {
+        "vpip": 0.1,
+        "pfr": 0.09111111111111111,
+        "threeBet": 0.07142857142857142,
+        "aggression": 0.37883435582822084,
+        "foldFacingBet": 0.8455978975032852,
+        "drawCall": 0.35714285714285715,
+        "riverCall": 0.17391304347826086,
+        "weakBet": 0.04819277108433735,
+        "meanBetPot": 0.5900571532420317
+      },
+      "counts": {
+        "hands": 1800,
+        "vpipHands": 180,
+        "pfrHands": 164,
+        "threeBetOpportunities": 336,
+        "threeBets": 24,
+        "postflopDecisions": 652,
+        "postflopAggressions": 247,
+        "foldOpportunities": 1522,
+        "folds": 1287,
+        "drawCallOpportunities": 14,
+        "drawCalls": 5,
+        "riverCallOpportunities": 23,
+        "riverCalls": 4,
+        "weakBetOpportunities": 249,
+        "weakBets": 12,
+        "betSizeSum": 145.74411685078184,
+        "betSizes": 247
+      },
+      "returnsByScenario": [
+        {
+          "scenario": "competent",
+          "sessions": 3,
+          "hands": 600,
+          "meanBbPer100": 12.35
+        },
+        {
+          "scenario": "loose-aggressive",
+          "sessions": 3,
+          "hands": 600,
+          "meanBbPer100": 24.683333333333337
+        },
+        {
+          "scenario": "mixed-six",
+          "sessions": 3,
+          "hands": 600,
+          "meanBbPer100": 197.6
+        }
+      ]
+    },
+    {
+      "personality": "curious",
+      "rates": {
+        "vpip": 0.5516666666666666,
+        "pfr": 0.16166666666666665,
+        "threeBet": 0.1835564053537285,
+        "aggression": 0.21673891297099032,
+        "foldFacingBet": 0.2500987751876729,
+        "drawCall": 0.8163265306122449,
+        "riverCall": 0.602510460251046,
+        "weakBet": 0.0695780903034789,
+        "meanBetPot": 0.7736317486078386
+      },
+      "counts": {
+        "hands": 1800,
+        "vpipHands": 993,
+        "pfrHands": 291,
+        "threeBetOpportunities": 523,
+        "threeBets": 96,
+        "postflopDecisions": 2999,
+        "postflopAggressions": 650,
+        "foldOpportunities": 2531,
+        "folds": 633,
+        "drawCallOpportunities": 49,
+        "drawCalls": 40,
+        "riverCallOpportunities": 239,
+        "riverCalls": 144,
+        "weakBetOpportunities": 1351,
+        "weakBets": 94,
+        "betSizeSum": 502.86063659509506,
+        "betSizes": 650
+      },
+      "returnsByScenario": [
+        {
+          "scenario": "competent",
+          "sessions": 3,
+          "hands": 600,
+          "meanBbPer100": -25.716666666666654
+        },
+        {
+          "scenario": "loose-aggressive",
+          "sessions": 3,
+          "hands": 600,
+          "meanBbPer100": 190.91666666666663
+        },
+        {
+          "scenario": "mixed-six",
+          "sessions": 3,
+          "hands": 600,
+          "meanBbPer100": 688.0166666666665
+        }
+      ]
+    },
+    {
+      "personality": "aggressive",
+      "rates": {
+        "vpip": 0.3794444444444444,
+        "pfr": 0.36666666666666664,
+        "threeBet": 0.3128654970760234,
+        "aggression": 0.6951871657754011,
+        "foldFacingBet": 0.5722315907813378,
+        "drawCall": 0.25,
+        "riverCall": 0.3181818181818182,
+        "weakBet": 0.5012285012285013,
+        "meanBetPot": 0.5236408027277873
+      },
+      "counts": {
+        "hands": 1800,
+        "vpipHands": 683,
+        "pfrHands": 660,
+        "threeBetOpportunities": 342,
+        "threeBets": 107,
+        "postflopDecisions": 935,
+        "postflopAggressions": 650,
+        "foldOpportunities": 1779,
+        "folds": 1018,
+        "drawCallOpportunities": 16,
+        "drawCalls": 4,
+        "riverCallOpportunities": 22,
+        "riverCalls": 7,
+        "weakBetOpportunities": 407,
+        "weakBets": 204,
+        "betSizeSum": 340.3665217730618,
+        "betSizes": 650
+      },
+      "returnsByScenario": [
+        {
+          "scenario": "competent",
+          "sessions": 3,
+          "hands": 600,
+          "meanBbPer100": 14.933333333333332
+        },
+        {
+          "scenario": "loose-aggressive",
+          "sessions": 3,
+          "hands": 600,
+          "meanBbPer100": -13.483333333333334
+        },
+        {
+          "scenario": "mixed-six",
+          "sessions": 3,
+          "hands": 600,
+          "meanBbPer100": 586.2166666666667
+        }
+      ]
+    }
+  ],
+  "gates": {
+    "curiousPlaysMore": true,
+    "aggressiveRaisesMoreThanCaller": true,
+    "aggressiveBetsMorePostflop": true,
+    "patientFoldsMore": true,
+    "aggressiveUsesMoreWeakBets": true
+  },
+  "allBehaviorGatesPassed": true,
+  "blindRecognitionAccuracy": 1,
+  "recognition": [
+    {
+      "seed": 262111,
+      "scenario": "competent",
+      "actual": "patient",
+      "predicted": "patient"
+    },
+    {
+      "seed": 262111,
+      "scenario": "competent",
+      "actual": "curious",
+      "predicted": "curious"
+    },
+    {
+      "seed": 262111,
+      "scenario": "competent",
+      "actual": "aggressive",
+      "predicted": "aggressive"
+    },
+    {
+      "seed": 262111,
+      "scenario": "loose-aggressive",
+      "actual": "patient",
+      "predicted": "patient"
+    },
+    {
+      "seed": 262111,
+      "scenario": "loose-aggressive",
+      "actual": "curious",
+      "predicted": "curious"
+    },
+    {
+      "seed": 262111,
+      "scenario": "loose-aggressive",
+      "actual": "aggressive",
+      "predicted": "aggressive"
+    },
+    {
+      "seed": 262111,
+      "scenario": "mixed-six",
+      "actual": "patient",
+      "predicted": "patient"
+    },
+    {
+      "seed": 262111,
+      "scenario": "mixed-six",
+      "actual": "curious",
+      "predicted": "curious"
+    },
+    {
+      "seed": 262111,
+      "scenario": "mixed-six",
+      "actual": "aggressive",
+      "predicted": "aggressive"
+    },
+    {
+      "seed": 273127,
+      "scenario": "competent",
+      "actual": "patient",
+      "predicted": "patient"
+    },
+    {
+      "seed": 273127,
+      "scenario": "competent",
+      "actual": "curious",
+      "predicted": "curious"
+    },
+    {
+      "seed": 273127,
+      "scenario": "competent",
+      "actual": "aggressive",
+      "predicted": "aggressive"
+    },
+    {
+      "seed": 273127,
+      "scenario": "loose-aggressive",
+      "actual": "patient",
+      "predicted": "patient"
+    },
+    {
+      "seed": 273127,
+      "scenario": "loose-aggressive",
+      "actual": "curious",
+      "predicted": "curious"
+    },
+    {
+      "seed": 273127,
+      "scenario": "loose-aggressive",
+      "actual": "aggressive",
+      "predicted": "aggressive"
+    },
+    {
+      "seed": 273127,
+      "scenario": "mixed-six",
+      "actual": "patient",
+      "predicted": "patient"
+    },
+    {
+      "seed": 273127,
+      "scenario": "mixed-six",
+      "actual": "curious",
+      "predicted": "curious"
+    },
+    {
+      "seed": 273127,
+      "scenario": "mixed-six",
+      "actual": "aggressive",
+      "predicted": "aggressive"
+    },
+    {
+      "seed": 284131,
+      "scenario": "competent",
+      "actual": "patient",
+      "predicted": "patient"
+    },
+    {
+      "seed": 284131,
+      "scenario": "competent",
+      "actual": "curious",
+      "predicted": "curious"
+    },
+    {
+      "seed": 284131,
+      "scenario": "competent",
+      "actual": "aggressive",
+      "predicted": "aggressive"
+    },
+    {
+      "seed": 284131,
+      "scenario": "loose-aggressive",
+      "actual": "patient",
+      "predicted": "patient"
+    },
+    {
+      "seed": 284131,
+      "scenario": "loose-aggressive",
+      "actual": "curious",
+      "predicted": "curious"
+    },
+    {
+      "seed": 284131,
+      "scenario": "loose-aggressive",
+      "actual": "aggressive",
+      "predicted": "aggressive"
+    },
+    {
+      "seed": 284131,
+      "scenario": "mixed-six",
+      "actual": "patient",
+      "predicted": "patient"
+    },
+    {
+      "seed": 284131,
+      "scenario": "mixed-six",
+      "actual": "curious",
+      "predicted": "curious"
+    },
+    {
+      "seed": 284131,
+      "scenario": "mixed-six",
+      "actual": "aggressive",
+      "predicted": "aggressive"
+    }
+  ],
+  "sessions": [
+    {
+      "seed": 262111,
+      "scenario": "competent",
+      "personality": "patient",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.075,
+        "pfr": 0.075,
+        "threeBet": 0,
+        "aggression": 0.3246753246753247,
+        "foldFacingBet": 0.9223300970873787,
+        "drawCall": null,
+        "riverCall": 0,
+        "weakBet": 0.03225806451612903,
+        "meanBetPot": 0.623847619047619
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 15,
+        "pfrHands": 15,
+        "threeBetOpportunities": 2,
+        "threeBets": 0,
+        "postflopDecisions": 77,
+        "postflopAggressions": 25,
+        "foldOpportunities": 103,
+        "folds": 95,
+        "drawCallOpportunities": 0,
+        "drawCalls": 0,
+        "riverCallOpportunities": 1,
+        "riverCalls": 0,
+        "weakBetOpportunities": 31,
+        "weakBets": 1,
+        "betSizeSum": 15.596190476190474,
+        "betSizes": 25
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": -2.8000000000000007,
+        "approximate95CI": [
+          -23.99980376509158,
+          18.39980376509158
+        ]
+      },
+      "coverage": {
+        "decisions": 131,
+        "chartDecisions": 0,
+        "modelledDecisions": 131,
+        "unequalStackDecisions": 131,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 131
+        }
+      },
+      "p95Ms": 23.636534999999867
+    },
+    {
+      "seed": 262111,
+      "scenario": "competent",
+      "personality": "curious",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.375,
+        "pfr": 0.09,
+        "threeBet": 0,
+        "aggression": 0.27983539094650206,
+        "foldFacingBet": 0.3114754098360656,
+        "drawCall": null,
+        "riverCall": 0.7,
+        "weakBet": 0.1568627450980392,
+        "meanBetPot": 0.6559924879042526
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 75,
+        "pfrHands": 18,
+        "threeBetOpportunities": 2,
+        "threeBets": 0,
+        "postflopDecisions": 243,
+        "postflopAggressions": 68,
+        "foldOpportunities": 122,
+        "folds": 38,
+        "drawCallOpportunities": 0,
+        "drawCalls": 0,
+        "riverCallOpportunities": 10,
+        "riverCalls": 7,
+        "weakBetOpportunities": 102,
+        "weakBets": 16,
+        "betSizeSum": 44.60748917748918,
+        "betSizes": 68
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": -6.399999999999995,
+        "approximate95CI": [
+          -42.05258845635463,
+          29.25258845635464
+        ]
+      },
+      "coverage": {
+        "decisions": 132,
+        "chartDecisions": 0,
+        "modelledDecisions": 132,
+        "unequalStackDecisions": 132,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 132
+        }
+      },
+      "p95Ms": 26.870794999999816
+    },
+    {
+      "seed": 262111,
+      "scenario": "competent",
+      "personality": "aggressive",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.325,
+        "pfr": 0.315,
+        "threeBet": 0.5,
+        "aggression": 0.8444444444444444,
+        "foldFacingBet": 0.6190476190476191,
+        "drawCall": null,
+        "riverCall": 1,
+        "weakBet": 0.7142857142857143,
+        "meanBetPot": 0.5795710073435306
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 65,
+        "pfrHands": 63,
+        "threeBetOpportunities": 2,
+        "threeBets": 1,
+        "postflopDecisions": 90,
+        "postflopAggressions": 76,
+        "foldOpportunities": 105,
+        "folds": 65,
+        "drawCallOpportunities": 0,
+        "drawCalls": 0,
+        "riverCallOpportunities": 1,
+        "riverCalls": 1,
+        "weakBetOpportunities": 35,
+        "weakBets": 25,
+        "betSizeSum": 44.047396558108325,
+        "betSizes": 76
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": -18.199999999999996,
+        "approximate95CI": [
+          -126.8740921175229,
+          90.4740921175229
+        ]
+      },
+      "coverage": {
+        "decisions": 133,
+        "chartDecisions": 0,
+        "modelledDecisions": 133,
+        "unequalStackDecisions": 133,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 133
+        }
+      },
+      "p95Ms": 24.235405999999784
+    },
+    {
+      "seed": 262111,
+      "scenario": "loose-aggressive",
+      "personality": "patient",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.07,
+        "pfr": 0.06,
+        "threeBet": 0.03636363636363636,
+        "aggression": 0.49122807017543857,
+        "foldFacingBet": 0.8148148148148148,
+        "drawCall": 1,
+        "riverCall": 0,
+        "weakBet": 0.1,
+        "meanBetPot": 0.5066278226570209
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 14,
+        "pfrHands": 12,
+        "threeBetOpportunities": 55,
+        "threeBets": 2,
+        "postflopDecisions": 57,
+        "postflopAggressions": 28,
+        "foldOpportunities": 189,
+        "folds": 154,
+        "drawCallOpportunities": 1,
+        "drawCalls": 1,
+        "riverCallOpportunities": 5,
+        "riverCalls": 0,
+        "weakBetOpportunities": 20,
+        "weakBets": 2,
+        "betSizeSum": 14.185579034396584,
+        "betSizes": 28
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": -22.199999999999996,
+        "approximate95CI": [
+          -122.84268961102308,
+          78.44268961102307
+        ]
+      },
+      "coverage": {
+        "decisions": 177,
+        "chartDecisions": 0,
+        "modelledDecisions": 177,
+        "unequalStackDecisions": 177,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 177
+        }
+      },
+      "p95Ms": 21.911528000000544
+    },
+    {
+      "seed": 262111,
+      "scenario": "loose-aggressive",
+      "personality": "curious",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.505,
+        "pfr": 0.165,
+        "threeBet": 0.20689655172413793,
+        "aggression": 0.18027210884353742,
+        "foldFacingBet": 0.25297619047619047,
+        "drawCall": 0.5714285714285714,
+        "riverCall": 0.696969696969697,
+        "weakBet": 0.06349206349206349,
+        "meanBetPot": 0.9842298197150304
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 101,
+        "pfrHands": 33,
+        "threeBetOpportunities": 87,
+        "threeBets": 18,
+        "postflopDecisions": 294,
+        "postflopAggressions": 53,
+        "foldOpportunities": 336,
+        "folds": 85,
+        "drawCallOpportunities": 7,
+        "drawCalls": 4,
+        "riverCallOpportunities": 33,
+        "riverCalls": 23,
+        "weakBetOpportunities": 126,
+        "weakBets": 8,
+        "betSizeSum": 52.164180444896616,
+        "betSizes": 53
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 121.39999999999998,
+        "approximate95CI": [
+          -23.30293981906999,
+          266.10293981906995
+        ]
+      },
+      "coverage": {
+        "decisions": 214,
+        "chartDecisions": 0,
+        "modelledDecisions": 214,
+        "unequalStackDecisions": 214,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 214
+        }
+      },
+      "p95Ms": 27.419012000002112
+    },
+    {
+      "seed": 262111,
+      "scenario": "loose-aggressive",
+      "personality": "aggressive",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.365,
+        "pfr": 0.345,
+        "threeBet": 0.32727272727272727,
+        "aggression": 0.6617647058823529,
+        "foldFacingBet": 0.5608695652173913,
+        "drawCall": 0,
+        "riverCall": 0.5,
+        "weakBet": 0.43333333333333335,
+        "meanBetPot": 0.43724733991086456
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 73,
+        "pfrHands": 69,
+        "threeBetOpportunities": 55,
+        "threeBets": 18,
+        "postflopDecisions": 68,
+        "postflopAggressions": 45,
+        "foldOpportunities": 230,
+        "folds": 129,
+        "drawCallOpportunities": 2,
+        "drawCalls": 0,
+        "riverCallOpportunities": 4,
+        "riverCalls": 2,
+        "weakBetOpportunities": 30,
+        "weakBets": 13,
+        "betSizeSum": 19.676130295988905,
+        "betSizes": 45
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": -62.349999999999994,
+        "approximate95CI": [
+          -191.59720512250883,
+          66.89720512250884
+        ]
+      },
+      "coverage": {
+        "decisions": 210,
+        "chartDecisions": 0,
+        "modelledDecisions": 210,
+        "unequalStackDecisions": 210,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 210
+        }
+      },
+      "p95Ms": 25.27030499999819
+    },
+    {
+      "seed": 262111,
+      "scenario": "mixed-six",
+      "personality": "patient",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.095,
+        "pfr": 0.085,
+        "threeBet": 0.08333333333333333,
+        "aggression": 0.3116883116883117,
+        "foldFacingBet": 0.8888888888888888,
+        "drawCall": null,
+        "riverCall": 0,
+        "weakBet": 0.03333333333333333,
+        "meanBetPot": 0.5876901760640832
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 19,
+        "pfrHands": 17,
+        "threeBetOpportunities": 48,
+        "threeBets": 4,
+        "postflopDecisions": 77,
+        "postflopAggressions": 24,
+        "foldOpportunities": 198,
+        "folds": 176,
+        "drawCallOpportunities": 0,
+        "drawCalls": 0,
+        "riverCallOpportunities": 1,
+        "riverCalls": 0,
+        "weakBetOpportunities": 30,
+        "weakBets": 1,
+        "betSizeSum": 14.104564225537999,
+        "betSizes": 24
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 160.8,
+        "approximate95CI": [
+          -95.70643940878125,
+          417.3064394087813
+        ]
+      },
+      "coverage": {
+        "decisions": 209,
+        "chartDecisions": 0,
+        "modelledDecisions": 209,
+        "unequalStackDecisions": 209,
+        "coldCallDecisions": 49,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 209
+        }
+      },
+      "p95Ms": 49.67427599999792
+    },
+    {
+      "seed": 262111,
+      "scenario": "mixed-six",
+      "personality": "curious",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.615,
+        "pfr": 0.13,
+        "threeBet": 0.11688311688311688,
+        "aggression": 0.21176470588235294,
+        "foldFacingBet": 0.2905982905982906,
+        "drawCall": 1,
+        "riverCall": 0.375,
+        "weakBet": 0.04519774011299435,
+        "meanBetPot": 0.7540941777284582
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 123,
+        "pfrHands": 26,
+        "threeBetOpportunities": 77,
+        "threeBets": 9,
+        "postflopDecisions": 425,
+        "postflopAggressions": 90,
+        "foldOpportunities": 351,
+        "folds": 102,
+        "drawCallOpportunities": 9,
+        "drawCalls": 9,
+        "riverCallOpportunities": 32,
+        "riverCalls": 12,
+        "weakBetOpportunities": 177,
+        "weakBets": 8,
+        "betSizeSum": 67.86847599556124,
+        "betSizes": 90
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 713.0499999999997,
+        "approximate95CI": [
+          220.8805970587586,
+          1205.2194029412408
+        ]
+      },
+      "coverage": {
+        "decisions": 243,
+        "chartDecisions": 0,
+        "modelledDecisions": 243,
+        "unequalStackDecisions": 243,
+        "coldCallDecisions": 77,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 243
+        }
+      },
+      "p95Ms": 77.33327599999757
+    },
+    {
+      "seed": 262111,
+      "scenario": "mixed-six",
+      "personality": "aggressive",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.385,
+        "pfr": 0.375,
+        "threeBet": 0.2553191489361702,
+        "aggression": 0.7125,
+        "foldFacingBet": 0.6324786324786325,
+        "drawCall": 1,
+        "riverCall": 0,
+        "weakBet": 0.5909090909090909,
+        "meanBetPot": 0.44022549553379303
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 77,
+        "pfrHands": 75,
+        "threeBetOpportunities": 47,
+        "threeBets": 12,
+        "postflopDecisions": 160,
+        "postflopAggressions": 114,
+        "foldOpportunities": 234,
+        "folds": 148,
+        "drawCallOpportunities": 1,
+        "drawCalls": 1,
+        "riverCallOpportunities": 1,
+        "riverCalls": 0,
+        "weakBetOpportunities": 66,
+        "weakBets": 39,
+        "betSizeSum": 50.185706490852404,
+        "betSizes": 114
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 680.3999999999999,
+        "approximate95CI": [
+          185.89599885698397,
+          1174.9040011430156
+        ]
+      },
+      "coverage": {
+        "decisions": 238,
+        "chartDecisions": 0,
+        "modelledDecisions": 238,
+        "unequalStackDecisions": 238,
+        "coldCallDecisions": 70,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 238
+        }
+      },
+      "p95Ms": 54.45320999999967
+    },
+    {
+      "seed": 273127,
+      "scenario": "competent",
+      "personality": "patient",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.105,
+        "pfr": 0.09,
+        "threeBet": 0,
+        "aggression": 0.3140495867768595,
+        "foldFacingBet": 0.8319327731092437,
+        "drawCall": 0.3333333333333333,
+        "riverCall": 0,
+        "weakBet": 0.058823529411764705,
+        "meanBetPot": 0.5714594709285334
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 21,
+        "pfrHands": 18,
+        "threeBetOpportunities": 4,
+        "threeBets": 0,
+        "postflopDecisions": 121,
+        "postflopAggressions": 38,
+        "foldOpportunities": 119,
+        "folds": 99,
+        "drawCallOpportunities": 3,
+        "drawCalls": 1,
+        "riverCallOpportunities": 4,
+        "riverCalls": 0,
+        "weakBetOpportunities": 51,
+        "weakBets": 3,
+        "betSizeSum": 21.71545989528427,
+        "betSizes": 38
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 35.199999999999996,
+        "approximate95CI": [
+          -35.445986245099014,
+          105.845986245099
+        ]
+      },
+      "coverage": {
+        "decisions": 141,
+        "chartDecisions": 0,
+        "modelledDecisions": 141,
+        "unequalStackDecisions": 141,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 141
+        }
+      },
+      "p95Ms": 25.76739799999632
+    },
+    {
+      "seed": 273127,
+      "scenario": "competent",
+      "personality": "curious",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.47,
+        "pfr": 0.19,
+        "threeBet": 0.2857142857142857,
+        "aggression": 0.1951219512195122,
+        "foldFacingBet": 0.22758620689655173,
+        "drawCall": 1,
+        "riverCall": 0.7,
+        "weakBet": 0.07482993197278912,
+        "meanBetPot": 0.6608048047449323
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 94,
+        "pfrHands": 38,
+        "threeBetOpportunities": 7,
+        "threeBets": 2,
+        "postflopDecisions": 287,
+        "postflopAggressions": 56,
+        "foldOpportunities": 145,
+        "folds": 33,
+        "drawCallOpportunities": 2,
+        "drawCalls": 2,
+        "riverCallOpportunities": 10,
+        "riverCalls": 7,
+        "weakBetOpportunities": 147,
+        "weakBets": 11,
+        "betSizeSum": 37.00506906571621,
+        "betSizes": 56
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": -33.3,
+        "approximate95CI": [
+          -148.1074216819029,
+          81.50742168190293
+        ]
+      },
+      "coverage": {
+        "decisions": 149,
+        "chartDecisions": 0,
+        "modelledDecisions": 149,
+        "unequalStackDecisions": 149,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 149
+        }
+      },
+      "p95Ms": 30.10797699999239
+    },
+    {
+      "seed": 273127,
+      "scenario": "competent",
+      "personality": "aggressive",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.425,
+        "pfr": 0.425,
+        "threeBet": 0,
+        "aggression": 0.6583333333333333,
+        "foldFacingBet": 0.4881889763779528,
+        "drawCall": 0.3333333333333333,
+        "riverCall": 0.6666666666666666,
+        "weakBet": 0.48484848484848486,
+        "meanBetPot": 0.6031675721251283
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 85,
+        "pfrHands": 85,
+        "threeBetOpportunities": 4,
+        "threeBets": 0,
+        "postflopDecisions": 120,
+        "postflopAggressions": 79,
+        "foldOpportunities": 127,
+        "folds": 62,
+        "drawCallOpportunities": 3,
+        "drawCalls": 1,
+        "riverCallOpportunities": 3,
+        "riverCalls": 2,
+        "weakBetOpportunities": 66,
+        "weakBets": 32,
+        "betSizeSum": 47.65023819788513,
+        "betSizes": 79
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 78.55,
+        "approximate95CI": [
+          -58.50326608256914,
+          215.60326608256912
+        ]
+      },
+      "coverage": {
+        "decisions": 148,
+        "chartDecisions": 0,
+        "modelledDecisions": 148,
+        "unequalStackDecisions": 148,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 148
+        }
+      },
+      "p95Ms": 26.515190999998595
+    },
+    {
+      "seed": 273127,
+      "scenario": "loose-aggressive",
+      "personality": "patient",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.115,
+        "pfr": 0.1,
+        "threeBet": 0.05555555555555555,
+        "aggression": 0.29411764705882354,
+        "foldFacingBet": 0.7745098039215687,
+        "drawCall": 0.4,
+        "riverCall": 0.375,
+        "weakBet": 0.02857142857142857,
+        "meanBetPot": 0.8053386273302887
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 23,
+        "pfrHands": 20,
+        "threeBetOpportunities": 54,
+        "threeBets": 3,
+        "postflopDecisions": 85,
+        "postflopAggressions": 25,
+        "foldOpportunities": 204,
+        "folds": 158,
+        "drawCallOpportunities": 5,
+        "drawCalls": 2,
+        "riverCallOpportunities": 8,
+        "riverCalls": 3,
+        "weakBetOpportunities": 35,
+        "weakBets": 1,
+        "betSizeSum": 20.133465683257217,
+        "betSizes": 25
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 79.69999999999999,
+        "approximate95CI": [
+          -36.98678690611183,
+          196.3867869061118
+        ]
+      },
+      "coverage": {
+        "decisions": 190,
+        "chartDecisions": 0,
+        "modelledDecisions": 190,
+        "unequalStackDecisions": 190,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 190
+        }
+      },
+      "p95Ms": 24.835091999993892
+    },
+    {
+      "seed": 273127,
+      "scenario": "loose-aggressive",
+      "personality": "curious",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.605,
+        "pfr": 0.255,
+        "threeBet": 0.2564102564102564,
+        "aggression": 0.19398907103825136,
+        "foldFacingBet": 0.19137466307277629,
+        "drawCall": 0.8571428571428571,
+        "riverCall": 0.6923076923076923,
+        "weakBet": 0.07526881720430108,
+        "meanBetPot": 1.0664402850587325
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 121,
+        "pfrHands": 51,
+        "threeBetOpportunities": 78,
+        "threeBets": 20,
+        "postflopDecisions": 366,
+        "postflopAggressions": 71,
+        "foldOpportunities": 371,
+        "folds": 71,
+        "drawCallOpportunities": 14,
+        "drawCalls": 12,
+        "riverCallOpportunities": 52,
+        "riverCalls": 36,
+        "weakBetOpportunities": 186,
+        "weakBets": 14,
+        "betSizeSum": 75.71726023917,
+        "betSizes": 71
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 295.3999999999999,
+        "approximate95CI": [
+          92.23295064296903,
+          498.5670493570308
+        ]
+      },
+      "coverage": {
+        "decisions": 228,
+        "chartDecisions": 0,
+        "modelledDecisions": 228,
+        "unequalStackDecisions": 228,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 228
+        }
+      },
+      "p95Ms": 28.17992700000468
+    },
+    {
+      "seed": 273127,
+      "scenario": "loose-aggressive",
+      "personality": "aggressive",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.45,
+        "pfr": 0.45,
+        "threeBet": 0.36538461538461536,
+        "aggression": 0.5684210526315789,
+        "foldFacingBet": 0.4860557768924303,
+        "drawCall": 0.3333333333333333,
+        "riverCall": 0.2,
+        "weakBet": 0.38095238095238093,
+        "meanBetPot": 0.5698010539107329
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 90,
+        "pfrHands": 90,
+        "threeBetOpportunities": 52,
+        "threeBets": 19,
+        "postflopDecisions": 95,
+        "postflopAggressions": 54,
+        "foldOpportunities": 251,
+        "folds": 122,
+        "drawCallOpportunities": 6,
+        "drawCalls": 2,
+        "riverCallOpportunities": 5,
+        "riverCalls": 1,
+        "weakBetOpportunities": 42,
+        "weakBets": 16,
+        "betSizeSum": 30.76925691117958,
+        "betSizes": 54
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 35.9,
+        "approximate95CI": [
+          -134.22932930263616,
+          206.02932930263617
+        ]
+      },
+      "coverage": {
+        "decisions": 229,
+        "chartDecisions": 0,
+        "modelledDecisions": 229,
+        "unequalStackDecisions": 229,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 229
+        }
+      },
+      "p95Ms": 24.824076999997487
+    },
+    {
+      "seed": 273127,
+      "scenario": "mixed-six",
+      "personality": "patient",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.085,
+        "pfr": 0.075,
+        "threeBet": 0.018518518518518517,
+        "aggression": 0.3492063492063492,
+        "foldFacingBet": 0.9438775510204082,
+        "drawCall": 0.3333333333333333,
+        "riverCall": null,
+        "weakBet": 0.03125,
+        "meanBetPot": 0.49652462431233
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 17,
+        "pfrHands": 15,
+        "threeBetOpportunities": 54,
+        "threeBets": 1,
+        "postflopDecisions": 63,
+        "postflopAggressions": 22,
+        "foldOpportunities": 196,
+        "folds": 185,
+        "drawCallOpportunities": 3,
+        "drawCalls": 1,
+        "riverCallOpportunities": 0,
+        "riverCalls": 0,
+        "weakBetOpportunities": 32,
+        "weakBets": 1,
+        "betSizeSum": 10.923541734871261,
+        "betSizes": 22
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 79.6,
+        "approximate95CI": [
+          -86.49006221491007,
+          245.69006221491006
+        ]
+      },
+      "coverage": {
+        "decisions": 202,
+        "chartDecisions": 0,
+        "modelledDecisions": 202,
+        "unequalStackDecisions": 202,
+        "coldCallDecisions": 51,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 202
+        }
+      },
+      "p95Ms": 51.46650199999567
+    },
+    {
+      "seed": 273127,
+      "scenario": "mixed-six",
+      "personality": "curious",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.635,
+        "pfr": 0.125,
+        "threeBet": 0.08139534883720931,
+        "aggression": 0.215633423180593,
+        "foldFacingBet": 0.3333333333333333,
+        "drawCall": 0.75,
+        "riverCall": 0.42105263157894735,
+        "weakBet": 0.025157232704402517,
+        "meanBetPot": 0.6783681293859785
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 127,
+        "pfrHands": 25,
+        "threeBetOpportunities": 86,
+        "threeBets": 7,
+        "postflopDecisions": 371,
+        "postflopAggressions": 80,
+        "foldOpportunities": 327,
+        "folds": 109,
+        "drawCallOpportunities": 4,
+        "drawCalls": 3,
+        "riverCallOpportunities": 19,
+        "riverCalls": 8,
+        "weakBetOpportunities": 159,
+        "weakBets": 4,
+        "betSizeSum": 54.26945035087828,
+        "betSizes": 80
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 594.25,
+        "approximate95CI": [
+          109.00135511750113,
+          1079.4986448824989
+        ]
+      },
+      "coverage": {
+        "decisions": 241,
+        "chartDecisions": 0,
+        "modelledDecisions": 241,
+        "unequalStackDecisions": 241,
+        "coldCallDecisions": 89,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 241
+        }
+      },
+      "p95Ms": 79.33462999999756
+    },
+    {
+      "seed": 273127,
+      "scenario": "mixed-six",
+      "personality": "aggressive",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.35,
+        "pfr": 0.325,
+        "threeBet": 0.23214285714285715,
+        "aggression": 0.6214285714285714,
+        "foldFacingBet": 0.6781115879828327,
+        "drawCall": null,
+        "riverCall": 0.5,
+        "weakBet": 0.417910447761194,
+        "meanBetPot": 0.44508082547495736
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 70,
+        "pfrHands": 65,
+        "threeBetOpportunities": 56,
+        "threeBets": 13,
+        "postflopDecisions": 140,
+        "postflopAggressions": 87,
+        "foldOpportunities": 233,
+        "folds": 158,
+        "drawCallOpportunities": 0,
+        "drawCalls": 0,
+        "riverCallOpportunities": 2,
+        "riverCalls": 1,
+        "weakBetOpportunities": 67,
+        "weakBets": 28,
+        "betSizeSum": 38.72203181632129,
+        "betSizes": 87
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 475.4,
+        "approximate95CI": [
+          76.13993670612706,
+          874.6600632938729
+        ]
+      },
+      "coverage": {
+        "decisions": 230,
+        "chartDecisions": 0,
+        "modelledDecisions": 230,
+        "unequalStackDecisions": 230,
+        "coldCallDecisions": 77,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 230
+        }
+      },
+      "p95Ms": 54.74053999999887
+    },
+    {
+      "seed": 284131,
+      "scenario": "competent",
+      "personality": "patient",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.13,
+        "pfr": 0.125,
+        "threeBet": 0.6,
+        "aggression": 0.5076923076923077,
+        "foldFacingBet": 0.8214285714285714,
+        "drawCall": null,
+        "riverCall": 0.3333333333333333,
+        "weakBet": 0.058823529411764705,
+        "meanBetPot": 0.5852581086780856
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 26,
+        "pfrHands": 25,
+        "threeBetOpportunities": 5,
+        "threeBets": 3,
+        "postflopDecisions": 65,
+        "postflopAggressions": 33,
+        "foldOpportunities": 112,
+        "folds": 92,
+        "drawCallOpportunities": 0,
+        "drawCalls": 0,
+        "riverCallOpportunities": 3,
+        "riverCalls": 1,
+        "weakBetOpportunities": 17,
+        "weakBets": 1,
+        "betSizeSum": 19.313517586376825,
+        "betSizes": 33
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 4.650000000000002,
+        "approximate95CI": [
+          -115.68845265315144,
+          124.98845265315146
+        ]
+      },
+      "coverage": {
+        "decisions": 130,
+        "chartDecisions": 0,
+        "modelledDecisions": 130,
+        "unequalStackDecisions": 130,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 130
+        }
+      },
+      "p95Ms": 22.016522999998415
+    },
+    {
+      "seed": 284131,
+      "scenario": "competent",
+      "personality": "curious",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.5,
+        "pfr": 0.155,
+        "threeBet": 0.7142857142857143,
+        "aggression": 0.2720306513409962,
+        "foldFacingBet": 0.17647058823529413,
+        "drawCall": null,
+        "riverCall": 0.75,
+        "weakBet": 0.14166666666666666,
+        "meanBetPot": 0.6643812794666191
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 100,
+        "pfrHands": 31,
+        "threeBetOpportunities": 7,
+        "threeBets": 5,
+        "postflopDecisions": 261,
+        "postflopAggressions": 71,
+        "foldOpportunities": 136,
+        "folds": 24,
+        "drawCallOpportunities": 0,
+        "drawCalls": 0,
+        "riverCallOpportunities": 12,
+        "riverCalls": 9,
+        "weakBetOpportunities": 120,
+        "weakBets": 17,
+        "betSizeSum": 47.17107084212996,
+        "betSizes": 71
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": -37.449999999999974,
+        "approximate95CI": [
+          -179.44088602636697,
+          104.540886026367
+        ]
+      },
+      "coverage": {
+        "decisions": 134,
+        "chartDecisions": 0,
+        "modelledDecisions": 134,
+        "unequalStackDecisions": 134,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 134
+        }
+      },
+      "p95Ms": 27.95296799999778
+    },
+    {
+      "seed": 284131,
+      "scenario": "competent",
+      "personality": "aggressive",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.335,
+        "pfr": 0.32,
+        "threeBet": 0.6,
+        "aggression": 0.7972972972972973,
+        "foldFacingBet": 0.5565217391304348,
+        "drawCall": null,
+        "riverCall": 0,
+        "weakBet": 0.625,
+        "meanBetPot": 0.6055419566532927
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 67,
+        "pfrHands": 64,
+        "threeBetOpportunities": 5,
+        "threeBets": 3,
+        "postflopDecisions": 74,
+        "postflopAggressions": 59,
+        "foldOpportunities": 115,
+        "folds": 64,
+        "drawCallOpportunities": 0,
+        "drawCalls": 0,
+        "riverCallOpportunities": 4,
+        "riverCalls": 0,
+        "weakBetOpportunities": 24,
+        "weakBets": 15,
+        "betSizeSum": 35.726975442544266,
+        "betSizes": 59
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": -15.550000000000006,
+        "approximate95CI": [
+          -169.52569753286937,
+          138.42569753286935
+        ]
+      },
+      "coverage": {
+        "decisions": 132,
+        "chartDecisions": 0,
+        "modelledDecisions": 132,
+        "unequalStackDecisions": 132,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 132
+        }
+      },
+      "p95Ms": 24.042003000009572
+    },
+    {
+      "seed": 284131,
+      "scenario": "loose-aggressive",
+      "personality": "patient",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.115,
+        "pfr": 0.105,
+        "threeBet": 0.125,
+        "aggression": 0.48936170212765956,
+        "foldFacingBet": 0.7696335078534031,
+        "drawCall": 0,
+        "riverCall": 0,
+        "weakBet": 0.07692307692307693,
+        "meanBetPot": 0.5755056668866938
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 23,
+        "pfrHands": 21,
+        "threeBetOpportunities": 56,
+        "threeBets": 7,
+        "postflopDecisions": 47,
+        "postflopAggressions": 23,
+        "foldOpportunities": 191,
+        "folds": 147,
+        "drawCallOpportunities": 2,
+        "drawCalls": 0,
+        "riverCallOpportunities": 1,
+        "riverCalls": 0,
+        "weakBetOpportunities": 13,
+        "weakBets": 1,
+        "betSizeSum": 13.236630338393956,
+        "betSizes": 23
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 16.55000000000001,
+        "approximate95CI": [
+          -96.19596926144865,
+          129.29596926144868
+        ]
+      },
+      "coverage": {
+        "decisions": 181,
+        "chartDecisions": 0,
+        "modelledDecisions": 181,
+        "unequalStackDecisions": 181,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 181
+        }
+      },
+      "p95Ms": 22.388845000008587
+    },
+    {
+      "seed": 284131,
+      "scenario": "loose-aggressive",
+      "personality": "curious",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.645,
+        "pfr": 0.19,
+        "threeBet": 0.26666666666666666,
+        "aggression": 0.20108695652173914,
+        "foldFacingBet": 0.1700507614213198,
+        "drawCall": 0.7,
+        "riverCall": 0.6222222222222222,
+        "weakBet": 0.059602649006622516,
+        "meanBetPot": 0.8390969876241477
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 129,
+        "pfrHands": 38,
+        "threeBetOpportunities": 90,
+        "threeBets": 24,
+        "postflopDecisions": 368,
+        "postflopAggressions": 74,
+        "foldOpportunities": 394,
+        "folds": 67,
+        "drawCallOpportunities": 10,
+        "drawCalls": 7,
+        "riverCallOpportunities": 45,
+        "riverCalls": 28,
+        "weakBetOpportunities": 151,
+        "weakBets": 9,
+        "betSizeSum": 62.093177084186934,
+        "betSizes": 74
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 155.95,
+        "approximate95CI": [
+          -44.63902027793125,
+          356.53902027793123
+        ]
+      },
+      "coverage": {
+        "decisions": 222,
+        "chartDecisions": 0,
+        "modelledDecisions": 222,
+        "unequalStackDecisions": 222,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 222
+        }
+      },
+      "p95Ms": 28.074616000027163
+    },
+    {
+      "seed": 284131,
+      "scenario": "loose-aggressive",
+      "personality": "aggressive",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.38,
+        "pfr": 0.38,
+        "threeBet": 0.4406779661016949,
+        "aggression": 0.6739130434782609,
+        "foldFacingBet": 0.5043859649122807,
+        "drawCall": 0,
+        "riverCall": null,
+        "weakBet": 0.4117647058823529,
+        "meanBetPot": 0.8117884959242935
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 76,
+        "pfrHands": 76,
+        "threeBetOpportunities": 59,
+        "threeBets": 26,
+        "postflopDecisions": 46,
+        "postflopAggressions": 31,
+        "foldOpportunities": 228,
+        "folds": 115,
+        "drawCallOpportunities": 3,
+        "drawCalls": 0,
+        "riverCallOpportunities": 0,
+        "riverCalls": 0,
+        "weakBetOpportunities": 17,
+        "weakBets": 7,
+        "betSizeSum": 25.165443373653098,
+        "betSizes": 31
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": -14.000000000000007,
+        "approximate95CI": [
+          -188.0458615469154,
+          160.0458615469154
+        ]
+      },
+      "coverage": {
+        "decisions": 216,
+        "chartDecisions": 0,
+        "modelledDecisions": 216,
+        "unequalStackDecisions": 216,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 216
+        }
+      },
+      "p95Ms": 20.39720499998657
+    },
+    {
+      "seed": 284131,
+      "scenario": "mixed-six",
+      "personality": "patient",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.11,
+        "pfr": 0.105,
+        "threeBet": 0.06896551724137931,
+        "aggression": 0.48333333333333334,
+        "foldFacingBet": 0.861904761904762,
+        "drawCall": null,
+        "riverCall": null,
+        "weakBet": 0.05,
+        "meanBetPot": 0.5701782026370082
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 22,
+        "pfrHands": 21,
+        "threeBetOpportunities": 58,
+        "threeBets": 4,
+        "postflopDecisions": 60,
+        "postflopAggressions": 29,
+        "foldOpportunities": 210,
+        "folds": 181,
+        "drawCallOpportunities": 0,
+        "drawCalls": 0,
+        "riverCallOpportunities": 0,
+        "riverCalls": 0,
+        "weakBetOpportunities": 20,
+        "weakBets": 1,
+        "betSizeSum": 16.53516787647324,
+        "betSizes": 29
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 352.4,
+        "approximate95CI": [
+          5.2429689970347795,
+          699.5570310029652
+        ]
+      },
+      "coverage": {
+        "decisions": 216,
+        "chartDecisions": 0,
+        "modelledDecisions": 216,
+        "unequalStackDecisions": 216,
+        "coldCallDecisions": 65,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 216
+        }
+      },
+      "p95Ms": 53.05821499999729
+    },
+    {
+      "seed": 284131,
+      "scenario": "mixed-six",
+      "personality": "curious",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.615,
+        "pfr": 0.155,
+        "threeBet": 0.12359550561797752,
+        "aggression": 0.2265625,
+        "foldFacingBet": 0.2979942693409742,
+        "drawCall": 1,
+        "riverCall": 0.5384615384615384,
+        "weakBet": 0.03825136612021858,
+        "meanBetPot": 0.7122352114375472
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 123,
+        "pfrHands": 31,
+        "threeBetOpportunities": 89,
+        "threeBets": 11,
+        "postflopDecisions": 384,
+        "postflopAggressions": 87,
+        "foldOpportunities": 349,
+        "folds": 104,
+        "drawCallOpportunities": 3,
+        "drawCalls": 3,
+        "riverCallOpportunities": 26,
+        "riverCalls": 14,
+        "weakBetOpportunities": 183,
+        "weakBets": 7,
+        "betSizeSum": 61.96446339506661,
+        "betSizes": 87
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 756.7499999999999,
+        "approximate95CI": [
+          228.15167614015468,
+          1285.348323859845
+        ]
+      },
+      "coverage": {
+        "decisions": 252,
+        "chartDecisions": 0,
+        "modelledDecisions": 252,
+        "unequalStackDecisions": 252,
+        "coldCallDecisions": 98,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 252
+        }
+      },
+      "p95Ms": 88.10603399999673
+    },
+    {
+      "seed": 284131,
+      "scenario": "mixed-six",
+      "personality": "aggressive",
+      "hands": 200,
+      "rates": {
+        "vpip": 0.4,
+        "pfr": 0.365,
+        "threeBet": 0.24193548387096775,
+        "aggression": 0.7394366197183099,
+        "foldFacingBet": 0.60546875,
+        "drawCall": 0,
+        "riverCall": 0,
+        "weakBet": 0.48333333333333334,
+        "meanBetPot": 0.4611746922526556
+      },
+      "counts": {
+        "hands": 200,
+        "vpipHands": 80,
+        "pfrHands": 73,
+        "threeBetOpportunities": 62,
+        "threeBets": 15,
+        "postflopDecisions": 142,
+        "postflopAggressions": 105,
+        "foldOpportunities": 256,
+        "folds": 155,
+        "drawCallOpportunities": 1,
+        "drawCalls": 0,
+        "riverCallOpportunities": 2,
+        "riverCalls": 0,
+        "weakBetOpportunities": 60,
+        "weakBets": 29,
+        "betSizeSum": 48.42334268652884,
+        "betSizes": 105
+      },
+      "returns": {
+        "dealPairs": 200,
+        "bbPer100": 602.8500000000001,
+        "approximate95CI": [
+          130.45045391775272,
+          1075.2495460822474
+        ]
+      },
+      "coverage": {
+        "decisions": 249,
+        "chartDecisions": 0,
+        "modelledDecisions": 249,
+        "unequalStackDecisions": 249,
+        "coldCallDecisions": 95,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 249
+        }
+      },
+      "p95Ms": 61.31849500001408
+    }
+  ],
+  "coverageComparison": [
+    {
+      "scenario": "competent",
+      "hands": 400,
+      "candidateCoverage": {
+        "decisions": 131,
+        "chartDecisions": 0,
+        "modelledDecisions": 131,
+        "unequalStackDecisions": 131,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 131
+        }
+      },
+      "incumbentCoverage": {
+        "decisions": 134,
+        "chartDecisions": 0,
+        "modelledDecisions": 0,
+        "unequalStackDecisions": 0,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 134
+        }
+      },
+      "delta": {
+        "dealPairs": 200,
+        "bbPer100": 79.4,
+        "approximate95CI": [
+          -100.29153136791581,
+          259.0915313679158
+        ]
+      }
+    },
+    {
+      "scenario": "loose-aggressive",
+      "hands": 400,
+      "candidateCoverage": {
+        "decisions": 252,
+        "chartDecisions": 0,
+        "modelledDecisions": 252,
+        "unequalStackDecisions": 252,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 252
+        }
+      },
+      "incumbentCoverage": {
+        "decisions": 253,
+        "chartDecisions": 0,
+        "modelledDecisions": 0,
+        "unequalStackDecisions": 0,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 253
+        }
+      },
+      "delta": {
+        "dealPairs": 200,
+        "bbPer100": -31.74999999999997,
+        "approximate95CI": [
+          -332.58448351520383,
+          269.08448351520394
+        ]
+      }
+    },
+    {
+      "scenario": "mixed-six",
+      "hands": 400,
+      "candidateCoverage": {
+        "decisions": 265,
+        "chartDecisions": 0,
+        "modelledDecisions": 265,
+        "unequalStackDecisions": 265,
+        "coldCallDecisions": 101,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 265
+        }
+      },
+      "incumbentCoverage": {
+        "decisions": 302,
+        "chartDecisions": 0,
+        "modelledDecisions": 0,
+        "unequalStackDecisions": 0,
+        "coldCallDecisions": 0,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 302
+        }
+      },
+      "delta": {
+        "dealPairs": 200,
+        "bbPer100": 246.2,
+        "approximate95CI": [
+          -380.51400625858304,
+          872.914006258583
+        ]
+      }
+    }
+  ],
+  "sessionCheck": [
+    {
+      "personality": "patient",
+      "hands": 40,
+      "coverage": {
+        "decisions": 41,
+        "chartDecisions": 0,
+        "modelledDecisions": 41,
+        "unequalStackDecisions": 41,
+        "coldCallDecisions": 10,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 41
+        }
+      },
+      "completed": true
+    },
+    {
+      "personality": "curious",
+      "hands": 40,
+      "coverage": {
+        "decisions": 51,
+        "chartDecisions": 0,
+        "modelledDecisions": 51,
+        "unequalStackDecisions": 51,
+        "coldCallDecisions": 18,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 51
+        }
+      },
+      "completed": true
+    },
+    {
+      "personality": "aggressive",
+      "hands": 40,
+      "coverage": {
+        "decisions": 51,
+        "chartDecisions": 0,
+        "modelledDecisions": 51,
+        "unequalStackDecisions": 51,
+        "coldCallDecisions": 19,
+        "spots": {},
+        "fallbackReasons": {
+          "unequal-starting-stacks": 51
+        }
+      },
+      "completed": true
+    }
+  ],
+  "limitations": [
+    "Authored personalities and heuristic range/response models; no human-data realism calibration or solver exploitability guarantee.",
+    "Recognition uses aggregate decisions from simulated sessions and holds out whole seeds; it does not establish recognition by humans in short live games.",
+    "Weak-hand betting is a public-feature proxy, not a certified bluff count. Rates include explicit opportunity denominators; small conditional samples are uncertain.",
+    "Fresh unequal stacks in comparison sessions; separate continuous-stack checks rebuy only busted seats. Adaptive memory makes return intervals descriptive."
+  ]
+}

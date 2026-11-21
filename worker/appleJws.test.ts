@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { premiumTransactionId, verifyAppleJws } from './appleJws';
+import { premiumExpiry, premiumTransactionId, verifyAppleJws } from './appleJws';
 
 // Builds a throwaway root, intermediate and leaf with openssl (so no private keys are committed), signs messages
 // the way Apple does, and checks the verifier accepts good ones and turns away every kind of bad one.
@@ -131,5 +131,19 @@ describe('premiumTransactionId', () => {
     expect(id({ ...ok, environment: 'Xcode' })).toBeNull();
     expect(id({ ...ok, originalTransactionId: 'abc' })).toBeNull();
     expect(id({ ...ok, originalTransactionId: undefined })).toBeNull();
+  });
+});
+
+describe('subscriptions', () => {
+  const ok = { ...tx, ownershipType: 'PURCHASED' };
+  const products = ['flipup.premium.unlock', 'flipup.premium.monthly', 'flipup.premium.yearly'];
+  it('takes the monthly and yearly plans as Premium too', () => {
+    expect(premiumTransactionId({ ...ok, productId: 'flipup.premium.yearly' }, 'com.goodwin.flipup', products)).toBe('2000000123456789');
+    expect(premiumTransactionId({ ...ok, productId: 'flipup.premium.weekly' }, 'com.goodwin.flipup', products)).toBeNull();
+  });
+  it('reads when a subscription runs out, and never for the one-time purchase', () => {
+    expect(premiumExpiry({ ...ok, expiresDate: 1_900_000_000_000 })).toBe(1_900_000_000_000);
+    expect(premiumExpiry(ok)).toBeNull();
+    expect(premiumExpiry(null)).toBeNull();
   });
 });

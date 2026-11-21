@@ -1,7 +1,9 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
+
+import { popIn } from '@/motion/presets';
 
 import { SheetScroll } from '@/components/sheet-scroll';
 import { Avatar } from '@/components/avatar';
@@ -28,11 +30,11 @@ export default function EmojiSheet() {
     saveProfile({ emoji });
   };
   return (
-    <SheetScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.lg }}>
+    <SheetScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xl, gap: spacing.md }}>
       <Stack.Screen options={{ title: 'Your emoji' }} />
       <View style={{ alignItems: 'center', gap: spacing.xs }}>
-        <Animated.View key={profile.emoji} entering={reduce ? undefined : ZoomIn.springify().mass(1).stiffness(300).damping(18)}>
-          <Avatar emoji={profile.emoji} size={96} />
+        <Animated.View key={profile.emoji} entering={reduce ? undefined : popIn()}>
+          <Avatar emoji={profile.emoji} size={72} />
         </Animated.View>
         <ThemedText variant="headline">{profile.name.trim() || 'You'}</ThemedText>
       </View>

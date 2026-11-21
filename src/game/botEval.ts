@@ -7,10 +7,6 @@ import { rankOf, RANKS, SUITS, type Card } from './cards';
 export type CardInt = number;
 
 export const toInt = (c: Card): CardInt => (rankOf(c) - 2) * 4 + SUITS.indexOf(c[1] as (typeof SUITS)[number]);
-export const toCard = (c: CardInt): Card => RANKS[c >> 2] + SUITS[c & 3];
-/** 2 to 14. */
-export const rankInt = (c: CardInt) => (c >> 2) + 2;
-export const suitInt = (c: CardInt) => c & 3;
 
 const cnt = new Uint8Array(15);
 const smask = new Uint16Array(4);
@@ -154,10 +150,6 @@ export function drawLevelWith(a: CardInt, b: CardInt, info: BoardInfo): number {
   else if (outs === 1 && level === 0) level = 1;
   if (level === 0 && ra > info.top && rb > info.top) level = 1;
   return level;
-}
-
-export function drawLevel(hole: ArrayLike<CardInt>, board: ArrayLike<CardInt>): number {
-  return drawLevelWith(hole[0], hole[1], boardInfo(board));
 }
 
 /**

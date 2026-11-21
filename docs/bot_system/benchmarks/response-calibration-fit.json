@@ -1,0 +1,59 @@
+{
+  "protocol": "response-calibration-1",
+  "seeds": {
+    "training": [
+      192031,
+      192037
+    ],
+    "validation": [
+      293021
+    ],
+    "test": [
+      394033
+    ]
+  },
+  "handsPerSession": 60,
+  "scores": {
+    "training": {
+      "baseline": {
+        "observations": 1832,
+        "logLoss": 0.4092930712451225,
+        "brier": 0.24722255707077093
+      },
+      "candidate": {
+        "observations": 1832,
+        "logLoss": 0.32345265877768603,
+        "brier": 0.18554687056873026
+      }
+    },
+    "validation": {
+      "baseline": {
+        "observations": 964,
+        "logLoss": 0.43190304397835927,
+        "brier": 0.27664850628727916
+      },
+      "candidate": {
+        "observations": 964,
+        "logLoss": 0.37581568838499047,
+        "brier": 0.2216434339233106
+      }
+    },
+    "test": {
+      "baseline": {
+        "observations": 989,
+        "logLoss": 0.4257899960376005,
+        "brier": 0.2646571123447779
+      },
+      "candidate": {
+        "observations": 989,
+        "logLoss": 0.33936057488771204,
+        "brier": 0.19544227901245406
+      }
+    }
+  },
+  "passed": true,
+  "limitations": [
+    "Synthetic bot/script mixture; not human data. Own cards are actor-local input, never opposing private cards.",
+    "Candidate selection uses training only; validation/test do not update weights. Playing-strength and realism gates remain separate."
+  ]
+}

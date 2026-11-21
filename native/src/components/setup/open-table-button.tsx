@@ -1,7 +1,8 @@
+import { BlurView } from 'expo-blur';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { brand, gradient, radius, ROUNDED, spacing } from '@/theme';
+import { brand, radius, ROUNDED, spacing, useLobbyTint, useReduceTransparency } from '@/theme';
 
 import { GRAIN_NIGHT } from '../grain-background';
 import { PressableScale } from '../pressable-scale';
@@ -10,13 +11,16 @@ import { PressableScale } from '../pressable-scale';
 const EDGE = 4;
 
 /**
- * Open table, pinned to the bottom of the grain page over a fade into its darkest colour, so rows scroll away
- * under it. A solid light button with violet ink and a pale violet edge under it (the party look): on the night
- * page it's the brightest thing there, and it never stacks a second grainy violet layer on the violet glow.
+ * Open table, pinned to the bottom of the page on a bar of its own (19 Nov 2026: a fade that started see-through let
+ * rows show through round the button, so the house rules looked cut off). The bar is Apple's dark blur tinted with
+ * the page's darkest colour, with a hairline along its top, like the tab bar: rows slide under it and go soft, never
+ * readable. Solid under Reduce Transparency. A solid light button with the page's ink: the brightest thing there.
  */
-export function OpenTableButton({ title, line, busy, onPress }: { title: string; line?: string; busy?: boolean; onPress: () => void }) {
+export function OpenTableButton({ title, line, busy, disabled, onPress }: { title: string; line?: string; busy?: boolean; disabled?: boolean; onPress: () => void }) {
   const insets = useSafeAreaInsets();
-  const night = GRAIN_NIGHT[2];
+  const tint = useLobbyTint();
+  const night = tint.night ?? GRAIN_NIGHT[2];
+  const solid = useReduceTransparency();
   return (
     <View
       pointerEvents="box-none"
@@ -26,25 +30,38 @@ export function OpenTableButton({ title, line, busy, onPress }: { title: string;
         right: 0,
         bottom: 0,
         paddingHorizontal: spacing.md,
-        paddingTop: spacing.xl,
+        paddingTop: spacing.sm,
         paddingBottom: Math.max(insets.bottom, spacing.md),
-        ...gradient(`linear-gradient(180deg, ${night}00 0%, ${night}e6 40%, ${night} 100%)`),
+        borderTopWidth: 0.5,
+        borderTopColor: 'rgba(255,255,255,0.12)',
+        overflow: 'hidden',
       }}
     >
+      {solid ? (
+        <View pointerEvents="none" style={{ position: 'absolute', inset: 0, backgroundColor: night }} />
+      ) : (
+        <>
+          <BlurView pointerEvents="none" tint="systemChromeMaterialDark" intensity={80} style={{ position: 'absolute', inset: 0 }} />
+          <View pointerEvents="none" style={{ position: 'absolute', inset: 0, backgroundColor: night, opacity: 0.6 }} />
+        </>
+      )}
       <PressableScale
         accessibilityRole="button"
         accessibilityLabel={line ? `${title}, ${line}` : title}
-        accessibilityState={{ busy: !!busy }}
-        onPress={busy ? undefined : onPress}
+        accessibilityState={{ busy: !!busy, disabled: !!disabled }}
+        onPress={busy || disabled ? undefined : onPress}
         outerStyle={{ alignSelf: 'stretch' }}
-        style={{ borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: brand.paperEdge, paddingBottom: EDGE }}
+        style={{ borderRadius: radius.md, borderCurve: 'continuous', boxShadow: '0 8px 24px rgba(0,0,0,0.28)' }}
       >
         <View
           style={{
             minHeight: 60,
             borderRadius: radius.md,
             borderCurve: 'continuous',
-            backgroundColor: brand.paper,
+            // Waiting: a solid dim fill, never see-through, so rows scrolling under the fade can't show in it.
+            backgroundColor: disabled ? (tint.idle ?? '#1b2850') : brand.paper,
+            borderWidth: disabled ? 1 : 0,
+            borderColor: 'rgba(255,255,255,0.1)',
             alignItems: 'center',
             justifyContent: 'center',
             paddingHorizontal: spacing.xl,
@@ -52,12 +69,12 @@ export function OpenTableButton({ title, line, busy, onPress }: { title: string;
           }}
         >
           {busy ? (
-            <ActivityIndicator color={brand.violet} />
+            <ActivityIndicator color={tint.ink} />
           ) : (
             <>
               <Text
                 maxFontSizeMultiplier={1.3}
-                style={{ fontFamily: ROUNDED, fontSize: 21, lineHeight: 25, fontWeight: '800', color: brand.violet }}
+                style={{ fontFamily: ROUNDED, fontSize: 21, lineHeight: 25, fontWeight: '800', color: disabled ? 'rgba(255,255,255,0.5)' : tint.ink }}
               >
                 {title}
               </Text>
@@ -65,7 +82,7 @@ export function OpenTableButton({ title, line, busy, onPress }: { title: string;
                 <Text
                   maxFontSizeMultiplier={1.3}
                   numberOfLines={1}
-                  style={{ fontSize: 13, lineHeight: 17, fontWeight: '600', color: brand.violetDeep }}
+                  style={{ fontSize: 13, lineHeight: 17, fontWeight: '600', color: disabled ? 'rgba(255,255,255,0.75)' : tint.inkSoft }}
                 >
                   {line}
                 </Text>

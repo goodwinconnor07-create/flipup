@@ -1,4 +1,4 @@
-// Renders the web's synthesised table sounds (src/ui/sound.ts) to WAV files for the iPhone app, so both play the
+// Renders the web's synthesised table sounds (scripts/sound/synth.ts, kept from the old website) to WAV files for the iPhone app, so both play the
 // same sounds. Each sound is played into Chromium's OfflineAudioContext by the real sound.ts, then saved.
 // Run after changing a sound in sound.ts:  node scripts/renderSounds.mjs
 // (Needs Playwright's Chromium; in the cloud sandbox set CHROMIUM_PATH=/opt/pw-browsers/chromium if it can't find it.)
@@ -7,11 +7,12 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 
 /** The made-in-code sounds the table uses. The four recorded ones are copied from public/sounds as they are. */
-const SOUNDS = ['deal', 'flip', 'check', 'fold', 'turn', 'tick', 'win', 'collect', 'pop', 'spook', 'dice', 'sting', 'splash'];
+// deal, flip, check and fold are recordings now (scripts/recordedSounds.sh), so they aren't rendered here.
+const SOUNDS = ['turn', 'tick', 'win', 'collect', 'pop', 'spook', 'dice', 'sting', 'splash'];
 const OUT = new URL('../native/assets/sounds/', import.meta.url);
 const RATE = 44100;
 
-const bundle = await build({ entryPoints: [new URL('../src/ui/sound.ts', import.meta.url).pathname], bundle: true, format: 'iife', globalName: 'Sound', write: false });
+const bundle = await build({ entryPoints: [new URL('./sound/synth.ts', import.meta.url).pathname], bundle: true, format: 'iife', globalName: 'Sound', write: false });
 const code = bundle.outputFiles[0].text;
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});

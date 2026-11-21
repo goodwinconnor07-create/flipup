@@ -2,6 +2,10 @@ import { DurableObject } from 'cloudflare:workers';
 import {
   buildPartyGame,
   cleanName,
+  closeAt,
+  closeReason,
+  maxLifeMs,
+  newLife,
   isNameBlocked,
   newCode,
   newId,
@@ -12,18 +16,15 @@ import {
   type PartySettings,
   type PartyStatus,
   type PartyView,
+  type Life,
 } from '../src/game';
 
-/** A party is deleted this long after its last change. */
-const KEEP_FOR_MS = 2 * 24 * 60 * 60 * 1000;
 
 interface Member {
   id: string;
   deviceId: string;
   name: string;
   emoji: string;
-  friendCode?: string;
-  twinCode?: string;
   points: number[];
 }
 
@@ -38,13 +39,13 @@ interface Stored {
   members: Member[];
   live: PartyLive[] | null;
   updatedAt: number;
+  /** When the party opened and when a person last played in it, and its deadline: 30 minutes of no play, 6 hours at most (8 for a 12-game playlist). */
+  life?: Life;
 }
 
 export interface PartyPerson {
   name: string;
   emoji: string;
-  friendCode?: string;
-  twinCode?: string;
 }
 
 type Result = { ok: true; view: PartyView } | { ok: false; error: string };
@@ -61,7 +62,7 @@ export class PartyRoom extends DurableObject<Env> {
   async create(code: string, deviceId: string, person: PartyPerson, settings: PartySettings): Promise<boolean> {
     if (await this.load()) return false;
     const host = this.member(deviceId, person);
-    await this.save({ code, hostId: host.id, settings, status: 'lobby', round: -1, table: null, nextAt: null, members: [host], live: null, updatedAt: Date.now() });
+    await this.save({ code, hostId: host.id, settings, status: 'lobby', round: -1, table: null, nextAt: null, members: [host], live: null, updatedAt: Date.now(), life: newLife(Date.now(), { partyGames: settings.games.length }) });
     return true;
   }
 
@@ -84,7 +85,7 @@ export class PartyRoom extends DurableObject<Env> {
     if (!data) return { ok: false, error: 'No party with that code.' };
     const have = data.members.find((m) => m.deviceId === deviceId);
     if (have) {
-      Object.assign(have, { name: this.uniqueName(data, cleanName(person.name), have.id), emoji: person.emoji, friendCode: person.friendCode, twinCode: person.twinCode });
+      Object.assign(have, { name: this.uniqueName(data, cleanName(person.name), have.id), emoji: person.emoji });
     } else {
       if (data.status !== 'lobby') return { ok: false, error: 'That party has already started.' };
       if (data.members.length >= PARTY_MAX_PLAYERS) return { ok: false, error: 'That party is full.' };
@@ -92,6 +93,7 @@ export class PartyRoom extends DurableObject<Env> {
       m.name = this.uniqueName(data, m.name, m.id);
       data.members.push(m);
     }
+    this.played(data);
     await this.save(data);
     return { ok: true, view: this.render(code, data, deviceId) };
   }
@@ -110,9 +112,26 @@ export class PartyRoom extends DurableObject<Env> {
         return { ok: true, view: { code, status: 'lobby', you: null, hostId: '', settings: data.settings, round: -1, table: null, nextAt: null, members: [], live: null } };
       }
       if (data.hostId === me.id) data.hostId = data.members[0].id;
+      this.played(data);
       await this.save(data);
     }
     return { ok: true, view: this.render(code, data, null) };
+  }
+
+  /** The host changes the playlist and rules (valid settings, checked by the route) while the party is still a lobby. */
+  async configure(code: string, deviceId: string, settings: PartySettings): Promise<Result> {
+    const data = await this.load();
+    if (!data) return { ok: false, error: 'No party with that code.' };
+    const me = data.members.find((m) => m.deviceId === deviceId);
+    if (!me || me.id !== data.hostId) return { ok: false, error: 'Only the host can change the party.' };
+    if (data.status !== 'lobby') return { ok: false, error: 'The party has already started.' };
+    data.settings = settings;
+    // The playlist can change length, and the party's longest life with it, while it's still a lobby.
+    const life = this.lifeOf(data);
+    life.hardCloseAt = life.bornAt + maxLifeMs(settings.games.length);
+    this.played(data);
+    await this.save(data);
+    return { ok: true, view: this.render(code, data, deviceId) };
   }
 
   /** The host starts the first game. */
@@ -121,6 +140,7 @@ export class PartyRoom extends DurableObject<Env> {
     if (!data) return { ok: false, error: 'No party with that code.' };
     if (!this.isHost(data, deviceId)) return { ok: false, error: 'Only the host can start the party.' };
     if (data.status !== 'lobby') return { ok: true, view: this.render(code, data, deviceId) };
+    this.played(data);
     const error = await this.startRound(code, data, 0);
     return error ? { ok: false, error } : { ok: true, view: this.render(code, data, deviceId) };
   }
@@ -130,23 +150,28 @@ export class PartyRoom extends DurableObject<Env> {
     const data = await this.load();
     if (!data) return { ok: false, error: 'No party with that code.' };
     if (!this.isHost(data, deviceId)) return { ok: false, error: 'Only the host can do that.' };
-    if (data.status === 'between') await this.nextRound(code, data);
+    if (data.status === 'between') {
+      this.played(data);
+      await this.nextRound(code, data);
+    }
     return { ok: true, view: this.render(code, data, deviceId) };
   }
 
   /** RPC from a round's table: chips after a hand. `live` is keyed by device id here. */
-  async progress(tableCode: string, round: number, live: PartyLive[]): Promise<void> {
+  async progress(tableCode: string, round: number, live: PartyLive[], activeAt?: number): Promise<void> {
     const data = await this.load();
     if (!data || data.status !== 'playing' || data.table !== tableCode || data.round !== round) return;
+    this.played(data, activeAt);
     const byDevice = new Map(data.members.map((m) => [m.deviceId, m.id]));
     data.live = live.flatMap((l) => (byDevice.has(l.id) ? [{ ...l, id: byDevice.get(l.id)! }] : []));
     await this.save(data);
   }
 
   /** RPC from a round's table: it's over. `order` is the people's device ids, best first. */
-  async roundEnded(tableCode: string, round: number, order: string[]): Promise<void> {
+  async roundEnded(tableCode: string, round: number, order: string[], activeAt?: number): Promise<void> {
     const data = await this.load();
     if (!data || data.status !== 'playing' || data.table !== tableCode || data.round !== round) return;
+    this.played(data, activeAt);
     // Anyone who isn't in the order (they left the table) finishes last.
     const ranked = [...order.filter((d) => data.members.some((m) => m.deviceId === d))];
     for (const m of data.members) if (!ranked.includes(m.deviceId)) ranked.push(m.deviceId);
@@ -165,11 +190,12 @@ export class PartyRoom extends DurableObject<Env> {
     await this.save(data);
   }
 
-  /** Moves the party along when the break is over, or forgets one nobody has used for days. */
+  /** Moves the party along when the break is over, or closes one nobody is playing or that has run its time. */
   async alarm(): Promise<void> {
     const data = await this.load();
     if (!data) return;
-    if (Date.now() >= data.updatedAt + KEEP_FOR_MS) {
+    if (closeReason(this.lifeOf(data), Date.now())) {
+      await this.ctx.storage.deleteAlarm();
       await this.ctx.storage.deleteAll();
       this.data = null;
       return;
@@ -180,13 +206,25 @@ export class PartyRoom extends DurableObject<Env> {
 
   // ── Inside ──────────────────────────────────────────────────────────────
 
+  /** The party's age. One saved before this existed starts its clock from its last change. */
+  private lifeOf(data: Stored): Life {
+    data.life ??= { bornAt: data.updatedAt, activeAt: data.updatedAt, hardCloseAt: data.updatedAt + maxLifeMs(data.settings.games.length) };
+    return data.life;
+  }
+
+  /** A person played (or a table says one did, at `at`): the idle clock starts again. */
+  private played(data: Stored, at: number = Date.now()): void {
+    const life = this.lifeOf(data);
+    life.activeAt = Math.max(life.activeAt, Math.min(at, Date.now()));
+  }
+
   private isHost(data: Stored, deviceId: string): boolean {
     return data.members.find((m) => m.id === data.hostId)?.deviceId === deviceId;
   }
 
   private member(deviceId: string, person: PartyPerson): Member {
     const name = cleanName(person.name);
-    return { id: newId(8), deviceId, name: isNameBlocked(name) ? 'Player' : name, emoji: person.emoji, friendCode: person.friendCode, twinCode: person.twinCode, points: [] };
+    return { id: newId(8), deviceId, name: isNameBlocked(name) ? 'Player' : name, emoji: person.emoji, points: [] };
   }
 
   private uniqueName(data: Stored, name: string, exceptId: string): string {
@@ -212,12 +250,12 @@ export class PartyRoom extends DurableObject<Env> {
   /** Opens the table for round `n`, with everyone seated. Returns an error sentence, or null when it worked. */
   private async startRound(code: string, data: Stored, n: number): Promise<string | null> {
     const host = data.members.find((m) => m.id === data.hostId) ?? data.members[0];
-    const people = [host, ...data.members.filter((m) => m !== host)].map((m) => ({ deviceId: m.deviceId, name: m.name, emoji: m.emoji, twinCode: m.twinCode }));
+    const people = [host, ...data.members.filter((m) => m !== host)].map((m) => ({ deviceId: m.deviceId, name: m.name, emoji: m.emoji }));
     for (let attempt = 0; attempt < 6; attempt++) {
       const tableCode = newCode();
       const game = buildPartyGame({ tableCode, partyCode: code, round: n, settings: data.settings, people, now: Date.now() });
       if (!game) return "Couldn't set the table up.";
-      if (await this.env.TABLE_ROOM.getByName(tableCode).create(game)) {
+      if (await this.env.TABLE_ROOM.getByName(tableCode).create(game, this.lifeOf(data).hardCloseAt)) {
         data.status = 'playing';
         data.round = n;
         data.table = tableCode;
@@ -240,7 +278,7 @@ export class PartyRoom extends DurableObject<Env> {
       round: data.round,
       table: data.table,
       nextAt: data.nextAt,
-      members: data.members.map(({ id, name, emoji, friendCode, points }) => ({ id, name, emoji, ...(friendCode ? { friendCode } : {}), points })),
+      members: data.members.map(({ id, name, emoji, points }) => ({ id, name, emoji, points })),
       live: data.live,
     };
   }
@@ -254,7 +292,8 @@ export class PartyRoom extends DurableObject<Env> {
     data.updatedAt = Date.now();
     this.data = data;
     await this.ctx.storage.put('party', data);
-    const at = data.status === 'between' && data.nextAt !== null ? Math.min(data.nextAt, data.updatedAt + KEEP_FOR_MS) : data.updatedAt + KEEP_FOR_MS;
+    const closes = closeAt(this.lifeOf(data));
+    const at = data.status === 'between' && data.nextAt !== null ? Math.min(data.nextAt, closes) : closes;
     await this.ctx.storage.setAlarm(Math.max(at, Date.now() + 10));
   }
 }

@@ -10,13 +10,14 @@ import {
   quickSay,
   reactionBeats,
   reactionText,
+  voiceKind,
   worthKeeping,
   worthSaying,
   type Game,
   type Seat,
   type Talk,
 } from '@/engine';
-import { useTalkOn } from '@/state/prefs';
+import { talkPasses, useTalkLevel } from '@/state/prefs';
 
 import { playSound } from './sounds';
 
@@ -28,16 +29,16 @@ export const moveSig = (hand: number, last: NonNullable<Seat['last']> | null | u
  * `canShow(id)` says whether a seat is on screen: a line from someone out of view would only hold up the rest.
  * `quiet` holds, per seat, the move whose talk has run its course: that move stays hidden rather than popping back.
  */
-export function useReactions(game: Game, canShow: (id: string) => boolean): { say: Record<string, Talk>; quiet: Record<string, string> } {
+export function useReactions(game: Game, canShow: (id: string) => boolean, meId?: string): { say: Record<string, Talk>; quiet: Record<string, string> } {
   // One conversation for as long as the table is on screen.
   const [chat] = useState(() => new ChatLane());
   const [now, redraw] = useReducer((_previous: number, at: number) => at, 0);
   const [quiet, setQuiet] = useState<Record<string, string>>({});
-  const talkOn = useTalkOn();
-  const talkRef = useRef(talkOn);
+  const talkLevel = useTalkLevel();
+  const talkRef = useRef(talkLevel);
   useEffect(() => {
-    talkRef.current = talkOn;
-  }, [talkOn]);
+    talkRef.current = talkLevel;
+  }, [talkLevel]);
   const gameRef = useRef(game);
   useEffect(() => {
     gameRef.current = game;
@@ -46,6 +47,10 @@ export function useReactions(game: Game, canShow: (id: string) => boolean): { sa
   useEffect(() => {
     canShowRef.current = canShow;
   }, [canShow]);
+  const meRef = useRef(meId);
+  useEffect(() => {
+    meRef.current = meId;
+  }, [meId]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Moves the conversation along to now, then wakes up again when something next changes.
@@ -125,7 +130,7 @@ export function useReactions(game: Game, canShow: (id: string) => boolean): { sa
         playSound('pop');
         continue;
       }
-      if (!talkRef.current || !canShowRef.current(who)) continue;
+      if (!talkPasses(talkRef.current, who, r.n, !!r.to && r.to === meRef.current) || !canShowRef.current(who)) continue;
       const name = gameRef.current.players.find((p) => p.id === r.to)?.name;
       chat.push(
         botSay({
@@ -137,6 +142,8 @@ export function useReactions(game: Game, canShow: (id: string) => boolean): { sa
           moment: momentRef.current,
           sig: lastMoves.current[who] ?? '',
           luck: Math.random(),
+          voice: voiceKind(r.id),
+          toYou: !!meRef.current && r.to === meRef.current,
         }),
       );
     }

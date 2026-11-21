@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 import { gameLook } from '@design/gameArt';
 import { toTableTime, variantOf, type Game, type Seat } from '@/engine';
 
+import { haptic } from '../haptics';
 import { playSound, setSoundMood, type SoundName } from './sounds';
 
 interface Snapshot {
@@ -23,7 +24,7 @@ function moveSound(move: NonNullable<Seat['last']>['move'], amount: number, bb: 
   if (move === 'fold') return 'fold';
   if (move === 'check') return 'check';
   if (move === 'allin') return 'allin';
-  if (move === 'sb' || move === 'bb') return 'chip';
+  if (move === 'sb' || move === 'bb' || move === 'straddle' || move === 'bomb') return 'chip';
   return amount >= bb * 8 ? 'chips' : 'chip';
 }
 
@@ -32,6 +33,12 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
   const hand = game.hand;
   const variant = variantOf(game);
   useEffect(() => setSoundMood(gameLook(variant).pitch), [variant]);
+  // The table's speed and the hand as it is now, read by the sound effects below when they fire. They only re-run
+  // on what they watch (a new move, a die, a vote), never because the clock speed or the moment changed.
+  const latest = useRef({ fast: game.fast, hand });
+  useEffect(() => {
+    latest.current = { fast: game.fast, hand };
+  });
 
   useEffect(() => {
     if (!hand) {
@@ -50,16 +57,34 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     if (newHand) {
       playSound('shuffle');
       const mine = hand.seats.find((x) => x.playerId === myId);
-      mine?.cards.forEach((_, i) => playSound('place', 300 + i * 180));
+      mine?.cards.forEach((_, i) => {
+        playSound('place', 300 + i * 180);
+        haptic.card(300 + i * 180);
+      });
       delay = 650;
     } else if (snap.board > before.board) {
       // The flop is three cards one after another; the turn and river are one.
-      for (let i = 0; i < snap.board - before.board; i++) playSound('place', i * 160);
+      // In the mini games the cards land on the moment's clock (see moments.ts), so the sounds follow it.
+      const m = hand.moment;
+      const sinceDeal = m ? toTableTime(Date.now(), latest.current.fast) - m.at : 0;
+      // A soft tap as the street lands, while you're still in the hand (sound for each card, one tap for the street).
+      const inHand = hand.seats.some((x) => x.playerId === myId && !x.folded);
+      for (let i = 0; i < snap.board - before.board; i++) {
+        const at = m?.offsets ? Math.max(0, (m.offsets[i] ?? i * 160) - sinceDeal) : i * 160;
+        playSound('place', at);
+        // One soft tap for a street, however many cards it brings: three buzzes for the flop read as a rattle.
+        if (inHand && i === 0) haptic.card(at);
+      }
     }
     let k = 0;
     for (const s of hand.seats) {
       const was = newHand ? '' : (before.last[s.playerId] ?? '');
-      if (s.last && keyOf(s) !== was) playSound(moveSound(s.last.move, s.last.amount, game.settings.bigBlind), delay + k++ * 120);
+      if (!s.last || keyOf(s) === was) continue;
+      const sound = moveSound(s.last.move, s.last.amount, game.settings.bigBlind);
+      const at = delay + k++ * 120;
+      playSound(sound, at);
+      // Your own chips going in (blinds too); other players' bets are sound only.
+      if (s.playerId === myId && sound !== 'fold' && sound !== 'check') haptic.chip(at);
     }
     if (snap.resulted && !before.resulted && hand.result) {
       const mine = myId ? (hand.result.won[myId] ?? 0) : 0;
@@ -68,22 +93,31 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     if (snap.myTurn && !before.myTurn) playSound('turn', 150);
   }, [hand, myId, game.settings.bigBlind]);
 
-  // The mini games' own moments: the die, the ghost taking a pot, the vote, a red river.
+  // The mini games' own moments: the die, the ghost taking a pot, a red river.
   const dice = hand?.dice ? `${hand.number}` : '';
   const kept = hand?.result?.ghost?.kept ? `${hand.number}` : '';
-  const voting = hand?.variant === 'imposter' && hand.result?.imposter ? `${hand.number}` : '';
+  const busted = hand?.moment?.kind === 'bust' ? `${hand.number}:${hand.moment.at}` : '';
+  // Crazy Deuces: five of a kind is the best hand there is.
+  const five = hand?.variant === 'deuces' && Object.values(hand.result?.names ?? {}).some((n) => n.startsWith('Five of a kind')) ? `${hand.number}` : '';
   const reds = hand?.variant === 'redriver' && hand.board.length > 5 ? `${hand.number}:${hand.board.length}` : '';
   const seen = useRef<Record<string, string> | null>(null);
   useEffect(() => {
-    const now = { dice, kept, voting, reds };
+    const now = { dice, kept, reds, busted, five };
     const before = seen.current;
     seen.current = now;
     if (!before) return;
+    const { hand, fast } = latest.current;
     if (dice && dice !== before.dice) playSound('dice');
     if (kept && kept !== before.kept) playSound('spook');
-    if (voting && voting !== before.voting) playSound('sting');
-    if (reds && reds !== before.reds) playSound('splash');
-  }, [dice, kept, voting, reds]);
+    if (reds && reds !== before.reds) {
+      // One splash for every extra card, as each lands.
+      const m = hand?.moment;
+      const since = m ? toTableTime(Date.now(), fast) - m.at : 0;
+      (m?.offsets?.slice(1) ?? [0]).forEach((o) => playSound('splash', Math.max(0, o - since)));
+    }
+    if (busted && busted !== before.busted) playSound('fold');
+    if (five && five !== before.five) playSound('pop', 400);
+  }, [dice, kept, reds, busted, five]);
 
   // A tick for each of your last five seconds.
   const deadline = snapTurn(game, myId);
@@ -92,7 +126,13 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     const timers: ReturnType<typeof setTimeout>[] = [];
     for (let s = 5; s >= 1; s--) {
       const at = (deadline - s * 1000 - toTableTime(Date.now(), game.fast)) / (game.fast ? 2 : 1);
-      if (at > 0) timers.push(setTimeout(() => playSound('tick'), at));
+      if (at > 0)
+        timers.push(
+          setTimeout(() => {
+            playSound('tick');
+            haptic.countdown(s);
+          }, at),
+        );
     }
     return () => timers.forEach(clearTimeout);
   }, [deadline]); // eslint-disable-line react-hooks/exhaustive-deps

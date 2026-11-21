@@ -4,13 +4,6 @@
 // real player in their seat would see, take as long as a person would, and now and then they say
 // something (botTalk.ts) or show their cards.
 
-import { decide, type BotMove } from './botPlay';
-import type { Game, Hand, Seat } from './types';
 
-export { BOTS, STYLES, type StyleId } from './botStyles';
+export { BOTS, FAMILIAR_COUNT, STYLES, type StyleId } from './botStyles';
 export type { BotMove } from './botPlay';
-
-/** What the bot whose turn it is does. */
-export function botMove(game: Game, hand: Hand, seat: Seat, rng: () => number): BotMove {
-  return decide(game, hand, seat, rng).move;
-}

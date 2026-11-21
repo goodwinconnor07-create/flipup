@@ -1,0 +1,123 @@
+# Takes the App Store screenshots on Apple's own iPhone simulators: builds the app for the simulator with the
+# screenshots recorder mounted (native/scripts/storeshots/install.mjs, never committed), then on an iPhone 17 Pro Max
+# (1320 × 2868, the 6.9" set) and an iPhone 17 Pro (1206 × 2622, the 6.1"/6.3" set) boots it with Apple's 9:41
+# status bar and lets the recorder walk the listing's screens while host.mjs takes `simctl` screenshots. The
+# pictures (JPEG, no alpha, the exact sizes App Store Connect asks for) are kept as the run's "store-screenshots"
+# download for 30 days: nothing is committed. No signing and no secrets: a simulator build needs neither.
+# Run by hand only (Actions tab > App Store screenshots > Run workflow). The order and the reasons are in
+# docs/APP_STORE.md under "Screenshots".
+name: App Store screenshots
+on:
+  workflow_dispatch:
+    inputs:
+      appearance:
+        description: "Light or dark mode for the pictures"
+        type: choice
+        options:
+          - dark
+          - light
+        default: dark
+      only:
+        description: "Some screens only, by number, separated by spaces (01 04 ...). Empty: all eight."
+        type: string
+        default: ""
+concurrency:
+  group: store-shots-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  shoot:
+    runs-on: macos-26
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.4
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+      - name: Pick Xcode
+        working-directory: .
+        # Expo SDK 58 needs Xcode 26.4 or later (see ios-build.yml).
+        run: |
+          xc=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          case "$xc" in *Xcode_26.[0-3]*) echo "::error::$xc is too old for Expo SDK 58 (needs Xcode 26.4+)"; exit 1;; esac
+          sudo xcode-select -s "$xc"
+          xcodebuild -version
+      - run: npm ci
+
+      - name: Mount the recorder
+        run: node scripts/storeshots/install.mjs
+
+      - name: Make the iOS project
+        env:
+          CI: "1"
+        run: |
+          npx expo prebuild --platform ios --clean
+          # The recorder calls the Mac's host on 127.0.0.1.
+          plist=$(ls ios/*/Info.plist | grep -v Pods | head -1)
+          /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity dict" "$plist" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Delete :NSAppTransportSecurity:NSAllowsLocalNetworking" "$plist" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsLocalNetworking bool true" "$plist"
+
+      - name: Build for the simulator
+        run: |
+          ws=$(ls -d ios/*.xcworkspace | head -1)
+          scheme=$(basename "$ws" .xcworkspace)
+          echo "Building $scheme from $ws"
+          set -o pipefail
+          xcodebuild -workspace "$ws" -scheme "$scheme" -configuration Release -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO build | tail -n 60
+          app=$(ls -d build/Build/Products/Release-iphonesimulator/*.app | head -1)
+          echo "APP=$PWD/$app" >> "$GITHUB_ENV"
+
+      - name: Shoot on each iPhone
+        env:
+          APPEARANCE: ${{ inputs.appearance }}
+          ONLY: ${{ inputs.only }}
+          OUT: ${{ runner.temp }}/store-screenshots
+        run: |
+          runtime=$(xcrun simctl list runtimes -j | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const r=JSON.parse(s).runtimes.filter(r=>r.platform==="iOS"&&r.isAvailable).pop();console.log(r?r.identifier:"")})')
+          shoot() {
+            name="$1"; type="$2"; folder="$3"
+            udid=$(xcrun simctl create "Store $name" "com.apple.CoreSimulator.SimDeviceType.$type" "$runtime")
+            echo "::group::$name ($udid)"
+            xcrun simctl boot "$udid"
+            xcrun simctl bootstatus "$udid" -b
+            xcrun simctl ui "$udid" appearance "$APPEARANCE"
+            xcrun simctl status_bar "$udid" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
+            xcrun simctl install "$udid" "$APP"
+            # A fresh simulator drops in a one-off "Ready for Apple Intelligence" notification a little after it
+            # boots: let it come and go before the app opens.
+            sleep 90
+            node scripts/storeshots/host.mjs "$udid" "$OUT/$folder" $ONLY > "$RUNNER_TEMP/host-$folder.log" 2>&1 &
+            host=$!
+            sleep 2
+            xcrun simctl launch "$udid" com.goodwin.flipup
+            # The recorder tells the host when it's done; give up after 40 minutes.
+            for i in $(seq 1 480); do
+              if ! kill -0 $host 2>/dev/null; then break; fi
+              sleep 5
+            done
+            kill $host 2>/dev/null || true
+            cat "$RUNNER_TEMP/host-$folder.log"
+            xcrun simctl shutdown "$udid" || true
+            echo "::endgroup::"
+            grep -q "] done" "$RUNNER_TEMP/host-$folder.log"
+          }
+          shoot "iPhone 17 Pro Max" iPhone-17-Pro-Max "6.9-inch-1320x2868"
+          shoot "iPhone 17 Pro" iPhone-17-Pro "6.3-inch-1206x2622"
+          ls -la "$OUT"/*
+
+      - name: Keep the pictures
+        if: always()
+        uses: actions/upload-artifact@v4 # pin to a commit SHA when convenient, like the others
+        with:
+          name: store-screenshots
+          path: ${{ runner.temp }}/store-screenshots
+          retention-days: 30

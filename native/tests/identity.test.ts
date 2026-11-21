@@ -3,14 +3,13 @@ import { DEFAULT_SETTINGS } from '../../src/game';
 
 vi.mock('expo-sqlite/localStorage/install', () => ({}));
 vi.mock('react-native', () => ({ AppState: { addEventListener: () => ({ remove() {} }) } }));
-vi.mock('../src/state/purchase', () => ({ restorePremium: async () => false }));
+vi.mock('../src/state/purchase', () => ({ restorePremium: async () => false, forgetPremium: () => {} }));
 vi.mock('../src/state/api', () => ({
   deleteFriendCard: vi.fn(),
   premiumForget: vi.fn().mockResolvedValue(undefined),
   createOnlineTable: vi.fn(),
   PremiumRequiredError: class extends Error {},
 }));
-vi.mock('../src/state/pals', () => ({ myPalCode: () => null }));
 vi.mock('../src/state/party', () => ({ leaveParty: vi.fn(), loadPartyRef: () => null }));
 
 afterEach(() => {
@@ -18,7 +17,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('rotates the table identity immediately after deletion and keeps Premium', async () => {
+it('rotates the table identity immediately after deletion and turns Premium off', async () => {
   vi.resetModules();
   vi.useFakeTimers();
   const entries = new Map<string, string>();
@@ -41,7 +40,7 @@ it('rotates the table identity immediately after deletion and keeps Premium', as
   const { deviceId } = await import('../src/state/device');
   expect(session.me).not.toBe(old);
   expect(session.me).toBe(deviceId());
-  expect(entries.get('flipup.premium')).toBe('true');
+  expect(entries.get('flipup.premium')).toBeUndefined();
   expect(entries.has('flipup.profile')).toBe(false);
   session.openLocalTable(DEFAULT_SETTINGS, 3, 'New', '😎');
   await vi.advanceTimersByTimeAsync(700);

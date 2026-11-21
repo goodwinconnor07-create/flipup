@@ -1,68 +1,59 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
-import { GameThumb } from '@/components/game-picture';
-import { VARIANTS, type Variant } from '@/engine';
-import { radius } from '@/theme';
-
-/**
- * Pictures of the game tiles, taken once per launch so the Party tab's belts can show plain images.
- *
- * Each tile is an SVG (cards, letters, suits) and the belts show about sixty of them; iOS draws them all the first
- * time the tab appears, which made the first visit stutter as the belts started moving. `ThumbSnapper` (on Home)
- * draws each game's tile off screen once the app has settled, saves it as a PNG, and `useThumbSnaps()` hands the
- * files out. Until they're ready (and on the web build, which has no pictures) the belts draw the SVGs as before.
- */
+import { DrawnThumb } from '@/components/game-picture';
+import { dropTile, keepTile, SNAPS_ON, subscribeTiles, tileKey, tilesSaved, tilesVersion, wantedTiles, type TileSpec } from '@/components/thumb-cache';
 
 /** The Party tab's tile size for a screen this tall: bigger on taller phones, so the belts fill the poster. */
 export const partyTile = (height: number, gap = 12) => Math.round(Math.max(76, Math.min(112, (height * 0.4 - gap * 2) / 3)));
 
-type Snaps = Partial<Record<Variant, string>>;
-let snaps: { size: number; files: Snaps } = { size: 0, files: {} };
-const listeners = new Set<() => void>();
-const subscribe = (f: () => void) => {
-  listeners.add(f);
-  return () => listeners.delete(f);
-};
-const EMPTY: Snaps = {};
+/** At most this many tiles are drawn off screen at once, so a batch never costs a noticeable frame. */
+const BATCH = 6;
 
-/** The saved tile pictures at `size`, once every game has one (an empty object until then). */
-export function useThumbSnaps(size: number): Snaps {
-  const now = useSyncExternalStore(subscribe, () => snaps);
-  return now.size === size && Object.keys(now.files).length === VARIANTS.length ? now.files : EMPTY;
-}
-
-/** Draws every game's tile off screen once the app has settled, and saves each as a picture. Mounted on Home. */
-export function ThumbSnapper({ size }: { size: number }) {
-  const [draw, setDraw] = useState(false);
-  const refs = useRef<Partial<Record<Variant, unknown>>>({});
+/**
+ * Photographs the game tiles that were drawn as SVG (see thumb-cache.ts), a few at a time, off screen, once the
+ * app has settled. Mounted once, in the root layout. Does nothing on the web build.
+ */
+export function ThumbSnapper() {
+  const version = useSyncExternalStore(subscribeTiles, tilesVersion, tilesVersion);
+  const [ready, setReady] = useState(false);
+  const [batch, setBatch] = useState<TileSpec[]>([]);
+  const refs = useRef(new Map<string, unknown>());
   const busy = useRef(false);
-  const done = snaps.size === size;
+
+  // Wait for the launch to finish and the first screen to settle, so this never competes with it.
   useEffect(() => {
-    if (Platform.OS !== 'ios' || done) return;
-    // Wait for the launch to finish and the first screen to settle, so this never competes with it.
-    const t = setTimeout(() => setDraw(true), 1500);
+    if (!SNAPS_ON) return;
+    const t = setTimeout(() => setReady(true), 1500);
     return () => clearTimeout(t);
-  }, [done]);
-  if (!draw || done) return null;
+  }, []);
+
+  // Pick the next few tiles whenever there are some waiting and nothing is being photographed.
+  useEffect(() => {
+    if (!ready || batch.length || busy.current) return;
+    const next = wantedTiles().slice(0, BATCH);
+    if (!next.length) return;
+    const t = setTimeout(() => setBatch(next), 250);
+    return () => clearTimeout(t);
+  }, [ready, version, batch.length]);
+
+  if (!batch.length) return null;
   const snap = async () => {
     if (busy.current) return;
     busy.current = true;
-    const files: Snaps = {};
-    try {
-      for (const v of VARIANTS) {
-        const ref = refs.current[v.id];
-        if (!ref) return;
-        files[v.id] = await captureRef(ref as never, { format: 'png', quality: 1, result: 'tmpfile' });
+    for (const spec of batch) {
+      const ref = refs.current.get(tileKey(spec));
+      try {
+        if (!ref) throw new Error('not drawn');
+        keepTile(spec, await captureRef(ref as never, { format: 'png', quality: 1, result: 'tmpfile' }));
+      } catch {
+        dropTile(spec);
       }
-      snaps = { size, files };
-      listeners.forEach((f) => f());
-    } catch {
-      // No pictures: the belts keep drawing the tiles themselves.
-    } finally {
-      setDraw(false);
     }
+    busy.current = false;
+    setBatch([]);
+    tilesSaved();
   };
   return (
     <View
@@ -71,18 +62,18 @@ export function ThumbSnapper({ size }: { size: number }) {
       importantForAccessibility="no-hide-descendants"
       // Off screen, but laid out and drawn. Waits a frame after layout so every tile has been drawn.
       onLayout={() => requestAnimationFrame(() => void snap())}
-      style={{ position: 'absolute', left: -10_000, top: 0, flexDirection: 'row' }}
+      style={{ position: 'absolute', left: -10_000, top: 0, flexDirection: 'row', alignItems: 'flex-start' }}
     >
-      {VARIANTS.map((v) => (
+      {batch.map((spec) => (
         <View
-          key={v.id}
+          key={tileKey(spec)}
           collapsable={false}
           ref={(r) => {
-            refs.current[v.id] = r ?? undefined;
+            refs.current.set(tileKey(spec), r ?? undefined);
           }}
-          style={{ width: size, height: size }}
+          style={{ width: spec.size, height: spec.size }}
         >
-          <GameThumb variant={v.id} size={size} rounded={radius.lg} />
+          <DrawnThumb variant={spec.variant} size={spec.size} rounded={spec.rounded} />
         </View>
       ))}
     </View>

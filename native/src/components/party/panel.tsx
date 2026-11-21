@@ -1,18 +1,29 @@
+import { showToast } from '@/state/toast';
+import { userMessage } from '@/state/user-error';
 import { router, useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+
+import { gameLook } from '@design/gameArt';
 
 import { PARTY_BREAK_SECONDS, partyStandings, variantInfo, type PartyView, type Variant } from '@/engine';
 import { partyLink } from '@/state/api';
 import { readParty, skipBreak, startParty, leaveParty } from '@/state/party';
 import { useProfile } from '@/state/profile';
 import { joinOnlineTable, leaveTable, useTable } from '@/state/session';
-import { spacing, usePlainColors } from '@/theme';
+import { enter } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { ForceScheme, ROUNDED, spacing, usePlainColors } from '@/theme';
 
 import { Button } from '../button';
 import { GameThumb } from '../game-picture';
 import { haptic } from '../haptics';
-import { InviteTicket } from '../invite-ticket';
+import { GameBackdrop } from '../home/game-backdrop';
+import { PANEL_RADIUS } from '../grouped-list';
+import { CodeCard } from '../lobby/code-card';
+import { Players, type PlayerLine } from '../lobby/players';
+import { PartyCard, PartyRules } from '../setup/party-pieces';
 import { ThemedText } from '../themed-text';
 import { PartyBoard } from './board';
 
@@ -28,7 +39,7 @@ export type PanelPlace = 'screen' | 'table' | 'sheet';
 const followed = new Set<string>();
 
 /** Polls the party while it's on screen: every 2s while a round is on, 3.5s otherwise, never in the background. */
-function usePartyView(code: string, onGone: () => void, active: boolean) {
+export function usePartyView(code: string, onGone: () => void, active: boolean) {
   const [view, setView] = useState<PartyView | null>(null);
   const gone = useRef(onGone);
   useEffect(() => {
@@ -72,6 +83,17 @@ function usePartyView(code: string, onGone: () => void, active: boolean) {
     };
   }, [code, active]);
   return [view, setView] as const;
+}
+
+/** Who's in a party's lobby, as the lobby's player rows. */
+export function lobbyRows(view: PartyView): PlayerLine[] {
+  return view.members.map((m) => ({
+    key: m.id,
+    name: m.name,
+    emoji: m.emoji,
+    line: m.id === view.hostId ? (m.id === view.you ? 'You · Host' : 'Host') : m.id === view.you ? 'You' : 'Ready',
+    you: m.id === view.you,
+  }));
 }
 
 /** Counts down to a time, in whole seconds. */
@@ -130,7 +152,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
       haptic.success();
     } catch (e) {
       haptic.failure();
-      Alert.alert('Something went wrong', e instanceof Error ? e.message : 'Try again.');
+      showToast(userMessage(e, 'Something went wrong. Try again.'));
     } finally {
       setBusy(false);
     }
@@ -148,23 +170,23 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
     void leaveParty(view.code);
     if (atTable) leaveTable();
     if (place !== 'screen' && router.canDismiss()) router.dismissAll();
-    router.navigate('/party');
+    router.navigate('/');
   };
 
   return (
     <View style={{ gap: spacing.lg }}>
       {view.status === 'lobby' && (
         <>
-          <View style={{ gap: spacing.xxs }}>
-            <ThemedText variant="largeTitle" accessibilityRole="header">
-              {host ? 'Invite your friends' : "You're in!"}
+          <CodeCard code={view.code} share={{ message: `Join my FlipUp party. Game code ${view.code}`, url: partyLink(view.code) }} />
+          <PartyCard games={view.settings.games} host={false} />
+          <PartyRules rules={{ stack: view.settings.startingStack, blindHands: view.settings.blindHands, fill: view.settings.fillTo }} />
+          <View style={{ gap: spacing.xs }}>
+            <Players rows={lobbyRows(view)} />
+            <ThemedText variant="footnote" tone="secondaryLabel" style={{ paddingHorizontal: spacing.xxs }}>
+              {view.settings.fillTo ? `Bots fill the empty seats up to ${view.settings.fillTo}.` : 'No bots in this party.'}
+              {host ? '' : " Waiting for the host to start."}
             </ThemedText>
-            <ThemedText tone="tertiaryLabel">{host ? `${total} games. Start when everyone's here.` : `Waiting for the host to start. ${total} games to play.`}</ThemedText>
           </View>
-          <InviteTicket code={view.code} link={partyLink(view.code)} kind="party" share="Join my FlipUp party." />
-          <PlaylistChips games={view.settings.games} round={-1} />
-          <SectionTitle text={`In the party · ${view.members.length}`} />
-          <PartyBoard rows={rows} you={view.you} running={false} code={code} />
           {host && <Button variant="party" tint="green" size="lg" title="Start the party" loading={busy} onPress={() => void act(() => startParty(view.code))} />}
         </>
       )}
@@ -179,7 +201,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
 
       {view.status === 'between' && (
         <>
-          <GameHeader eyebrow={`Up next · game ${view.round + 2} of ${total}`} variant={next} line={`Game ${view.round + 1} is done. The next one starts in ${seconds ?? PARTY_BREAK_SECONDS}s.`} />
+          {next && <UpNext variant={next} eyebrow={`Up next · game ${view.round + 2} of ${total}`} line={`Game ${view.round + 1} is done. Starts in ${seconds ?? PARTY_BREAK_SECONDS}s.`} />}
           <PartyBoard rows={rows} you={view.you} running={false} code={code} />
           {host && <Button variant="party" tint="blue" size="lg" title="Start next game now" loading={busy} onPress={() => void act(() => skipBreak(view.code))} />}
         </>
@@ -198,7 +220,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
           </View>
           <PartyBoard rows={rows} you={view.you} running={false} code={code} />
           <PlaylistChips games={view.settings.games} round={total} />
-          <Button variant="party" tint="blue" size="lg" title="Back to the Party tab" onPress={home} />
+          <Button variant="party" tint="blue" size="lg" title="Back to Play" onPress={home} />
         </>
       )}
       {place === 'screen' && view.status !== 'done' && view.status !== 'lobby' && (
@@ -210,11 +232,38 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
   );
 }
 
-function SectionTitle({ text }: { text: string }) {
+/**
+ * The break between games: the next game on a card in its own colour (Home's `GameBackdrop`), with its picture, name
+ * and hook. The one moment in a party about a single game, so it's the one place a party wears a game's colour (the
+ * rule in docs/DESIGN.md). A card, not the page: the break is mostly seen on the table's finish screen, whose page is
+ * the table's own.
+ */
+function UpNext({ variant, eyebrow, line }: { variant: Variant; eyebrow: string; line: string }) {
+  const reduce = useReduceMotion();
+  const info = variantInfo(variant);
+  const look = gameLook(variant);
   return (
-    <ThemedText variant="footnote" tone="tertiaryLabel" accessibilityRole="header" style={{ textTransform: 'uppercase', paddingHorizontal: spacing.md, marginBottom: -spacing.sm }}>
-      {text}
-    </ThemedText>
+    <Animated.View key={variant} entering={enter(reduce)} style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', boxShadow: '0 10px 28px rgba(0, 0, 0, 0.3)' }}>
+      <ForceScheme scheme="dark">
+        <GameBackdrop variant={variant} style={{ flex: 0, borderRadius: PANEL_RADIUS, borderCurve: 'continuous' }}>
+          <View accessible accessibilityRole="header" accessibilityLabel={`${eyebrow}. ${info.name}. ${look.hook}. ${line}`} style={{ padding: spacing.lg, alignItems: 'center', gap: spacing.xs }}>
+            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.8)' }}>
+              {eyebrow}
+            </Text>
+            <GameThumb variant={variant} size={88} />
+            <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontFamily: ROUNDED, fontSize: 32, fontWeight: '900', letterSpacing: -0.4, color: '#ffffff', textAlign: 'center' }}>
+              {info.name}
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '500', color: 'rgba(255, 255, 255, 0.85)', textAlign: 'center' }}>
+              {look.hook}
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '600', color: 'rgba(255, 255, 255, 0.8)', textAlign: 'center', fontVariant: ['tabular-nums'] }}>
+              {line}
+            </Text>
+          </View>
+        </GameBackdrop>
+      </ForceScheme>
+    </Animated.View>
   );
 }
 

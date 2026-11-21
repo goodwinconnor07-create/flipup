@@ -46,6 +46,14 @@ export class Connection {
     return true;
   }
 
+  /** Try now, instead of waiting out the back-off (the Try again button). */
+  retryNow(): void {
+    if (this.closed || this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) return;
+    this.failures = 0;
+    clearTimeout(this.retryTimer);
+    this.open();
+  }
+
   close(): void {
     this.closed = true;
     clearTimeout(this.retryTimer);
@@ -91,7 +99,7 @@ export class Connection {
       clearInterval(this.beatTimer);
       if (event.code === 4404 || event.code === 4410) {
         this.closed = true;
-        this.h.onGone(event.code === 4410 ? 'That table has closed.' : 'That table no longer exists.');
+        this.h.onGone(event.code === 4410 ? event.reason || 'That table has closed.' : 'That table no longer exists.');
         return;
       }
       this.h.onStatus('offline');

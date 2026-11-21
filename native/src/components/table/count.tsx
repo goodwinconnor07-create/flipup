@@ -38,7 +38,17 @@ export function useCountUp(target: number, ms = 600): { value: number; dir: 'up'
 }
 
 /** `up`/`down` override the rising and falling colours (the pot pill uses paler ones on the felt). */
-export function Count({ value, style, up, down }: { value: number; style?: TextStyle; up?: string; down?: string }) {
+export function Count({
+  value,
+  style,
+  up,
+  down,
+}: {
+  value: number;
+  style?: TextStyle;
+  up?: string;
+  down?: string;
+}) {
   const c = usePlainColors();
   const { value: v, dir } = useCountUp(value);
   const colour = dir === 'up' ? (up ?? c.green) : dir === 'down' ? (down ?? c.red) : undefined;

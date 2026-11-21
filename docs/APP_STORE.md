@@ -4,8 +4,12 @@ What Apple asks of FlipUp's iPhone and iPad app, what we'll do about each rule, 
 Everything below was checked against Apple's own pages on **2 November 2026** unless a line says otherwise.
 The App Review Guidelines page showed "Last Updated: October 16, 2026" that day.
 
-Status: **Phase 1 done, waiting for the owner's review.** Phase 2 doesn't start until the change list at the
-end and the questions under it have answers.
+Status (15 November 2026): **ready to submit once the owner's steps in `docs/SUBMISSION.md` are done.** A full test
+and review pass ran that day (every test suite, the layout sweep at four iPhone sizes, the bot labs, the live server and
+pages); what it found and fixed is in the pull request "App Store prep". On 16 November 2026 everything the app
+doesn't show was taken out of the code (the owner: no switched-off features in the submitted app): Friends, contacts,
+challenges, the testing switch, the website's game, Bankroll, Campaign and Blackjack. The eight newest games are in
+`parked/games/` for later.
 
 Sources:
 [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) ·
@@ -45,8 +49,7 @@ reviewer and functional."
 - Replace every Expo placeholder: the icon (`assets/expo.icon`, `assets/images/icon.png`) and the splash image. Done: both are drawn by `scripts/makeAppIcon.mjs`.
 - Remove every `ComingNext` screen (`native/src/components/coming-next.tsx`): Phase 5 uses them as stand-ins for
   steps it hasn't built yet. `grep -r ComingNext native/src` must find nothing but the file itself, then delete it.
-- `/privacy` and `/support` on gtoduel.online answer today, but only with the web app's page (the single-page
-  fallback), not a policy. Make them real static pages before submitting.
+- `/privacy` and `/support` on playflipup.com are real static pages (`public/privacy.html`, `public/support.html`).
 - Premium must be buyable in the review build with a sandbox account, and the review notes say where it is.
 - Keep the Worker up during review. `/api/health` already exists for a quick check.
 
@@ -58,8 +61,8 @@ honestly (2.3.6), name at most 30 characters with no keyword stuffing (2.3.7), m
 
 **What we'll do:** screenshots taken from the real native build. Nothing about Campaign, roulette, blackjack or
 AI Legends anywhere in the listing, since they won't be in the app. The description says plainly that chips are
-play chips with no cash value. Name "FlipUp: Poker with Friends" is 26 characters; subtitle "Variants and party
-nights" is 25.
+play chips with no cash value. Name "FlipUp: Poker with Friends" is 26 characters; subtitle "Texas Hold'em + 12 mini games"
+is 29.
 
 ### 2.5.2 Software requirements (no downloaded code)
 
@@ -75,7 +78,24 @@ in version 1. If it's added later, it's only for bug fixes, never new features.
 purchase. Apps may not use their own mechanisms to unlock content or functionality." And: "you should make sure
 you have a restore mechanism for any restorable in-app purchases."
 
-**What we'll do:**
+**Subscriptions (November 2026, the owner's call): Premium is now sold as auto-renewing subscriptions.**
+- One subscription group, "FlipUp Premium", with two products: `flipup.premium.monthly` at $7.00 a month and
+  `flipup.premium.yearly` at $50.00 a year (`native/appInfo.ts`). Each has an introductory offer, **pay up front,
+  $1.00 for the first month** (set it per product in App Store Connect > Subscriptions > Subscription Prices >
+  Introductory Offers). The plan was $1 for 14 days, but Apple's shortest pay-up-front offer is one month (free
+  trials can be 3 days, 1 or 2 weeks, or longer; checked 15 November 2026), so the owner picked a month. The app
+  words whatever is set from StoreKit (`introLengthOf()` in `state/purchase.ts`: "Try 1 month for $1.00"). **TODO(owner): make the group, both products and both offers in App Store Connect before the next build**,
+  and add the two ids to the review build's sandbox testers.
+- The old one-time `flipup.premium.unlock` is no longer sold. Anyone who bought it keeps Premium for good (the app and
+  the server both still accept it); don't remove it from sale in a way that breaks Restore.
+- 3.1.2 asks for the price, the period, what renews and how to cancel next to Subscribe, plus links to the terms of
+  use and the privacy policy: the Premium sheet's pinned bar has all of it (Apple's standard EULA at
+  `APP_INFO.termsUrl`). Manage subscription (`deepLinkToSubscriptions`) is on the sheet once you have Premium.
+- The server (`worker/premium.ts`, `entitlement.ts`) keeps each subscription's expiry from the signed transaction and
+  from App Store Server Notifications (renewals move it on), with a day's grace. Set the notifications URL
+  (`/api/apple/notifications`, version 2) in App Store Connect so renewals and expiries reach it.
+
+**Before November 2026:**
 - Premium is the non-consumable `flipup.premium.unlock`, sold through StoreKit (`react-native-iap` or
   `expo-iap`, whichever supports SDK 58 when we get there). The price shown comes from StoreKit, never a
   hard-coded "$9".
@@ -107,10 +127,10 @@ equivalent private login (Sign in with Apple is the usual one).
 It must say what's collected and how it's used, that third parties protect it equally, and how data is kept,
 deleted and how a person asks for deletion.
 
-**What we'll do:** write the policy as a static page at `https://gtoduel.online/privacy` (URL kept in
-`native/appInfo.ts`). It covers: the random device ID made on the phone, the friend code with its name and
-emoji, what an online table or party keeps while it runs, how long each is kept (tables 3 days, parties 2 days,
-friend codes 120 days after their last use, all deleted automatically), Cloudflare as the host that processes it,
+**What we'll do:** the policy is a static page at `https://playflipup.com/privacy` (URL kept in
+`native/appInfo.ts`). It covers: the random device ID made on the phone, the name and
+emoji shown at tables, what an online table or party keeps while it runs, how long each is kept (tables and parties close after 30 minutes with no play and 6 hours at most, 8 for a 12-game party,
+all deleted automatically), Cloudflare as the host that processes it,
 no ads, no analytics, no tracking, purchases handled by Apple, and how to delete everything from the app. Link it
 from Settings and from the Premium sheet.
 
@@ -122,15 +142,13 @@ for the user. Do I need to include an option to initiate account deletion? Yes."
 the option to delete automatically generated accounts (sometimes called 'guest' accounts)." Deactivating isn't
 enough.
 
-**Is a device ID an account?** On its own, no: it never leaves the phone except to prove a phone owns its seat.
-But a **friend code** is a record on our server (a name, an emoji and the owning device ID in a `FriendCard`
-Durable Object, kept for 120 days after last use) that others look up. That's a guest account in Apple's words.
-
-**What we'll do:** add "Delete my data" to Settings. It asks once, then:
-1. calls a new `DELETE /api/friends/:code` (only the owning device may) which clears that `FriendCard`,
-2. leaves any open table or party,
-3. wipes every `flipup.*` key on the phone, including the device ID and the friend list,
-4. tells the person it's done. Premium survives because Apple keeps that record, and Restore brings it back.
+**Is a device ID an account?** No: it never leaves the phone except to prove a phone owns its seat, and since
+Friends came out (16 November 2026) the server keeps no lasting record of a person (the friend codes were the one
+that counted as a guest account). Settings still has "Delete my data". It asks once, then:
+1. leaves any open table or party,
+2. drops the Premium link between the device ID and the purchase on the server,
+3. wipes every `flipup.*` key on the phone, including the device ID,
+4. tells the person it's done. Premium goes off on the phone (`flipup.premiumreset` stops it coming back by itself); Apple keeps the subscription, and Restore brings it back.
 
 ### 1.2 User-generated content
 
@@ -222,10 +240,10 @@ What FlipUp collects, all **linked to the user**, all for **App Functionality** 
 
 | Apple's data type | What it is in FlipUp |
 |---|---|
-| Identifiers > User ID | The friend code, and the screen name shown at tables, parties and on the friend card ("screen name, handle ... assigned user ID") |
-| Identifiers > Device ID | The random ID the app makes on first launch (`flipup.device`), which proves a phone owns its seat or friend code. Not the advertising ID or the vendor ID |
-| User Content > Gameplay Content | Online tables and parties: seats, moves, chips and results while the table runs (deleted 3 days after it goes quiet) |
-| User Content > Other User Content | The emoji picture on a friend card and at tables |
+| Identifiers > User ID | The screen name shown at tables and parties ("screen name, handle ... assigned user ID") |
+| Identifiers > Device ID | The random ID the app makes on first launch (`flipup.device`), which proves a phone owns its seat. Not the advertising ID or the vendor ID |
+| User Content > Gameplay Content | Online tables and parties: seats, moves, chips and results while the table runs (deleted after 30 minutes with no play, and at most 6 hours after it opens, 8 for a 12-game party) |
+| User Content > Other User Content | The emoji picture shown at tables and parties |
 
 Premium: the server keeps Apple's original transaction id and the device ids it was shown on (Purchases, linked to
 the device id, for App Functionality). It keeps no name, email or card details. "Delete my data" removes the device
@@ -235,7 +253,7 @@ Not collected by FlipUp itself: contact info, location, health, financial info, 
 diagnostics, usage data, purchases (Apple handles the purchase; if the server later checks StoreKit transactions and keeps them, add
 **Purchases > Purchase History**). Bots-only games never leave the phone.
 
-`native/app.config.ts` writes the same four types into the privacy manifest. Keep the two in step.
+`native/app.config.ts` writes these types into the privacy manifest, plus Purchases > Purchase History (the server keeps Apple's purchase id with the device id). Keep the two in step, and tick Purchase History on the App Privacy label.
 
 ### Privacy manifest (`PrivacyInfo.xcprivacy`)
 
@@ -252,21 +270,41 @@ manifests the React Native and Expo modules ship with:
 Recheck after every `npx expo install` of a native module: open the built `.ipa` and compare, since Apple emails
 after upload when a reason is missing.
 
-### Review access (draft review notes)
+### Review access (review notes, updated 17 November 2026)
 
-> FlipUp needs no account or login. To play right away, tap **Play with bots** on Home, then **Deal**. The bots
-> fill the table and the game runs on the phone, so no second device is needed. To see an online table, tap
-> **Play with friends**: it opens a table with a 5-letter code, and **Add bot** fills the seats. Party mode is on
-> the Party tab: **Host a party**, add bots, and start.
+Paste this into App Store Connect > the version > App Review Information > Notes. It names the buttons as they are in
+the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a game).
+
+> FlipUp needs no account or login. To play right away: on the Play tab, tap **Play bots**, then **Start game**. The
+> bots fill the table and the game runs on the phone, so no second device or connection is needed.
 >
-> Chips are play chips only. They can't be bought, cashed out or exchanged, and there's no real-money play.
+> Online play: tap **Host a game**. The lobby shows a six-character game code; tap **Add Bot** to fill seats and
+> **Start game** to deal. A second device joins with **Join a game** and that code (or by scanning the QR code under
+> **QR**). Party mode starts from the same lobby: **Start a party**, pick the games, **Save playlist**, then
+> **Start party**.
 >
-> Premium is a one-time in-app purchase (`flipup.premium.unlock`). Open it from Settings > FlipUp Premium, or by
-> tapping any locked card back, bubble colour or game. Buy it with a sandbox account; **Restore Purchases** is on
-> the same sheet. Five game modes are free. The other eight need Premium to host; anyone can join one with a code
-> for free, so only the host needs it. There are no ads and no referral rewards. To check account deletion: Settings > Delete my data.
+> Chips are play chips only. They can't be bought, sold, won or exchanged, and there's no real-money play.
 >
-> Reporting and blocking: tap a player's seat at an online table, then Report or Block.
+> Premium is an auto-renewing subscription in one group, monthly (`flipup.premium.monthly`) or yearly
+> (`flipup.premium.yearly`), each with an introductory offer for the first month. Open it from the **Premium**
+> button (crown) on the Play tab, or swipe to any game with a crown and tap **Host a game** or **Play bots**. Buy it
+> with a sandbox account; **Restore** is on the same page and in Settings, and **Manage subscription** is in Settings
+> once subscribed.
+> - Free: Texas Hold'em, ten bots, Saved hands and one Range training hand a day.
+> - Premium: hosting the 12 mini games, the rest of the bots, Bot Lab (Settings > Bot Lab: make your own bots), the
+>   rest of Range training and Hand review (open a Texas Hold'em hand in Saved hands).
+>
+> Anyone can join any game with a code for free; only the host needs Premium. There are no ads and no tracking.
+>
+> Account deletion: **Settings** (the gear on the Play tab) > **Delete my data**.
+>
+> Reporting and blocking need another person at the table: tap their seat at an online table, or their face in the
+> lobby's Players, then **Report…** or **Block**. Blocked players are listed in Settings > Blocked players. Nothing
+> typed is ever shown to other players; table talk is a fixed list of quick messages.
+>
+> Permissions are asked only when used: the camera for **Scan a QR code** on Join a game, notifications for the
+> optional daily reminder on the Train tab, and Photos only to add a picture when you tap Save Image on a share card.
+> The daily reminder is a local notification on the phone. The app doesn't use push notifications.
 
 ### Performance
 
@@ -294,6 +332,12 @@ PNG or JPEG, no transparency, 1 to 10 per size.
 Smaller sizes fall back to these, so a 6.9" set and a 6.1" set cover every iPhone. The 13" iPad set comes with
 the iPad release.
 
+**Order (11 November 2026).** Lead with a mini game table, not Texas Hold'em: the variants are what no other poker
+app has. Suggested order: 1. a Crucifix or Pittsburgh table mid-hand (the cross or three rivers on the felt), 2.
+Die on the River's roll, 3. Home's game swiper on a mini game, 4. the Play with friends lobby with the game code, 5.
+a Haunted Pot showdown, 6. the Range training daily quiz, 7. Texas Hold'em with bots talking, 8. Saved hands and a
+share card (free). Every one from the real native build (2.3.3).
+
 ### App icon
 
 - One 1024 × 1024 square, no transparency and no rounded corners (the system masks it).
@@ -307,19 +351,24 @@ the iPad release.
 
 ## Open items before submission
 
+- Rewarded ads, Bankroll, the Global tab and its public boards were all taken out before 1.0 (16 November 2026), so
+  nothing about ads, tracking or public boards is open. The audit of 16 November 2026 (`docs/AUDIT_2026-11.md`) lists
+  what's left for the owner to decide.
+
 | # | Item | Who |
 |---|---|---|
 | 1 | GitHub secrets: done. The Expo token is `EXPO_API_TOKEN` | Done |
 | 2 | Bundle ID `com.goodwin.flipup`, in `native/appInfo.ts` | Done |
 | 3 | EAS project ID `55f84d03-0b82-48a2-9fa8-a4f76a7d112a`, in `native/appInfo.ts` | Done |
-| 4 | **Support email `goodwinconnor007@gmail.com` is a placeholder** (`TODO(before launch)` in `native/appInfo.ts`). Replace it before submitting | Owner |
-| 5 | Real static pages at `/privacy` and `/support` (today both return the web app) | Claude, Phase 2 |
+| 4 | Support email is `support@playflipup.com` (Cloudflare Email Routing to the owner's inbox). Done | Owner |
+| 5 | Real static pages at `/privacy` and `/support`: live (checked 15 November 2026); the corrected text goes live with the next Deploy | Done |
 | 6 | The first EAS build may need the Apple team type (individual or company). If the build asks, set `EXPO_APPLE_TEAM_TYPE` in the workflow | Owner says which |
 | 7 | `eas submit` may need the App Store Connect app ID (the number in the app's URL) if it can't find the app from the bundle ID | Owner, if asked |
 | 8 | App icon and splash made for FlipUp: done (`scripts/makeAppIcon.mjs`). Check the layered icon in Icon Composer or on a TestFlight build, since it was written by hand, not exported | Done, check on device |
 | 9 | Availability: leave out **South Korea** and **China mainland** (decided 2 November 2026) | Owner sets it in App Store Connect |
 | 10 | **Fix web payments.** The web's Premium purchase is still a stand-in that always succeeds. The web waits for a real payment provider before launch | Owner picks a provider, then Claude |
-| 11 | ~~Google AdMob account~~ Dropped: no ads (4 November 2026). Instead: set the App Store Server Notifications V2 URL to `https://gtoduel.online/api/apple/notifications` (production and sandbox), then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy | Owner |
+| 11 | ~~Google AdMob account~~ Dropped: no ads (4 November 2026). Instead: set the App Store Server Notifications V2 URL to `https://playflipup.com/api/apple/notifications` (production and sandbox), then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy. Enforcement is live (the server refused a Premium game to a phone without Premium on 15 November 2026); the notifications URL is still the owner's step | Owner (URL) |
+| 12 | **Join links open the app.** Put your Apple Developer Team ID (10 characters) in `APPLE_TEAM_ID` in `wrangler.jsonc` and deploy, so the Worker can answer `/.well-known/apple-app-site-association`. The app needs a new build too (`associatedDomains` in `app.config.ts`). Check with `curl https://playflipup.com/.well-known/apple-app-site-association`, then tap a link in Messages on a phone with the build installed. If the domain changes, the app and the Worker both follow `apiOrigin` | Done: the Team ID is set and the file is live (checked 15 November 2026); the 1.0 build carries `associatedDomains` |
 
 ---
 
@@ -331,7 +380,7 @@ Native build:
 2. Premium through StoreKit only, the price from StoreKit, a working Restore Purchases button on the Premium
    sheet and in Settings, no stand-in purchase code.
 3. Never sell or give chips for money; Premium unlocks looks and modes only.
-3a. Game modes: the first five free, the other eight need Premium to host. Only the host needs it; people joining
+3a. Game modes: only normal Texas Hold'em free, the other games need Premium to host (free hosts also seat only the ten original bots; Range training is one hand a day, and Premium has every hand). Only the host needs it; people joining
    by code don't. The server checks it (see "Premium, checked on the server"). No ads.
 3b. "Type any emoji" free for everyone.
 4. A "play chips only" line in the app and in the description.
@@ -349,7 +398,7 @@ Native build:
 
 Server (Cloudflare Worker):
 14. `DELETE /api/friends/:code` for the owning device. Done (Phase 5, step 5), with Delete my data in the app's Settings.
-15. `POST /api/reports`, stored and emailed to the support address. Done (`worker/reports.ts`, the `ReportBox` Durable Object, kept 180 days). Email needs the Worker secrets `RESEND_API_KEY` and `REPORT_TO` (and `REPORT_FROM` on a domain verified in Resend); without them reports are only stored.
+15. `POST /api/reports`, stored and emailed to the support address. Done (`worker/reports.ts`, the `ReportBox` Durable Object, kept 180 days). Email needs the Worker secrets `RESEND_API_KEY` and `REPORT_TO` (and `REPORT_FROM` on a domain verified in Resend; live: `FlipUp <reports@mail.playflipup.com>`, `mail.playflipup.com` is verified for sending and receiving, the Worker's key is sending-only and limited to it); without them reports are only stored.
 16. Check a signed StoreKit transaction before honouring Premium looks or modes at an online table. Done in code
     (`worker/appleJws.ts`, `worker/premium.ts`, `worker/entitlement.ts`, enforced by `worker/index.ts` and
     `worker/room.ts`); switched on by `PREMIUM_ENFORCED` once the owner's steps in row 11 are done.
@@ -367,11 +416,11 @@ Store listing:
 ## Questions for the owner (answered 2 November 2026)
 
 1. Should Premium include the variants as paid modes, or only cosmetics?
-   **Answer:** Yes. The first five game modes are free; the rest are Premium, and anyone without Premium can
+   **Answer:** Yes. (Changed 11 November 2026: only normal Texas Hold'em is free, with the ten original bots and one daily range quiz; everything else is Premium.) The game modes past Hold'em are Premium, and anyone without Premium can
    (changed 4 November 2026: no ads) host a Premium game without Premium. When someone joins a Premium game with a
    code, only the host needs Premium; the people joining don't.
-   - Free, in `VARIANTS` order: Texas Hold'em, Crazy Pineapple, Crazy Deuces, Ghost Hold'em, Pittsburgh.
-   - Premium: Die on the River, Red River, Imposter, Crucifix, Circle Hold'em, Memory Poker, Bean
+   - Free, in `VARIANTS` order: Texas Hold'em, Crazy Pineapple, Crazy Deuces, Haunted Pot, Pittsburgh.
+   - Premium: Die on the River, Red River, Crucifix, Round the Clock, Memory Poker, Bean
      Stalk.
 2. Does the desktop version need its own layout changes beyond sharing the new tokens?
    **Answer:** Yes. Parts of it are laid out like the phone app and don't use the whole screen. The board is good,
@@ -396,8 +445,9 @@ Store listing:
 
 ### What Premium unlocks now
 
-Card packs, chat bubble effects, and hosting the seven Premium game modes. AI Legends and "Type any
-emoji" are no longer Premium unlocks (Legends aren't in the native app; any emoji is free).
+As of 17 November 2026: hosting the 12 mini games (no free game of the week), Bot Lab and every bot past the free ten, all of
+Range training past the free daily hand, Hand review in Saved hands (19 Nov 2026), the card backs, the Premium share-card designs and the gold name. "Type any
+emoji" is free for everyone. Chat bubble effects and AI Legends are no longer in the app.
 
 ### Rewarded ads: dropped (4 November 2026)
 
@@ -427,3 +477,5 @@ still join one for free. `unlockToHost()` in `native/src/state/unlock.ts` opens 
   locked out of Premium games and looks. Switch it to `"1"` when the iPhone app is the client that sells them.
 - **Family Sharing** is off for the purchase (a shared purchase is refused by the check).
 - **Not done:** Apple offer codes (unconfirmed for non-consumables), a referral reward (see `docs/PREMIUM_PLAN.md`).
+
+- Contacts: removed with Friends on 16 November 2026 (expo-contacts is gone, so the app never asks).

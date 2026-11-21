@@ -1,14 +1,19 @@
 // The table and everything in it. One Game is one table, from lobby to the last hand.
 
+import type { LabBotSpec, LabDials } from './botLab';
+import type { Style } from './botStyles';
 import type { Card } from './cards';
-import type { TwinBrain } from './twinFit';
 import type { Variant } from './variants';
+import type { BotDifficulty } from '../bot_engine/everyday';
+import type { EverydayBotState } from '../bot_engine/everydayLive';
 
 export type Status = 'lobby' | 'playing' | 'ended';
 export type Street = 'preflop' | 'flop' | 'turn' | 'river';
 export type Move = 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin';
 
 export interface Settings {
+  /** Normal Hold'em opponents. Missing defaults to Casual; changes apply next hand. */
+  botDifficulty?: BotDifficulty;
   /** Chips each player sits down with (and gets again on a rebuy). */
   startingStack: number;
   smallBlind: number;
@@ -23,10 +28,22 @@ export interface Settings {
   blindCap?: number;
   /** Online tables: a busted player (no chips) sees every hole card. */
   showToBusted?: boolean;
+  /** Bots-only tables: after each hand you played past preflop, a small recap (what you won or lost, who won) waits
+   * for Next hand or Replay. The phone holds the deal; the engine and server ignore it. */
+  replayEachHand?: boolean;
   /** Seconds a person gets to act before they're checked or folded. 0 = no limit. */
   turnSeconds: number;
   /** Which game the table plays (see variants.ts). Missing = Texas Hold'em. */
   variant?: Variant;
+  // Home game house rules (see docs/RULES.md "House rules"). Missing = off.
+  /** Everyone dealt in antes this share of the big blind, in percent (10, 25, 50 or 100). */
+  ante?: number;
+  /** The player after the big blind posts a straddle of two big blinds every hand (three players or more). */
+  straddle?: boolean;
+  /** Every this many hands is a bomb pot: everyone puts in two big blinds and the hand starts on the flop. */
+  bombEvery?: number;
+  /** When an all-in leaves cards to come in Texas Hold'em, the players in it can agree to deal the rest twice. */
+  runTwice?: boolean;
 }
 
 export interface Player {
@@ -51,18 +68,23 @@ export interface Player {
   offline?: boolean;
   /** A bot's way of playing (see botStyles.ts). Stripped before the table is sent to any phone. */
   style?: string;
-  /** Plays in the style of a legend (see legends.ts). Public: the table shows who it is. */
-  legend?: string;
   /** Their chat bubble colour (see bubbles.ts), a FlipUp Premium extra. Public: everyone at the table sees it. */
   bubble?: string;
   /** Their card back (see cardPacks.ts), a FlipUp Premium extra. Public: the table sees it on the back of their cards. */
   cardPack?: string;
-  /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */
-  twin?: TwinBrain;
+  /** A FlipUp Premium player who shows their name in gold (Settings > Gold name). Public: everyone at the table sees it. */
+  gold?: boolean;
+  /** Bot lab only (botSim.ts): the style this seat plays instead of its own. Stripped before the table is sent to any phone. */
+  labStyle?: Style;
+  /** A bot made in the app's Bot Lab: its dials, played through `labStyle()` (botLab.ts). Stripped like `style`. */
+  lab?: LabDials;
+  /**
+   * A bot the host made in Bot Lab. Public (the dials stay private in `lab`): the Casual / Challenge level only
+   * changes the everyday bots, so a screen hides it when every bot at the table is one of these.
+   */
+  labBot?: boolean;
   /** Stable bot identity, private on online tables. */
   botProfile?: string;
-  /** 0 to 1: how much less well this bot plays than its style, at an easy campaign table (see `dulled()`). Stripped before the table is sent to any phone. */
-  dull?: number;
 }
 
 /** What the bots have seen a player do, from public moves only. */
@@ -142,7 +164,7 @@ export interface Seat {
   /** Cards are face up for everyone. */
   shown: boolean;
   /** The last thing they did, shown under their picture. */
-  last: { move: Move | 'sb' | 'bb'; amount: number; street: Street } | null;
+  last: { move: Move | 'sb' | 'bb' | 'straddle' | 'bomb'; amount: number; street: Street } | null;
 }
 
 export interface PotResult {
@@ -160,12 +182,21 @@ export interface HandResult {
   names: Record<string, string>;
   /** True if it went to a showdown; false if everyone else folded. */
   showdown: boolean;
-  /** Ghost Hold'em: the ghost's hand, and the chips it kept for the next hand because nobody beat it. */
-  ghost?: { cards: Card[]; name: string; kept: number };
-  /** Blackjack Hold'em: each showing player's 21 count, and who won each pot's poker half and 21 half (by pot). */
+  /** Haunted Pot: the ghost's hand, the chips it kept for the next hand because nobody beat it (its bounty grows by
+   * that), and `paid`, the bounty it had built up that a player took by beating it this hand. */
+  ghost?: { cards: Card[]; name: string; kept: number; paid?: number };
+  /** Hit Me: each showing player's 21 count, and who won each pot's poker half and 21 half (by pot). */
   blackjack?: { counts: Record<string, number>; poker: string[][]; winners: string[][] };
-  /** Imposter: who it was, how everyone voted (voter to suspect) and whether the innocents caught them. */
-  imposter?: { id: string; votes: Record<string, string>; caught: boolean };
+  /** Run it twice: each board, its hand names and each pot's winners on it (half of each pot per run). */
+  runs?: RunResult[];
+}
+
+/** One board of a hand that was run twice. */
+export interface RunResult {
+  board: Card[];
+  names: Record<string, string>;
+  /** Winners of each pot's half on this board, in the order of `HandResult.pots`. */
+  winners: string[][];
 }
 
 /** One finished hand, for the hand log. */
@@ -209,6 +240,14 @@ export interface HandRecord {
   /** Chips each player got back at the end. */
   won: Record<string, number>;
   showdown: boolean;
+  /** House rules: chips each player put in before the hand as dead money (antes, or a bomb pot's buy-in). */
+  dead?: Record<string, number>;
+  /** A bomb pot: no blinds, no betting before the flop. */
+  bomb?: boolean;
+  /** Who straddled, and for how much. */
+  straddle?: { id: string; amount: number };
+  /** Run it twice: the first run's board (`board` is the second). */
+  firstBoard?: Card[];
 }
 
 export interface Hand {
@@ -252,28 +291,123 @@ export interface Hand {
   ranOut?: boolean;
   /** Each player's chips before the blinds. */
   startStacks?: Record<string, number>;
-  /** Ghost Hold'em: the ghost's two cards. Sent to phones only once the hand reaches a showdown. */
+  /** Haunted Pot: the ghost's two cards. Sent to phones only once the hand reaches a showdown. */
   ghost?: Card[];
-  /** Ghost Hold'em: chips the ghost kept from earlier hands, in this pot too. */
+  /** Haunted Pot: chips the ghost kept from earlier hands, in this pot too. */
   carry?: number;
   /** Crazy Pineapple: the flop betting is over and everyone still in throws a card away before the turn. */
   discarding?: boolean;
   /** The game this hand is played as (a change of game in the settings waits for the next hand). Missing = Texas Hold'em. */
   variant?: Variant;
   /** Die on the River: what the die rolled, and the board card it swapped (out) for a new one (in). A 6 swaps nothing. */
-  dice?: { roll: number; out?: Card; in?: Card };
-  /** Blackjack Hold'em: how many cards each player has hit (public; the cards themselves are face down). */
+  /** `until`: when the roll's show ends on the phones (the river's betting waits for it). */
+  dice?: { roll: number; out?: Card; in?: Card; until?: number };
+  /** Hit Me: how many cards each player has hit (public; the cards themselves are face down). */
   hits?: Record<string, number>;
-  /** Blackjack Hold'em: players who went over 21 and were folded. */
+  /** Hit Me: players who went over 21 and were folded. */
   busted?: string[];
   /** Memory Poker: the 20 cards taken out of the deck before this hand. Phones only get them once the hand is over. */
   removed?: Card[];
-  /** Imposter: the imposter's id. Phones only get it if it's them, or once the hand is over. */
-  imposter?: string;
-  /** Imposter: everyone dealt in is voting for who the imposter is. */
-  voting?: boolean;
-  /** Imposter: votes so far, voter to suspect. Phones see who has voted, not for whom, until the hand is over. */
-  votes?: Record<string, string>;
+  /** A timed beat the table waits on (a die roll, a red river, the ghost turning over...), see moments.ts. */
+  moment?: Moment | null;
+  /** Betting on this street starts at this time, once the moment has played. */
+  bettingAt?: number | null;
+  /** Crazy Pineapple: who has thrown their card away (public). */
+  discarded?: string[];
+  /** Crazy Pineapple: the cards thrown away. Phones see their own until everyone is done. */
+  discards?: Record<string, Card>;
+  /** Power Cards: the power each player was dealt this hand. Phones see only their own until it's played or the hand is over. */
+  powers?: Record<string, PowerId>;
+  /** Power Cards: every power played this hand, in order (public, except what a Peek or an X-ray showed). */
+  powerUses?: PowerUse[];
+  /** Power Cards: players who can't bet or raise, and on which street (Silence). */
+  silenced?: Record<string, Street>;
+  /** House rules: chips each player put in before the deal as dead money (antes or a bomb pot). */
+  dead?: Record<string, number>;
+  /** A bomb pot: everyone put in `bomb` chips and the hand starts on the flop. */
+  bomb?: number;
+  /** Who straddled this hand, and for how much. */
+  straddle?: { id: string; amount: number };
+  /** Run it twice (see `RunTwice`). */
+  twice?: RunTwice;
+}
+
+/**
+ * Run it twice. When an all-in leaves cards to come, every person in it is asked (`asking`, until `until`; bots answer
+ * at once). Everyone yes: `agreed`, and once the first run reaches the river its board is kept in `first` and the
+ * cards after `from` are dealt again. Public: there's nothing hidden in it.
+ */
+export interface RunTwice {
+  /** Board cards out when the all-in happened: both runs share these. */
+  from: number;
+  /** The street the run-out started on. */
+  street: Street;
+  /** Who has said yes or no so far. */
+  votes: Record<string, boolean>;
+  /** Players asked (everyone still in the hand). */
+  asked: string[];
+  /** Waiting for answers until this time. */
+  until: number | null;
+  agreed: boolean;
+  /** The first run's whole board, once it's out. */
+  first?: Card[];
+}
+
+/** What `variantTalk()` has already seen this hand, so each power and bust is reacted to once. */
+export interface TalkSeen {
+  hand: number;
+  board: number;
+  powers: number;
+  busts: number;
+  hits: number;
+  discards: boolean;
+  dice: boolean;
+  result: boolean;
+  /** Memory Poker: the `until` of the peek already talked about. */
+  peek: number;
+}
+
+export type PowerId = 'peek' | 'xray' | 'swap' | 'reroll' | 'extra' | 'passleft' | 'shield' | 'silence' | 'bounty' | 'foldtax' | 'copycat';
+
+/** One power played in a Power Cards hand. */
+export interface PowerUse {
+  by: string;
+  power: PowerId;
+  /** Copycat: the power it copied (the effect is that power's). */
+  as?: PowerId;
+  street: Street;
+  /** X-ray and Silence: who it was aimed at. */
+  target?: string;
+  /** Peek and X-ray: what it showed. Only the player who played it ever sees this. */
+  seen?: Card[];
+  /** Reroll: the board card that went (out) and the one that came (in). Public. */
+  out?: Card;
+  in?: Card;
+  /** Bounty: the rank called (2 to 14), the board when it was called, and who paid what at the end. */
+  rank?: number;
+  board?: Card[];
+  paid?: Record<string, number>;
+  /** Shield: what the player had put in when it went up, and what came back at the showdown. */
+  from?: number;
+  refund?: number;
+}
+
+export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'bust' | 'power';
+
+/**
+ * A beat in a hand that the table waits on. Cards dealt with it appear one at a time (`offsets`, ms after `at`, for
+ * the board cards from index `from`), and while `gate` is on nobody can act. Times are table times.
+ */
+export interface Moment {
+  kind: MomentKind;
+  at: number;
+  until: number;
+  from?: number;
+  offsets?: number[];
+  gate?: boolean;
+  /** Bust: who, and with what count. Power: who played it. */
+  who?: string;
+  value?: number;
 }
 
 /** One move played for a seat before anyone gets control, to set up a Scroll card's spot. `to` is the street total, as in an `act`. */
@@ -299,6 +433,10 @@ export interface CardScene {
 }
 
 export interface Game {
+  /** Offline legacy-style laboratory only; never accepted as a network setting. */
+  legacyBotSimulation?: true;
+  /** Private, independent observer memories and stable everyday bot profiles. */
+  botTable?: EverydayBotState;
   id: string;
   /** Join code for online tables. null for bots-only tables on one phone. */
   code: string | null;
@@ -334,10 +472,32 @@ export interface Game {
   talkAt?: Record<string, number>;
   /** When each bot's last line is done being said and read: it doesn't move before then. */
   talkDone?: Record<string, number>;
+  /** What the game-mode bot talk has already reacted to (counts, so each moment is spoken about once). See `variantTalk()`. */
+  talkSeen?: TalkSeen;
   /** A bot that has said what it's thinking, and the move it will make a moment later. Never sent to phones. */
   botPlan?: { playerId: string; seq: number; move: Move; to?: number };
   /** A bot's reply to what someone just said, due a beat later. Never sent to phones. */
-  pendingTalk?: { at: number; playerId: string; /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. 'hello' is said to `forId`. */ event?: 'reply' | 'tank' | 'hello' | 'welcome' | 'rematchWon' | 'rematchLost' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg' | 'cheer' | 'commiserate'; forId?: string; seq?: number; reactionN?: number; handNumber?: number };
+  pendingTalk?: {
+    at: number;
+    playerId: string;
+    /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. 'hello' is said to `forId`. */ event?:
+      | 'reply'
+      | 'tank'
+      | 'hello'
+      | 'welcome'
+      | 'rememberHello'
+      | 'greetBack'
+      | 'thanks'
+      | 'ribbed'
+      | 'goodLuck'
+      | 'gg'
+      | 'cheer'
+      | 'commiserate';
+    forId?: string;
+    seq?: number;
+    reactionN?: number;
+    handNumber?: number;
+  };
   /** Hands in a row each person has lost chips without winning one. Bots use it to pick their moment. Never sent to phones. */
   streaks?: Record<string, number>;
   /** Bots that said something before this hand's outcome was known ("c'mon!", "all in"). They owe the table a reaction when it ends. Never sent to phones. */
@@ -348,14 +508,11 @@ export interface Game {
   first?: { settings: Settings; bots: number };
   /** A bots-only table on this phone that runs on a faster clock (set when it's dealt, so it can't change mid-table). */
   fast?: boolean;
-  /** A heads-up game against the player's own AI twin: "Play again" deals a new one from what the twin has learned since. */
-  twinGame?: boolean;
-  /** With `twinGame`: the twin is a friend's, whose twin code this is. */
-  friendTwin?: string;
-  /** A heads-up game against a legend (their id): "Play again" sits down against them again. */
-  legendGame?: string;
-  /** With `legendGame`: this person has beaten them before ('won') or only lost to them ('lost'), so they greet them differently. */
-  rematch?: 'won' | 'lost';
+  /**
+   * A phone's own table: the bots here you've played before, by lower-case name, from the phone's memory (tables
+   * shared, and showdowns you've won and lost against them). A bot you know greets you as a regular.
+   */
+  rivals?: Record<string, Rival>;
   /** The last hand the bots took notes on. */
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */
@@ -364,60 +521,36 @@ export interface Game {
   dialogue?: Record<string, { recent: string[]; lastIntent: string }>;
   /** A Scroll card's set-up. Its presence means one hand, dealt to order, with quiet bots. Never sent to phones. */
   card?: CardScene;
-  /** Ghost Hold'em: chips the ghost is holding, which go into the next hand's pot. */
+  /** Haunted Pot: chips the ghost is holding, which go into the next hand's pot. */
   ghostPot?: number;
   /** Memory Poker: the cards being taken out for the next hand, shown to everyone until it's dealt at `until`. Public. */
   memory?: { cards: Card[]; until: number };
   /** This table is one round of a party tournament (see party.ts). Public. */
   party?: { code: string; round: number; total: number };
-  /** Party rounds: player ids in the order they ran out of chips (or left), first out first. Campaign sit and gos keep it too. */
+  /** Party rounds: player ids in the order they ran out of chips (or left), first out first. */
   busted?: string[];
-  /**
-   * A campaign table (see campaign.ts): a cash game whose empty seats fill with new bots, or a tournament of `seats` players.
-   * On this phone for bots only, or online (it has a code) with friends. `venue` is a stake id for cash, a venue id for a tournament.
-   * Public: every phone pays its own buy-in and works out its own prize from it.
-   */
-  campaign?: {
-    kind: 'cash' | 'sng';
-    venue: string;
-    seats: number;
-    /** Tournaments: the format, and the prize drawn for this one. */
-    format?: 'sng' | 'jackpot';
-    prize?: number;
-    /** What it costs to sit down: a tournament's buy-in, or an online cash table's fixed stack. */
-    buyIn?: number;
-    /** A tournament's boss: the legend who runs the venue, in this seat. */
-    boss?: { playerId: string; legend: string };
-    /** Sometimes a tournament puts a bounty on one bot: knock it out yourself for the reward. */
-    bounty?: { playerId: string; reward: number };
-  };
-  /** Tournaments: who knocked out whom (the winners of the pots the busted player was in), by the busted player's id. */
-  knocked?: Record<string, string[]>;
-  /**
-   * A solo challenge on this phone (see challenges.ts). Public: it holds only which challenge it is, never an
-   * answer. `quiet` keeps the bots from talking, since each style has its own lines (Style Detective).
-   */
-  challenge?: { id: 'shortStack' | 'detective' | 'rewind'; quiet?: boolean };
 }
 
 export type Action =
   /** This phone takes a seat (or updates its name and picture). */
   | { type: 'join'; name: string; emoji: string }
-  | { type: 'setLook'; name: string; emoji: string; bubble?: string; cardPack?: string }
-  /** `legend` seats that AI Legend instead of a random bot. */
-  | { type: 'addBot'; legend?: string; /** A bot from `BOTS` by name (the setup page's picks). */ name?: string }
+  | { type: 'setLook'; name: string; emoji: string; bubble?: string; cardPack?: string; gold?: boolean }
+  /** `name` seats a bot from `BOTS` by name (the setup page's picks); `lab` seats one the host made in Bot Lab. */
+  | { type: 'addBot'; name?: string; lab?: LabBotSpec }
   /** Host removes a player or bot; anyone can remove themselves. */
   | { type: 'remove'; playerId: string }
   | { type: 'settings'; settings: Partial<Settings> }
   | { type: 'start' }
   | { type: 'act'; hand: number; seq: number; move: Move; to?: number }
   | { type: 'next'; hand: number }
-  /** Blackjack Hold'em: on your turn on the flop, take another card. */
+  /** Hit Me: on your turn on the flop, take another card. */
   | { type: 'hit'; hand: number; seq: number }
+  /** Power Cards: play your power on your turn, before your move. `target` (X-ray, Silence), `card` (Swap: yours; Reroll: the board's), `rank` (Bounty). */
+  | { type: 'power'; hand: number; seq: number; target?: string; card?: Card; rank?: number }
+  /** Run it twice: your answer when an all-in is asked to run twice. */
+  | { type: 'runTwice'; hand: number; yes: boolean }
   /** Crazy Pineapple: throw this card away after the flop. */
   | { type: 'discard'; hand: number; card: Card }
-  /** Imposter: who you think the imposter is. */
-  | { type: 'vote'; hand: number; playerId: string }
   /** Turn your cards face up once the hand is over. */
   | { type: 'show'; hand: number }
   /** After a hand, the host turns every bot's cards face up for everyone. */
@@ -428,7 +561,7 @@ export type Action =
   | { type: 'rebuy' }
   | { type: 'end' }
   /** After a game ends: the host opens a new one; anyone else says they want in (`off` takes that back). */
-  | { type: 'playAgain'; off?: boolean }
+  | { type: 'playAgain'; off?: boolean; /** The host, opening the next game in a different mode. */ variant?: Variant }
   /** Internal: time has moved on (bots, timers, run-outs). Never accepted from a phone. */
   | { type: 'tick' }
   /** Internal: which phones are connected right now (device ids), from the server. Never accepted from a phone. */
@@ -441,3 +574,11 @@ export interface ActionContext {
 }
 
 export type ActionResult = { ok: true; game: Game; changed: boolean } | { ok: false; error: string };
+
+/** What a phone remembers about one bot across tables (`Game.rivals`). */
+export interface Rival {
+  tables: number;
+  /** Showdowns you won against this bot, and lost to it. */
+  beat: number;
+  lost: number;
+}

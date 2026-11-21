@@ -9,7 +9,7 @@ export function longest() {
     n++;
     chars += beats[0].text.length;
     if (s > say) { say = s; worst = beats[0].text; }
-    up = Math.max(up, spokenMs(beats) + holdMs(beats[0].text));
+    up = Math.max(up, spokenMs(beats) + holdMs(beats[0].text, beats[0].pauses));
     wait = Math.max(wait, spokenMs(beats));
   }
   return { lines: n, avgChars: Math.round(chars / n), longestSayAndRead: say, longestUp: up, longestToLand: wait, worst };

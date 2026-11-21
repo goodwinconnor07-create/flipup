@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   startHand,
+  makeMove,
   startWait,
   TIMING,
   applyAction,
@@ -320,7 +321,12 @@ describe('betting', () => {
       code: null,
       now: clock,
     });
-    // A fixed mix of styles (bots are seated at random), so every run plays the same hands.
+    // A fixed mix of styles (bots are seated at random), so every run plays the same hands. The style bots play here,
+    // not the production ones: this test is about the chips, which every move goes through `applyAction()` for
+    // whichever bot makes it. The production bots spend most of a second on some decisions, so 60 hands of them took
+    // 15s of one CPU and timed out on CI beside the other sims; fuzzActions.test.ts checks the chips after every step
+    // of production-bot play in every game.
+    game.legacyBotSimulation = true;
     const styles = ['pro', 'maniac', 'station', 'trapper', 'gambler'];
     game.players.filter((p) => p.bot).forEach((p, i) => (p.style = styles[i]));
     game = begin(game);
@@ -351,7 +357,7 @@ describe('betting', () => {
       expect(chipsInPlay(game)).toBe(total);
       for (const p of game.players) expect(p.stack).toBeGreaterThanOrEqual(0);
     }
-    expect(hands).toBeGreaterThan(5);
+    expect(hands).toBeGreaterThanOrEqual(60);
   });
 });
 
@@ -463,7 +469,7 @@ describe('table', () => {
   });
 
   it('lets a busted player rebuy, and counts it against them', () => {
-    let game = table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 });
+    let game = table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10, rebuys: true });
     const [a, b] = game.hand!.seats.map((s) => nameOf(game, s.playerId)!);
     game = rig(game, { [a]: 'Ah Ad', [b]: '7c 2d' }, 'Ks 9c 5d 3h Jc');
     game = act(game, 'allin');
@@ -499,14 +505,7 @@ describe('table', () => {
   });
 
   it('ends an online game three seconds after the deciding hand, even with rebuys on', () => {
-    let game = table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 });
-    game = decidingHand(game);
-    expect(game.hand!.result).not.toBeNull();
-    expect(game.wakeAt).toBe(clock + 3000);
-  });
-
-  it('ends a legend game three seconds after the deciding hand, even with rebuys on and no code', () => {
-    let game: Game = { ...table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 }), code: null, legendGame: 'legend-test' };
+    let game = table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10, rebuys: true });
     game = decidingHand(game);
     expect(game.hand!.result).not.toBeNull();
     expect(game.wakeAt).toBe(clock + 3000);
@@ -532,7 +531,7 @@ describe('table', () => {
   });
 
   it('keeps the rebuy window for a table on one phone with rebuys on', () => {
-    let game: Game = { ...table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 }), code: null };
+    let game: Game = { ...table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10, rebuys: true }), code: null };
     game = decidingHand(game);
     expect(game.hand!.result).not.toBeNull();
     expect(game.wakeAt).toBe(clock + TIMING.rebuyWindow);
@@ -669,15 +668,8 @@ describe('table', () => {
     const n = game.hand!.number;
     // Not while the hand is still being played.
     expect(applyAction(game, { type: 'revealBots', hand: n }, ctx(HOST)).ok).toBe(false);
-    // Everyone folds round to one player.
-    while (!game.hand!.result) {
-      const id = game.hand!.toAct!;
-      const who = game.players.find((p) => p.id === id)!;
-      game = who.bot
-        ? must(game, { type: 'tick' }, 'server', seededRng(3))
-        : must(game, { type: 'act', hand: game.hand!.number, seq: game.hand!.seq, move: 'fold' }, who.deviceId!);
-      if (who.bot) clock = (game.wakeAt ?? clock) + 1;
-    }
+    // Construct a folded hand directly: reveal permissions must not depend on the opponent policy.
+    while (!game.hand!.result) expect(makeMove(game, 'fold', undefined, ctx(HOST))).toBeNull();
     const bots = game.players.filter((p) => p.bot).map((p) => p.id);
     const hiddenFrom = (device: string, id: string) =>
       redactForDevice(game, device).hand!.seats.find((s) => s.playerId === id)!.cards.length === 0;

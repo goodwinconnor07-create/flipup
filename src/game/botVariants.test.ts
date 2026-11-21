@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { variantDecide, variantEquity, variantScore } from './botVariants';
+import { botHits, draws, variantDecide, variantEquity, variantScore } from './botVariants';
+import type { Hand } from './types';
+import { keepTwo } from './variants';
 import { applyAction, bestHand, createTable, DEFAULT_SETTINGS, fullDeck, makeMove, seededRng, type Game, type Variant } from './index';
 
 const HOST = 'host-device';
-const VARIANTS: Variant[] = ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem'];
+const VARIANTS: Variant[] = ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem'];
 
 /** A bots-only table (the host sits out of the way by calling) with the first hand dealt. */
 function dealt(variant: Variant, bots = 4, seed = 1): Game {
@@ -51,16 +53,6 @@ describe('variant bots', { timeout: 20_000 }, () => {
     expect(decide(facing, weak)).toBe('fold');
   });
 
-  it('never fold in Imposter', () => {
-    for (let seed = 1; seed <= 20; seed++) {
-      const g = dealt('imposter', 4, seed);
-      const hand = g.hand!;
-      const seat = hand.seats.find((s) => s.playerId === hand.toAct)!;
-      const facing = { ...hand, currentBet: seat.bet + 3000 };
-      expect(variantDecide(g, facing, seat, seededRng(seed))!.move.move).not.toBe('fold');
-    }
-  });
-
   it('make only moves the table accepts, quickly', () => {
     for (const v of VARIANTS) {
       let game = dealt(v);
@@ -70,7 +62,7 @@ describe('variant bots', { timeout: 20_000 }, () => {
       const took: number[] = [];
       for (let i = 0; i < 600 && checked < 30; i++) {
         const hand = game.hand;
-        if (hand && !hand.result && hand.toAct && !hand.discarding && !hand.voting) {
+        if (hand && !hand.result && hand.toAct && !hand.discarding) {
           const seat = hand.seats.find((s) => s.playerId === hand.toAct)!;
           const t0 = performance.now();
           const { move } = variantDecide(game, hand, seat, rng)!;
@@ -105,5 +97,34 @@ describe('the bots\' quick scoring', () => {
       const [hole, board] = [d.slice(0, 2), d.slice(2, 2 + boardSize)];
       expect(variantScore(v, hole, board)).toBe(bestHand(v, hole, board).score);
     }
+  });
+});
+
+describe('game-mode sense', () => {
+  const cards = (s: string) => s.split(' ');
+
+  it('keeps a flush draw over a weak pair in Crazy Pineapple', () => {
+    // 3c pairs the board's three; Ah Kh are four hearts with the flop.
+    expect([...keepTwo(cards('Ah Kh 3c'), cards('Qh 7h 3d'))].sort()).toEqual(['Ah', 'Kh']);
+    // Trips still beat everything.
+    expect([...keepTwo(cards('Ah Kd 7c'), cards('7d 7s 2h'))].sort()).toEqual(['7c', 'Ah']);
+  });
+
+  it('reads a bettor as stronger than random', () => {
+    const hand = { actions: [{ street: 'flop', playerId: 'a', move: 'raise', to: 100 }, { street: 'turn', playerId: 'a', move: 'bet', to: 200 }] } as unknown as Hand;
+    // Two bets read as the best of two random hands (a bet counts 0.65, up to 2.2 in all), a bettor who keeps going as three.
+    expect(draws(hand, 'a', () => 0.99)).toBe(2);
+    expect(draws(hand, 'b', () => 0.99)).toBe(1);
+    const keepsGoing = { actions: [0, 1, 2, 3].map((n) => ({ street: 'flop', playerId: 'a', move: 'bet', to: 100 + n })) } as unknown as Hand;
+    expect(draws(keepsGoing, 'a', () => 0.99)).toBe(3);
+  });
+
+  it('risks less on a hit in Blackjack Hold\'em when its poker hand is good', () => {
+    const g = dealt('bjholdem');
+    const hand = { ...g.hand!, board: cards('Kd Kc 6h') };
+    const game = { ...g, hand };
+    const seat = { ...hand.seats[0], cards: cards('Ks 6c') }; // 16, and a full house
+    const hits = Array.from({ length: 40 }, (_, i) => botHits(game, seat, seededRng(i))).filter(Boolean).length;
+    expect(hits).toBe(0);
   });
 });

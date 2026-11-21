@@ -5,13 +5,33 @@
 
 import { composeDialogue, DIALOGUE, dialogueText, type FixedLineEvent } from './botDialogue';
 import { reactionText } from './reactions';
+import { usesEverydayBots } from './botTableMode';
 import { playerStyle, styleOf, type StyleId } from './botStyles';
-import { ADDED_FRIENDLY, ADDED_TRASH, ADDED_VOICES, EXTRA_FRIENDLY, EXTRA_TRASH, EXTRA_VOICES, MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH } from './botLines';
+import {
+  ADDED_FRIENDLY,
+  ADDED_TRASH,
+  ADDED_VOICES,
+  EMOJI_FRIENDLY,
+  EMOJI_TRASH,
+  EXTRA_FRIENDLY,
+  EXTRA_TRASH,
+  EXTRA_VOICES,
+  MORE_FRIENDLY,
+  MORE_TRASH,
+  MORE_VOICES,
+  NEW_FRIENDLY,
+  NEW_TRASH,
+  REMEMBER_FRIENDLY,
+  REMEMBER_TRASH,
+} from './botLines';
+import { GAME_CHANCE, GAME_EVENTS, GAME_FRIENDLY, GAME_TRASH, type GameTalkEvent } from './botGameLines';
 import { lineBeats, sayAndReadMs } from './chat';
-import { LEGEND_VOICES, type LegendId } from './legendTalk';
-import type { Game } from './types';
+import { isRed, rankOf } from './cards';
+import type { Game, TalkSeen } from './types';
+import { variantOf } from './variants';
 
-export type TalkEvent =
+export type TalkEvent = BaseTalkEvent | GameTalkEvent;
+type BaseTalkEvent =
   /** Thinking out loud before a hard decision. */
   | 'thinkHard'
   /** Thinking out loud before an easy one. */
@@ -70,12 +90,6 @@ export type TalkEvent =
   | 'watched'
   /** A new heads-up game is about to start: a word to the one person across the table, by name ({you}). */
   | 'hello'
-  /** A legend meets someone who has already beaten them / only lost to them. */
-  | 'rematchWon'
-  | 'rematchLost'
-  /** The game is over: the legend won, or lost. Said on the finish screen. */
-  | 'finishWon'
-  | 'finishLost'
   /** A new game with several players is about to start: a word to the table. */
   | 'welcome'
   /** A person said something nice ("Nice hand!", 👏): a bot says thanks. */
@@ -92,8 +106,6 @@ export type TalkEvent =
   | 'commiserate'
   /** The first bot has greeted the table: another says hi. */
   | 'greetBack'
-  /** Won a pot with its signature hand (see `Craft.pets`). */
-  | 'signature'
   /** The flop, turn or river has just come down. */
   | 'flop'
   | 'turn'
@@ -116,9 +128,20 @@ export type TalkEvent =
   | 'beforeRiver'
   | 'beforeShowdown'
   /** A person has just picked this bot for their table on the setup page: its first word, before any cards. */
-  | 'addedToTable';
+  | 'addedToTable'
+  /**
+   * Bankroll's "I remember you" (bankroll.ts): a regular sits down; or a habit the month has shown comes up again
+   * (river bluffs, folding to 3-bets, big bets that are always the goods, check-raises, folding to c-bets, calling everything).
+   */
+  | 'rememberHello'
+  | 'rememberBluffs'
+  | 'rememberFold3bet'
+  | 'rememberBigBet'
+  | 'rememberCheckRaise'
+  | 'rememberFolds'
+  | 'rememberCalls';
 
-type Lines = Record<TalkEvent, string[]>;
+type Lines = Record<BaseTalkEvent, string[]> & Partial<Record<GameTalkEvent, string[]>>;
 
 const TRASH: Lines = {
   thinkHard: ['Hmm…', 'What do we have…', 'Let me think.', 'Sneaky…', 'You sure?'],
@@ -160,11 +183,13 @@ const TRASH: Lines = {
   tilted: ['I’m fine.', 'Totally calm.', 'Next hand’s mine.', 'Unreal deck.', 'Just deal.'],
   gotBluffed: ['You had THAT?', 'Noted.', 'I’ll remember that.', 'Enjoy it while it lasts.', 'Cute.'],
   watched: ['Well, well.', 'Brutal.', 'There it is.', 'Wow, okay.', 'Next.'],
-  hello: ['Hey {you}. Ready to lose?', 'Sit down, {you}.', '{you}. Let’s see what you’ve got.', 'Nice to meet you, {you}. Nice chips.', 'Evening, {you}.'],
-  rematchWon: [],
-  rematchLost: [],
-  finishWon: [],
-  finishLost: [],
+  hello: [
+    'Hey {you}. Ready to lose?',
+    'Sit down, {you}.',
+    '{you}. Let’s see what you’ve got.',
+    'Nice to meet you, {you}. Nice chips.',
+    'Evening, {you}.',
+  ],
   welcome: ['Welcome to the table.', 'Fresh chips. Lovely.', 'Hope you all brought chips.', 'Take a seat, fish.', 'Let’s play.'],
   thanks: [],
   ribbed: [],
@@ -173,7 +198,6 @@ const TRASH: Lines = {
   cheer: [],
   commiserate: [],
   greetBack: [],
-  signature: [],
   flop: [],
   turn: [],
   river: [],
@@ -189,6 +213,13 @@ const TRASH: Lines = {
   beforeRiver: [],
   beforeShowdown: [],
   addedToTable: [],
+  rememberHello: [],
+  rememberBluffs: [],
+  rememberFold3bet: [],
+  rememberBigBet: [],
+  rememberCheckRaise: [],
+  rememberFolds: [],
+  rememberCalls: [],
 };
 
 const FRIENDLY: Lines = {
@@ -230,11 +261,13 @@ const FRIENDLY: Lines = {
   tilted: ['Deep breaths…', 'Not my night.', 'I’m okay. Mostly.', 'Need a break.', 'Can I win one?'],
   gotBluffed: ['No way!', 'You had nothing?!', 'Sneaky!', 'Ugh, I believed you.', 'Well played…'],
   watched: ['Wow!', 'What a hand!', 'Wild one.', 'Oof, nice.', 'Phew, glad that’s over.'],
-  hello: ['Hi {you}! Good luck!', 'Hey {you}, let’s have fun!', 'Welcome, {you}! Ready?', 'Good to see you, {you}!', 'Hi {you}! Be gentle 😅'],
-  rematchWon: [],
-  rematchLost: [],
-  finishWon: [],
-  finishLost: [],
+  hello: [
+    'Hi {you}! Good luck!',
+    'Hey {you}, let’s have fun!',
+    'Welcome, {you}! Ready?',
+    'Good to see you, {you}!',
+    'Hi {you}! Be gentle 😅',
+  ],
   welcome: ['Welcome to the table!', 'Hi everyone!', 'Good luck, all!', 'Glad you’re here!', 'Let’s have a good one!'],
   thanks: [],
   ribbed: [],
@@ -243,7 +276,6 @@ const FRIENDLY: Lines = {
   cheer: [],
   commiserate: [],
   greetBack: [],
-  signature: [],
   flop: [],
   turn: [],
   river: [],
@@ -259,6 +291,13 @@ const FRIENDLY: Lines = {
   beforeRiver: [],
   beforeShowdown: [],
   addedToTable: [],
+  rememberHello: [],
+  rememberBluffs: [],
+  rememberFold3bet: [],
+  rememberBigBet: [],
+  rememberCheckRaise: [],
+  rememberFolds: [],
+  rememberCalls: [],
 };
 
 // Each style adds its own lines on top of its tone's pool, so the four bots of a style sound alike
@@ -266,9 +305,9 @@ const FRIENDLY: Lines = {
 const VOICES: Record<StyleId, Partial<Lines>> = {
   // The Menace: cocky, loves rubbing it in.
   shark: {
-    hello: ['Hello, {you}. I’ve read you already.', '{you}. Nice stack. Mine soon.'],
-    welcome: ['Welcome. Sit. Lose.'],
-    thinkEasy: ['Light work.', 'Calculated.'],
+    hello: ['Hello, {you}. I’ve read you already.', '{you}.|I’ll take those chips.'],
+    welcome: ['Sit down.|Pay up.'],
+    thinkEasy: ['Routine.', 'By the book.'],
     raise: ['Pay me.', 'Sit down.'],
     bluffWon: ['Folded 😂', 'Scared money.', 'Nice fold.'],
     bigWin: ['Free money 💸', 'Delicious pot.', 'Mine now.'],
@@ -276,11 +315,11 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     lostToYou: ['Lucky bastard.', 'Read you.'],
     tiltJab: ['I’ve studied you.', 'You’re transparent.', 'Free read.', 'Classic you.'],
     yourBigBet: ['That’s your move?', 'Interesting raise.'],
-    idle: ['Hello, fish.', 'Feeling dangerous.'],
+    idle: ['Clock’s running.', 'Feeling dangerous.'],
     tank: ['He’s buffering…', 'Solver time.'],
     showBluff: ['Read that.', 'Scared money.'],
     revenge: ['Owned.', 'Back in my pocket.'],
-    tilted: ['Whatever.'],
+    tilted: ['Variance.'],
   },
   lag: {
     hello: ['{you}! Buckle up.', 'Hey {you}. No brakes tonight.'],
@@ -291,8 +330,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     bigWin: ['Printing 💸', 'Cha-ching.', 'Payday.'],
     win: ['Cry more.', 'Another victim.'],
     badBeat: ['Rigged.', 'Disgusting.'],
-    tiltJab: ['Again, bro?', 'Keep donating.', 'Too emotional.'],
-    bluffCaught: ['Worth it.', 'We move.'],
+    tiltJab: ['Tilted, bro?', 'Tilt much?', 'Too emotional.'],
+    bluffCaught: ['No regrets.', 'We move.'],
     tank: ['Windows update.', 'We have jobs.'],
     showBluff: ['Cinema 🎬', 'Nothing. Again.'],
     revenge: ['Run it back?'],
@@ -303,7 +342,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     welcome: ['WELCOME! Chaos time!'],
     allin: ['Trust me.', 'Chaos time.', 'Call the FBI.'],
     raise: ['Believe me?', 'Trust me.'],
-    sweatLose: ['Scripted 🎬', 'Rigged.', 'That’s illegal.'],
+    sweatLose: ['Scripted 🎬', 'This deck!', 'That’s illegal.'],
     bluffWon: ['Never had it.', 'So obvious.', '🫵😂'],
     bigWin: ['Retirement fund.', 'Generational wealth.', 'I’m eating.'],
     badBeat: ['PokerPrime moment.', 'Unreal runout.', 'I’m reporting.'],
@@ -337,10 +376,10 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     thinkEasy: ['Clean.', 'Standard.'],
     bluffWon: ['Respectfully, no.', 'Good boy.'],
     bigWin: ['Beautiful.', 'Thank you.', 'Easy game.'],
-    lostToYou: ['Well played.', 'Fair play.', 'Not bad.'],
+    lostToYou: ['Good hand.', 'Nicely done.', 'Not bad.'],
     badBeat: ['Brutal.', 'Unlucky.'],
     tiltJab: ['Character building.', 'Hold that.'],
-    idle: ['Stay sharp.', 'Lock in.'],
+    idle: ['Focus up.', 'Lock in.'],
     tank: ['Need assistance?', 'It’s one hand.'],
     showStrong: ['Standard.', 'Always have it.'],
     showFold: ['Disciplined.'],
@@ -400,8 +439,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     sweatLose: ['I’m sick.', 'No shot.', 'Excuse me?!', 'I’m reporting.'],
     badBeat: ['WHAT?!', 'Disgusting river.', 'That’s personal.', 'Uncalled for.'],
     lostToYou: ['You win.', 'I folded.', 'Don’t celebrate.'],
-    bluffCaught: ['I panicked 😭', 'Lag moment.', 'Delete that.'],
-    idle: ['Nervous already.', 'Anyone home?'],
+    bluffCaught: ['Oh no 🙈', 'Lag moment.', 'Delete that.'],
+    idle: ['Nervous already.', 'Um… hello?'],
     tank: ['Hurry, I’m sweating.', 'Please don’t.'],
     showFold: ['Was I right?!', 'I panicked 😭'],
     tilted: ['Why me?', 'I’m sweating.', 'I’m sick.'],
@@ -413,10 +452,10 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     thinkHard: ['I’m calling anyway.', 'Hmm.'],
     sweatLose: ['Rigged.', 'Of course.', 'Naturally.'],
     badBeat: ['No way.', 'You’re joking.', 'Again?!'],
-    lostToYou: ['Whatever.', 'You got me.', 'Fair enough.'],
+    lostToYou: ['Whatever.', 'Fair enough.', 'Can’t win ’em all.'],
     bigWin: ['I knew.', 'Told you.', 'Never worried.'],
     bluffCaught: ['I meant that.', 'Fair enough.'],
-    idle: ['Coffee break? ☕', 'Bored already.'],
+    idle: ['Snack time? 🍿', 'Bored already.'],
     tank: ['Just call.', 'Bro is thinking.'],
     showFold: ['First fold today.'],
     tilted: ['Of course.', 'Naturally.'],
@@ -425,7 +464,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
 
 // The second pass of lines, added after the first so earlier ids keep their meaning.
 const grow = (pools: Lines, more: Partial<Lines>) => {
-  for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) pools[event].push(...lines);
+  for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) (pools[event] ??= []).push(...lines);
 };
 grow(TRASH, NEW_TRASH);
 grow(FRIENDLY, NEW_FRIENDLY);
@@ -435,13 +474,35 @@ grow(TRASH, EXTRA_TRASH);
 grow(FRIENDLY, EXTRA_FRIENDLY);
 grow(TRASH, ADDED_TRASH);
 grow(FRIENDLY, ADDED_FRIENDLY);
+grow(TRASH, REMEMBER_TRASH);
+grow(FRIENDLY, REMEMBER_FRIENDLY);
+grow(TRASH, EMOJI_TRASH);
+grow(FRIENDLY, EMOJI_FRIENDLY);
 for (const passes of [MORE_VOICES, EXTRA_VOICES, ADDED_VOICES]) {
   for (const [style, more] of Object.entries(passes) as [StyleId, Partial<Lines>][]) {
-    for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) VOICES[style][event] = [...(VOICES[style][event] ?? []), ...lines];
+    for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][])
+      VOICES[style][event] = [...(VOICES[style][event] ?? []), ...lines];
   }
 }
 
+// What bots say about the games themselves (botGameLines.ts), in the same two tones.
+for (const event of GAME_EVENTS) {
+  TRASH[event] = [...GAME_TRASH[event]];
+  FRIENDLY[event] = [...GAME_FRIENDLY[event]];
+}
+
 const id = (voice: string, event: string, i: number) => `b:${voice}:${event}:${i}`;
+
+/**
+ * How a bot's line should be dressed: its tone, 'trash' or 'friendly'.
+ * Read from the line id (`b:<voice>:<event>:<i>`), so the screen needs nothing else about the bot. '' for anything that isn't a bot's line.
+ */
+export function voiceKind(lineId: string): 'trash' | 'friendly' | '' {
+  const [b, voice] = lineId.split(':');
+  if (b !== 'b' || !voice || voice === 'local') return '';
+  if (voice === 'trash' || voice === 'friendly') return voice;
+  return Object.hasOwn(VOICES, voice) ? (styleOf(voice as StyleId).talk.tone === 'trash' ? 'trash' : 'friendly') : '';
+}
 
 /** The text for a bot line id, or '' if it isn't one. */
 export function botLineText(lineId: string): string {
@@ -462,38 +523,27 @@ export function addedLine(style: StyleId, you: string | undefined, rng: () => nu
   return { id: lineId, text: reactionText(lineId, you) };
 }
 
-/** A line a legend says when the game is over (null for anyone else). `name` is who they played. */
-export function finishLine(legend: string, event: 'finishWon' | 'finishLost', name: string, pick: number): string | null {
-  if (!(legend in LEGEND_VOICES)) return null;
-  const lines = LEGEND_VOICES[legend as LegendId].lines[event] ?? [];
-  return lines.length ? lines[pick % lines.length].replace('{you}', name) : null;
-}
-
 /** Every line a voice can say for an event: its tone's pool, then the style's own lines. Old ids name just the tone. */
 function pool(voice: string, event: TalkEvent): string[] {
   if (voice === 'trash') return TRASH[event] ?? [];
   if (voice === 'friendly') return FRIENDLY[event] ?? [];
-  // A legend: its tone's pool, then its own lines.
-  if (Object.hasOwn(LEGEND_VOICES, voice)) {
-    const legend = LEGEND_VOICES[voice as LegendId];
-    return [...((legend.tone === 'trash' ? TRASH : FRIENDLY)[event] ?? []), ...(legend.lines[event] ?? [])];
-  }
   const style = Object.hasOwn(VOICES, voice) ? styleOf(voice as StyleId) : null;
   if (!style) return [];
-  return [...(style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event], ...(VOICES[style.id][event] ?? [])];
+  return [...((style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event] ?? []), ...(VOICES[style.id][event] ?? [])];
 }
 
 /** Every line a bot can say, with who says it and for what: for the chat lab and the tests that check how lines read. */
 export function allLines(): { voice: string; event: TalkEvent; text: string }[] {
   const out: { voice: string; event: TalkEvent; text: string }[] = [];
   const events = Object.keys(CHANCE) as TalkEvent[];
-  const voices = ['trash', 'friendly', ...(Object.keys(VOICES) as StyleId[]), ...(Object.keys(LEGEND_VOICES) as LegendId[])];
+  const voices = ['trash', 'friendly', ...(Object.keys(VOICES) as StyleId[])];
   for (const voice of voices) for (const event of events) for (const text of pool(voice, event)) out.push({ voice, event, text });
   return out;
 }
 
 /** How likely each kind of moment gets a word, before the bot's own chattiness. */
 const CHANCE: Record<TalkEvent, number> = {
+  ...GAME_CHANCE,
   thinkHard: 0.22,
   thinkEasy: 0.1,
   allin: 0.55,
@@ -523,10 +573,6 @@ const CHANCE: Record<TalkEvent, number> = {
   gotBluffed: 0.9,
   watched: 1,
   hello: 1,
-  rematchWon: 1,
-  rematchLost: 1,
-  finishWon: 1,
-  finishLost: 1,
   welcome: 1,
   // Answering a person or another bot is what makes it a conversation: a bot nearly always does when asked to.
   thanks: 0.9,
@@ -536,7 +582,6 @@ const CHANCE: Record<TalkEvent, number> = {
   cheer: 0.8,
   commiserate: 0.8,
   greetBack: 1,
-  signature: 1,
   flop: 0.22,
   turn: 0.2,
   river: 0.25,
@@ -552,6 +597,14 @@ const CHANCE: Record<TalkEvent, number> = {
   beforeRiver: 0.3,
   beforeShowdown: 0.35,
   addedToTable: 1,
+  // Bankroll's "I remember you" lines are rationed by the table itself (two a sitting), so the dice never hold one back.
+  rememberHello: 1,
+  rememberBluffs: 1,
+  rememberFold3bet: 1,
+  rememberBigBet: 1,
+  rememberCheckRaise: 1,
+  rememberFolds: 1,
+  rememberCalls: 1,
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */
@@ -588,20 +641,20 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   if (!player?.bot) return 0;
   // Scroll cards are quiet, so nothing muddies the lesson.
   if (game.card) return 0;
-  // A Style Detective table is quiet too: every style has lines of its own, which would give the answer away.
-  if (game.challenge?.quiet) return 0;
+  const everyday = usesEverydayBots(game);
+  // At ordinary tables the talk is spaced out a little more than at the old styles' tables.
+  const tableLast = Math.max(-Infinity, ...Object.values(game.talkAt ?? {}));
+  if (everyday && !owed && now - tableLast < 4500) return 0;
   const last = game.talkAt?.[playerId] ?? -Infinity;
   if (!owed && now - last < COOLDOWN) return 0;
   const style = playerStyle(player);
-  // A legend speaks in its own voice; everyone else in their style's.
-  const voice = player.legend ?? style.id;
-  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty) * TALKATIVE * share(game, playerId))) return 0;
+  const voice = style.id;
+  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty) * TALKATIVE * share(game, playerId) * (everyday ? 0.8 : 1)))
+    return 0;
   // A table-wide pause keeps nine seats from shouting over an ordinary decision.
-  const tableLast = Math.max(-Infinity, ...Object.values(game.talkAt ?? {}));
   if (!owed && now - tableLast < 700) return 0;
   // A regular with a profile talks through the dialogue planner (its own phrasing, aimed at whoever bet).
-  // A legend, or an AI twin, keeps the fixed lines of its own voice.
-  const planned = !player.legend && !!player.botProfile && Object.hasOwn(DIALOGUE, event);
+  const planned = !!player.botProfile && Object.hasOwn(DIALOGUE, event);
   const target = planned ? (to ?? (game.hand?.aggressorId !== playerId ? (game.hand?.aggressorId ?? undefined) : undefined)) : to;
   let line: string;
   if (planned) {
@@ -609,12 +662,26 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   } else {
     const lines = pool(voice, event);
     if (!lines.length) return 0;
-    const i = Math.floor(rng() * lines.length);
+    let i = Math.floor(rng() * lines.length);
+    // Not the line this bot said last, nor one the table has just heard: the game modes' lists are short (three to six
+    // lines), so a plain random pick said "No help here." twice in two hands. Another pick only when it would repeat,
+    // so the random numbers (and every seeded table) stay the same otherwise.
+    const heard = new Set(Object.values(game.reactions ?? {}).map((r) => botLineText(r.id)));
+    const repeats = (k: number) => heard.has(lines[k]);
+    if (lines.length > 1 && repeats(i)) {
+      const others = lines.map((_, k) => k).filter((k) => !repeats(k));
+      if (others.length) i = others[Math.floor(rng() * others.length)];
+    }
     line = id(voice, event, i);
   }
-  game.reactions = { ...game.reactions, [playerId]: { id: line, n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(target ? { to: target } : {}) } };
+  game.reactions = {
+    ...game.reactions,
+    [playerId]: { id: line, n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(target ? { to: target } : {}) },
+  };
   game.talkAt = { ...game.talkAt, [playerId]: now };
-  const ms = sayAndReadMs(lineBeats(reactionText(line, game.players.find((p) => p.id === target)?.name), game.players.find((p) => p.id === target)?.name));
+  const ms = sayAndReadMs(
+    lineBeats(reactionText(line, game.players.find((p) => p.id === target)?.name), game.players.find((p) => p.id === target)?.name),
+  );
   game.talkDone = { ...game.talkDone, [playerId]: now + ms };
   return ms;
 }
@@ -674,9 +741,113 @@ export const DRAMA_MAX = 3200;
  * and read, so the moment has some weight. Returns how long to wait (0 for nothing to say). Never more than `DRAMA_MAX`,
  * half of it at a fast bot game. Only for a table on one phone: an online table (it has a code) is left as it was.
  */
-export function dramaPause(game: Game, playerId: string, upcoming: 'flop' | 'turn' | 'river' | 'showdown', rng: () => number, now: number): number {
+export function dramaPause(
+  game: Game,
+  playerId: string,
+  upcoming: 'flop' | 'turn' | 'river' | 'showdown',
+  rng: () => number,
+  now: number,
+): number {
   if (game.code) return 0;
-  const event: TalkEvent = upcoming === 'flop' ? 'beforeFlop' : upcoming === 'turn' ? 'beforeTurn' : upcoming === 'river' ? 'beforeRiver' : 'beforeShowdown';
+  const event: TalkEvent =
+    upcoming === 'flop' ? 'beforeFlop' : upcoming === 'turn' ? 'beforeTurn' : upcoming === 'river' ? 'beforeRiver' : 'beforeShowdown';
   const ms = botSays(game, playerId, event, rng, now);
   return ms ? Math.round(Math.min(DRAMA_MAX, ms) * (game.fast ? 0.5 : 1)) : 0;
 }
+
+/**
+ * A word about what is special in this game, said by one bot (or two), once for each moment: a deuce landing, the ghost
+ * taking a pot, a bust, a power played, a finger pointed, a mission done. It keeps its own count of what it has already
+ * reacted to (`game.talkSeen`), so it can run after every action and say nothing most of the time. Nothing when only bots are
+ * left in the hand (nobody is watching), and no hidden card is ever mentioned: every line is about something the table saw.
+ */
+export function variantTalk(game: Game, rng: () => number, now: number): void {
+  const v = variantOf(game);
+  if (v === 'holdem' || game.card) return;
+  const hand = game.hand;
+  const botIds = game.players.filter((p) => p.bot).map((p) => p.id);
+  if (!botIds.length) return;
+  // Memory Poker: the twenty cards are up before there is a hand.
+  if (v === 'memory' && game.memory && game.talkSeen?.peek !== game.memory.until) {
+    game.talkSeen = { ...(game.talkSeen ?? blank(hand?.number ?? 0, game)), peek: game.memory.until };
+    const bots = game.players.filter((p) => p.bot && !p.sittingOut);
+    if (bots.length) botSays(game, pick(bots, rng).id, 'memoryPeek', rng, now);
+  }
+  if (!hand) return;
+  const fresh = game.talkSeen?.hand !== hand.number;
+  const seen: TalkSeen = fresh ? blank(hand.number, game) : { ...game.talkSeen! };
+  if (fresh && game.talkSeen) seen.peek = game.talkSeen.peek;
+  const watched = !hand.seats.every((s) => s.folded || game.players.find((p) => p.id === s.playerId)?.bot);
+  const inHand = (id: string) => hand.seats.some((s) => s.playerId === id);
+  const bots = (not: string[] = []) => game.players.filter((p) => p.bot && inHand(p.id) && !not.includes(p.id));
+  const say = (id: string | undefined, event: GameTalkEvent, to?: string, owed = false) => (id ? botSays(game, id, event, rng, now, owed, to) : 0);
+  const anyBot = (not: string[] = []) => {
+    const b = bots(not);
+    return b.length ? pick(b, rng).id : undefined;
+  };
+
+  if (hand.board.length > seen.board) {
+    const fresher = hand.board.slice(seen.board);
+    seen.board = hand.board.length;
+    const n = hand.board.length;
+    let event: GameTalkEvent | null = null;
+    if (v === 'pittsburgh' && n >= 7) event = 'threeRivers';
+    else if (v === 'redriver' && n >= 5) event = isRed(hand.board[n - 1]) ? 'redRiver' : n > 5 ? 'blackRiver' : null;
+    else if (v === 'crucifix') event = n === 5 ? 'crossFlop' : n === 9 ? 'crossRiver' : null;
+    else if (v === 'circle') event = n === 2 ? 'circleFlop' : n === 6 ? 'circleRiver' : null;
+    else if (v === 'beanstalk' && n >= 3) event = 'stalkGrows';
+    if (v === 'deuces' && fresher.some((c) => rankOf(c) === 2)) event = 'deuceLands';
+    if (event && watched) say(anyBot(), event);
+  }
+  if (hand.dice && !seen.dice) {
+    seen.dice = true;
+    if (watched) say(anyBot(), hand.dice.roll === 6 ? 'dieSix' : 'dieSwap');
+  }
+  if (v === 'pineapple' && !hand.discarding && (hand.discarded?.length ?? 0) > 0 && !seen.discards) {
+    seen.discards = true;
+    if (watched) say(anyBot(), 'discardsShown');
+  }
+  const uses = hand.powerUses ?? [];
+  for (let k = seen.powers; k < uses.length; k++) {
+    const u = uses[k];
+    if (!watched) break;
+    const target = u.target && game.players.find((p) => p.id === u.target)?.bot ? u.target : undefined;
+    if (target) say(target, 'powerOnMe', u.by);
+    else if (game.players.find((p) => p.id === u.by)?.bot && rng() < 0.5) say(u.by, 'powerMine');
+    else say(anyBot([u.by]), 'powerSeen');
+  }
+  seen.powers = uses.length;
+  const busted = hand.busted ?? [];
+  if (busted.length > seen.busts) {
+    if (watched) say(anyBot(busted), 'bjBust');
+    seen.busts = busted.length;
+  }
+  const hits = Object.entries(hand.hits ?? {});
+  const hitCount = hits.reduce((a, [, n]) => a + n, 0);
+  if (hitCount > seen.hits) {
+    const hitters = hits.filter(([id, n]) => n > 0 && game.players.find((p) => p.id === id)?.bot).map(([id]) => id);
+    if (watched && hitters.length) say(pick(hitters, rng), 'bjHit');
+    seen.hits = hitCount;
+  }
+  if (hand.result && !seen.result) {
+    seen.result = true;
+    const r = hand.result;
+    if (watched) {
+      if (r.ghost) say(anyBot(), r.ghost.kept > 0 ? 'ghostWins' : r.showdown ? 'ghostLoses' : 'ghostWins');
+      if (v === 'memory' && hand.removed?.length && r.showdown) say(anyBot(), 'memoryRecall');
+    }
+  }
+  game.talkSeen = seen;
+}
+
+const blank = (hand: number, game: Game): TalkSeen => ({
+  hand,
+  board: 0,
+  powers: 0,
+  busts: 0,
+  hits: 0,
+  discards: false,
+  dice: false,
+  result: false,
+  peek: game.talkSeen?.peek ?? 0,
+});

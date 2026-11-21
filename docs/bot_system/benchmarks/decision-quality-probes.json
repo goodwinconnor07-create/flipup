@@ -1,0 +1,2027 @@
+{
+  "protocol": "decision-quality-probes-1",
+  "contexts": 12,
+  "rows": [
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 2,
+        "heroId": "seat-1",
+        "buttonId": "seat-0",
+        "street": "flop",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 0,
+        "hole": [
+          "3h",
+          "7c"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 980,
+            "bet": 0,
+            "total": 20,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 980,
+            "bet": 0,
+            "total": 20,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          }
+        ],
+        "legal": {
+          "toCall": 0,
+          "canCheck": true,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 10,
+          "maxTo": 980,
+          "word": "Bet",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "check"
+        },
+        {
+          "move": "bet",
+          "to": 10
+        },
+        {
+          "move": "bet",
+          "to": 13
+        },
+        {
+          "move": "bet",
+          "to": 30
+        },
+        {
+          "move": "bet",
+          "to": 50
+        },
+        {
+          "move": "bet",
+          "to": 980
+        }
+      ],
+      "referenceValuesBb": [
+        0.5703125,
+        2.275390625,
+        2.178515625,
+        1.630859375,
+        0.986328125,
+        -28.3984375
+      ],
+      "standardErrorsBb": [
+        0.10709613882100348,
+        0.1580816640675357,
+        0.16871467658336908,
+        0.22888349966204968,
+        0.3005739543419568,
+        3.3533605459613454
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 1.4558336092133877,
+          "distribution": [
+            0.7886086592450738,
+            0.05127467873801757,
+            0.053417606036858016,
+            0.04890739942411077,
+            0.05779165655593988,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 1.5975687281757094,
+          "distribution": [
+            0.9304169911378178,
+            0.029700766020060283,
+            0.030123801964823428,
+            0.006768351496436636,
+            0.0029900893808616495,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 1.5890043658406774,
+          "distribution": [
+            0.9297449334296478,
+            0.03828570543984999,
+            0.030880981118991065,
+            0.001051875893196447,
+            0.00003650411831489367,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 3,
+        "heroId": "seat-0",
+        "buttonId": "seat-0",
+        "street": "flop",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 10,
+        "hole": [
+          "3s",
+          "8s"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 980,
+            "bet": 0,
+            "total": 20,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 970,
+            "bet": 10,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 10,
+          "canCheck": false,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 20,
+          "maxTo": 980,
+          "word": "Raise",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "fold"
+        },
+        {
+          "move": "call"
+        },
+        {
+          "move": "raise",
+          "to": 20
+        },
+        {
+          "move": "raise",
+          "to": 30
+        },
+        {
+          "move": "raise",
+          "to": 55
+        },
+        {
+          "move": "raise",
+          "to": 85
+        },
+        {
+          "move": "raise",
+          "to": 980
+        }
+      ],
+      "referenceValuesBb": [
+        0,
+        0.280078125,
+        2.70703125,
+        2.41484375,
+        1.68515625,
+        0.808984375,
+        -25.03125
+      ],
+      "standardErrorsBb": [
+        0,
+        0.22674596268448025,
+        0.24892622784257798,
+        0.2946984478231207,
+        0.41138261453483116,
+        0.5528215468137903,
+        3.4441974639011534
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 2.227081186617324,
+          "distribution": [
+            0.7357610276167772,
+            0.07545774704481092,
+            0.08372489087399881,
+            0.07952038828821954,
+            0.02223605837852846,
+            0.0032998877976651037,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 2.3664653795696386,
+          "distribution": [
+            0.42935459271279613,
+            0.4891190411495339,
+            0.054074036320697204,
+            0.01649194313429553,
+            0.009703544725384624,
+            0.0012568419572925984,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 2.4727662578230936,
+          "distribution": [
+            0.896435233750395,
+            0.017590020944575013,
+            0.07488706571822908,
+            0.01087103547242937,
+            0.00021647716311710825,
+            1.669512544107771e-7,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 4,
+        "heroId": "seat-1",
+        "buttonId": "seat-0",
+        "street": "turn",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 0,
+        "hole": [
+          "3h",
+          "7c"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc",
+          "7s"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 970,
+            "bet": 0,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 970,
+            "bet": 0,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 0,
+          "canCheck": true,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 10,
+          "maxTo": 970,
+          "word": "Bet",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "check"
+        },
+        {
+          "move": "bet",
+          "to": 10
+        },
+        {
+          "move": "bet",
+          "to": 20
+        },
+        {
+          "move": "bet",
+          "to": 45
+        },
+        {
+          "move": "bet",
+          "to": 75
+        },
+        {
+          "move": "bet",
+          "to": 970
+        }
+      ],
+      "referenceValuesBb": [
+        3.256640625,
+        3.53515625,
+        3.2546875,
+        2.5546875,
+        1.715625,
+        -10.97265625
+      ],
+      "standardErrorsBb": [
+        0.2782321398323435,
+        0.3467655960165731,
+        0.4227744926977713,
+        0.6152162457451843,
+        0.8473547497934669,
+        4.088648517575448
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 0.2561706860099484,
+          "distribution": [
+            0.1431811115299977,
+            0.3473663700364893,
+            0.41235397109286825,
+            0.09061748654228216,
+            0.006481060798362718,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 0.46640122789917304,
+          "distribution": [
+            0.3026564997990988,
+            0.19372821450524888,
+            0.2316059249932786,
+            0.21188063185833575,
+            0.0601287288440381,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 0.3389940645728043,
+          "distribution": [
+            0.10153868768939908,
+            0.35684941362484945,
+            0.3579440677414673,
+            0.147626106235108,
+            0.036041724709176055,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 5,
+        "heroId": "seat-0",
+        "buttonId": "seat-0",
+        "street": "turn",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 10,
+        "hole": [
+          "3s",
+          "8s"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc",
+          "7s"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 970,
+            "bet": 0,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 960,
+            "bet": 10,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "turn",
+            "move": "bet",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 10,
+          "canCheck": false,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 20,
+          "maxTo": 970,
+          "word": "Raise",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "fold"
+        },
+        {
+          "move": "call"
+        },
+        {
+          "move": "raise",
+          "to": 20
+        },
+        {
+          "move": "raise",
+          "to": 36
+        },
+        {
+          "move": "raise",
+          "to": 70
+        },
+        {
+          "move": "raise",
+          "to": 110
+        },
+        {
+          "move": "raise",
+          "to": 970
+        }
+      ],
+      "referenceValuesBb": [
+        0,
+        1.53515625,
+        3.804296875,
+        3.391796875,
+        2.515625,
+        1.484375,
+        -25.375
+      ],
+      "standardErrorsBb": [
+        0,
+        0.3291794703178927,
+        0.38010264660785387,
+        0.4807634217890894,
+        0.6987321928963242,
+        0.958222266848263,
+        3.94514314211344
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 1.1063513538251832,
+          "distribution": [
+            0.01107348334231236,
+            0.28832593279999447,
+            0.2424164222219432,
+            0.2552702356053703,
+            0.16103852560877774,
+            0.04187540042160203,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 2.5802634345989266,
+          "distribution": [
+            0.24537402073547301,
+            0.7247058853514401,
+            0.02524163013450115,
+            0.004255743710182127,
+            0.00039556182584738977,
+            0.000027158242556138182,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 0.30574282832783484,
+          "distribution": [
+            0.02808816687826252,
+            0.060723648231815704,
+            0.7699653301195618,
+            0.13800391899962036,
+            0.003197760338174271,
+            0.000021175432565225375,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 6,
+        "heroId": "seat-1",
+        "buttonId": "seat-0",
+        "street": "river",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 0,
+        "hole": [
+          "3h",
+          "7c"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc",
+          "7s",
+          "3c"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 960,
+            "bet": 0,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 960,
+            "bet": 0,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "turn",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "turn",
+            "move": "call",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 0,
+          "canCheck": true,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 10,
+          "maxTo": 960,
+          "word": "Bet",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "check"
+        },
+        {
+          "move": "bet",
+          "to": 10
+        },
+        {
+          "move": "bet",
+          "to": 26
+        },
+        {
+          "move": "bet",
+          "to": 60
+        },
+        {
+          "move": "bet",
+          "to": 100
+        },
+        {
+          "move": "bet",
+          "to": 960
+        }
+      ],
+      "referenceValuesBb": [
+        7.09375,
+        7.3359375,
+        7.7234375,
+        8.546875,
+        9.515625,
+        39.71875
+      ],
+      "standardErrorsBb": [
+        0.214006697141862,
+        0.26041743259691286,
+        0.33924881367916465,
+        0.5145469270482567,
+        0.7256244933372098,
+        3.662299127028448
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 31.06441958292053,
+          "distribution": [
+            0.07671121649874037,
+            0.06407644092347653,
+            0.1380037686850897,
+            0.2978212737516775,
+            0.42338730014101594,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 31.767427216834136,
+          "distribution": [
+            0.1427253653984677,
+            0.1926510247769262,
+            0.3002254648259966,
+            0.26906824949514885,
+            0.09532989550346066,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 31.729959884926814,
+          "distribution": [
+            0.23159306134413402,
+            0.18164852320998406,
+            0.20075266516306367,
+            0.21700336201579193,
+            0.16900238826702632,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 7,
+        "heroId": "seat-0",
+        "buttonId": "seat-0",
+        "street": "river",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 10,
+        "hole": [
+          "3s",
+          "8s"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc",
+          "7s",
+          "3c"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 960,
+            "bet": 0,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 950,
+            "bet": 10,
+            "total": 50,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "turn",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "turn",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "river",
+            "move": "bet",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 10,
+          "canCheck": false,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 20,
+          "maxTo": 960,
+          "word": "Raise",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "fold"
+        },
+        {
+          "move": "call"
+        },
+        {
+          "move": "raise",
+          "to": 20
+        },
+        {
+          "move": "raise",
+          "to": 43
+        },
+        {
+          "move": "raise",
+          "to": 85
+        },
+        {
+          "move": "raise",
+          "to": 135
+        },
+        {
+          "move": "raise",
+          "to": 960
+        }
+      ],
+      "referenceValuesBb": [
+        0,
+        4.3125,
+        3.36328125,
+        2.187890625,
+        0.046875,
+        -2.501953125,
+        -35.765625
+      ],
+      "standardErrorsBb": [
+        0,
+        0.3125,
+        0.4026416836656283,
+        0.5074369174569237,
+        0.7009713749977073,
+        0.9334910117987374,
+        3.7505839772009857
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 2.9504287028755964,
+          "distribution": [
+            0.6598891703289422,
+            0.25532268182233875,
+            0.0680701805985585,
+            0.014673207997346671,
+            0.001987418143662745,
+            0.00005734110915117698,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 3.512739699160021,
+          "distribution": [
+            0.7965521102495159,
+            0.13777610485491937,
+            0.05382834612807269,
+            0.01122289389595104,
+            0.0006116894375984691,
+            0.000008855433942559963,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 0.8746477520357118,
+          "distribution": [
+            0.08307223806179541,
+            0.44337565573653703,
+            0.4188857111108216,
+            0.05344404277272993,
+            0.0012134292445221545,
+            0.000008923073593756105,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-13",
+        "hand": 1,
+        "sequence": 2,
+        "heroId": "seat-1",
+        "buttonId": "seat-0",
+        "street": "flop",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 0,
+        "hole": [
+          "6h",
+          "9c"
+        ],
+        "board": [
+          "Js",
+          "9h",
+          "9d"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 980,
+            "bet": 0,
+            "total": 20,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 980,
+            "bet": 0,
+            "total": 20,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          }
+        ],
+        "legal": {
+          "toCall": 0,
+          "canCheck": true,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 10,
+          "maxTo": 980,
+          "word": "Bet",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "check"
+        },
+        {
+          "move": "bet",
+          "to": 10
+        },
+        {
+          "move": "bet",
+          "to": 13
+        },
+        {
+          "move": "bet",
+          "to": 30
+        },
+        {
+          "move": "bet",
+          "to": 50
+        },
+        {
+          "move": "bet",
+          "to": 980
+        }
+      ],
+      "referenceValuesBb": [
+        0.89296875,
+        3.45390625,
+        3.797265625,
+        5.599609375,
+        7.8953125,
+        22.8828125
+      ],
+      "standardErrorsBb": [
+        1.6083605447498193,
+        1.5005585974487294,
+        1.5295196209674093,
+        1.7141072765521614,
+        1.9550805577679227,
+        3.2014005924428615
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 18.791276378462094,
+          "distribution": [
+            0.4032316782822668,
+            0.06518231215078622,
+            0.08344840393323905,
+            0.15190681796103297,
+            0.2962307876726749,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 21.904933207410643,
+          "distribution": [
+            0.9770190547838559,
+            0.007531792301824143,
+            0.007715923155170397,
+            0.004764540858125721,
+            0.0029686889010237887,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 18.744852155188212,
+          "distribution": [
+            0.2289112915751599,
+            0.19112475811146806,
+            0.19842801681068795,
+            0.21449053605873555,
+            0.1670453974439486,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-13",
+        "hand": 1,
+        "sequence": 3,
+        "heroId": "seat-0",
+        "buttonId": "seat-0",
+        "street": "flop",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 10,
+        "hole": [
+          "5d",
+          "7h"
+        ],
+        "board": [
+          "Js",
+          "9h",
+          "9d"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 980,
+            "bet": 0,
+            "total": 20,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 970,
+            "bet": 10,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 10,
+          "canCheck": false,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 20,
+          "maxTo": 980,
+          "word": "Raise",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "fold"
+        },
+        {
+          "move": "call"
+        },
+        {
+          "move": "raise",
+          "to": 20
+        },
+        {
+          "move": "raise",
+          "to": 30
+        },
+        {
+          "move": "raise",
+          "to": 55
+        },
+        {
+          "move": "raise",
+          "to": 85
+        },
+        {
+          "move": "raise",
+          "to": 980
+        }
+      ],
+      "referenceValuesBb": [
+        0,
+        -0.509375,
+        2.83984375,
+        2.542578125,
+        1.800390625,
+        0.909375,
+        -23.31640625
+      ],
+      "standardErrorsBb": [
+        0,
+        0.23602150416629747,
+        0.25648553240998045,
+        0.3043613204649735,
+        0.4258470861978331,
+        0.5728016038644671,
+        3.1249543405824887
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 2.5460154934677774,
+          "distribution": [
+            0.7574709770612376,
+            0.11381754178141149,
+            0.08809071054582643,
+            0.03845623637463845,
+            0.0021255007765451145,
+            0.00003903346034096953,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 2.727220096263873,
+          "distribution": [
+            0.9195396924813877,
+            0.03269780106621053,
+            0.03116279059880646,
+            0.014770757995406697,
+            0.001753757481602691,
+            0.0000752003765859426,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 2.604874641165666,
+          "distribution": [
+            0.9075666902957423,
+            0.006954574069251851,
+            0.07129141285753378,
+            0.014164133661089501,
+            0.000023139616378243377,
+            4.950000427585357e-8,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-13",
+        "hand": 1,
+        "sequence": 4,
+        "heroId": "seat-1",
+        "buttonId": "seat-0",
+        "street": "turn",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 0,
+        "hole": [
+          "6h",
+          "9c"
+        ],
+        "board": [
+          "Js",
+          "9h",
+          "9d",
+          "7d"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 970,
+            "bet": 0,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 970,
+            "bet": 0,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 0,
+          "canCheck": true,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 10,
+          "maxTo": 970,
+          "word": "Bet",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "check"
+        },
+        {
+          "move": "bet",
+          "to": 10
+        },
+        {
+          "move": "bet",
+          "to": 20
+        },
+        {
+          "move": "bet",
+          "to": 45
+        },
+        {
+          "move": "bet",
+          "to": 75
+        },
+        {
+          "move": "bet",
+          "to": 970
+        }
+      ],
+      "referenceValuesBb": [
+        3.670703125,
+        5.705078125,
+        5.965625,
+        7.11953125,
+        9.198828125,
+        34.328125
+      ],
+      "standardErrorsBb": [
+        1.4799230854161005,
+        1.0018975822381706,
+        1.2545725039174838,
+        1.6660580491561316,
+        1.86780231908866,
+        3.650662286938092
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 25.258586813943257,
+          "distribution": [
+            0.0011877038998161285,
+            0.0003794779634819716,
+            0.0029107520215155996,
+            0.05385825901128581,
+            0.9416638071039005,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 29.015272919620408,
+          "distribution": [
+            0.31216690776296313,
+            0.339470426248082,
+            0.24956558858341027,
+            0.08048745566392174,
+            0.018309621741622775,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 28.146498746401342,
+          "distribution": [
+            0.23051832631481628,
+            0.18461185548543746,
+            0.20065537331674993,
+            0.21599633221410228,
+            0.1682181126688941,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-13",
+        "hand": 1,
+        "sequence": 5,
+        "heroId": "seat-0",
+        "buttonId": "seat-0",
+        "street": "turn",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 10,
+        "hole": [
+          "5d",
+          "7h"
+        ],
+        "board": [
+          "Js",
+          "9h",
+          "9d",
+          "7d"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 970,
+            "bet": 0,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 960,
+            "bet": 10,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "turn",
+            "move": "bet",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 10,
+          "canCheck": false,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 20,
+          "maxTo": 970,
+          "word": "Raise",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "fold"
+        },
+        {
+          "move": "call"
+        },
+        {
+          "move": "raise",
+          "to": 20
+        },
+        {
+          "move": "raise",
+          "to": 36
+        },
+        {
+          "move": "raise",
+          "to": 70
+        },
+        {
+          "move": "raise",
+          "to": 110
+        },
+        {
+          "move": "raise",
+          "to": 970
+        }
+      ],
+      "referenceValuesBb": [
+        0,
+        1.96484375,
+        -0.681640625,
+        -2.5234375,
+        -5.890625,
+        -9.859375,
+        -24.875
+      ],
+      "standardErrorsBb": [
+        0,
+        0.40521046474343664,
+        0.9039180079961913,
+        1.1571201639238646,
+        1.547023537134626,
+        2.043414508576342,
+        3.6992894786781454
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 1.8850046620922527,
+          "distribution": [
+            0.9588913704124548,
+            0.04075881420040008,
+            0.0003459256780224174,
+            0.000003889412710773886,
+            2.9640994703601034e-10,
+            2.2293104690246092e-15,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 1.7306213309772243,
+          "distribution": [
+            0.856367389406235,
+            0.12641116612621336,
+            0.015966054065229104,
+            0.0012255766088513495,
+            0.000028712250755465656,
+            0.0000011015427159595465,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 0.2602097633178303,
+          "distribution": [
+            0.11879257913276021,
+            0.8717332932708007,
+            0.00853634130787802,
+            0.0009376187671599762,
+            1.6750122938303489e-7,
+            2.0171695100704208e-11,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-13",
+        "hand": 1,
+        "sequence": 6,
+        "heroId": "seat-1",
+        "buttonId": "seat-0",
+        "street": "river",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 0,
+        "hole": [
+          "6h",
+          "9c"
+        ],
+        "board": [
+          "Js",
+          "9h",
+          "9d",
+          "7d",
+          "8h"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 960,
+            "bet": 0,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 960,
+            "bet": 0,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "turn",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "turn",
+            "move": "call",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 0,
+          "canCheck": true,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 10,
+          "maxTo": 960,
+          "word": "Bet",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "check"
+        },
+        {
+          "move": "bet",
+          "to": 10
+        },
+        {
+          "move": "bet",
+          "to": 26
+        },
+        {
+          "move": "bet",
+          "to": 60
+        },
+        {
+          "move": "bet",
+          "to": 100
+        },
+        {
+          "move": "bet",
+          "to": 960
+        }
+      ],
+      "referenceValuesBb": [
+        0.75,
+        4.23828125,
+        3.81953125,
+        2.9296875,
+        1.8828125,
+        16.875
+      ],
+      "standardErrorsBb": [
+        0.7863729095926286,
+        0.46135033388104396,
+        0.5942270058087606,
+        0.8803298315757182,
+        1.2193829074011708,
+        4.839881044965027
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 15.07653328834366,
+          "distribution": [
+            0.6590553157451434,
+            0.15839555925491666,
+            0.12381391379838462,
+            0.0471420114110478,
+            0.011593199790507496,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 13.133160200960628,
+          "distribution": [
+            0.08535174267967534,
+            0.5865669485073713,
+            0.2648094238474936,
+            0.058472431483779105,
+            0.004799453481680442,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 14.210694749555074,
+          "distribution": [
+            0.23159306134413402,
+            0.18164852320998406,
+            0.20075266516306367,
+            0.21700336201579193,
+            0.16900238826702632,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-13",
+        "hand": 1,
+        "sequence": 7,
+        "heroId": "seat-0",
+        "buttonId": "seat-0",
+        "street": "river",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 10,
+        "hole": [
+          "5d",
+          "7h"
+        ],
+        "board": [
+          "Js",
+          "9h",
+          "9d",
+          "7d",
+          "8h"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 960,
+            "bet": 0,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 950,
+            "bet": 10,
+            "total": 50,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "turn",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "turn",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "river",
+            "move": "bet",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 10,
+          "canCheck": false,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 20,
+          "maxTo": 960,
+          "word": "Raise",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "actions": [
+        {
+          "move": "fold"
+        },
+        {
+          "move": "call"
+        },
+        {
+          "move": "raise",
+          "to": 20
+        },
+        {
+          "move": "raise",
+          "to": 43
+        },
+        {
+          "move": "raise",
+          "to": 85
+        },
+        {
+          "move": "raise",
+          "to": 135
+        },
+        {
+          "move": "raise",
+          "to": 960
+        }
+      ],
+      "referenceValuesBb": [
+        0,
+        3.765625,
+        0.55859375,
+        -1.576953125,
+        -5.448828125,
+        -10.058203125,
+        -40.39453125
+      ],
+      "standardErrorsBb": [
+        0,
+        0.31154111464651996,
+        0.5490232120256703,
+        0.713276945922494,
+        1.0132115906648926,
+        1.3718239989706853,
+        3.851031088740034
+      ],
+      "results": [
+        {
+          "model": "baseline-6",
+          "referenceScoreLossBb": 3.257674899810842,
+          "distribution": [
+            0.8428653458652856,
+            0.13163267579347288,
+            0.024585092847754373,
+            0.0009126590652078615,
+            0.000004221187362738865,
+            5.240916413440948e-9,
+            0
+          ]
+        },
+        {
+          "model": "baseline-7",
+          "referenceScoreLossBb": 3.257910190786557,
+          "distribution": [
+            0.8516894360847288,
+            0.1331006065592439,
+            0.014283109232332301,
+            0.0009245227101644923,
+            0.000002321475169343363,
+            3.938361161596295e-9,
+            0
+          ]
+        },
+        {
+          "model": "calibrated-1",
+          "referenceScoreLossBb": 0.9206136858902937,
+          "distribution": [
+            0.21989314363874424,
+            0.7520884025632473,
+            0.026748508385507214,
+            0.001267242692675999,
+            0.0000026989409306355103,
+            3.7788945753843166e-9,
+            0
+          ]
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Common specified preflop prior and competent-style own-card response model for all candidates; approximate future sizing, not a solver or human ground truth.",
+    "Independent of each candidate's own value estimates; scores have Monte Carlo uncertainty. Controlled exact-payoff unit tests separately cover value, bluffing and bad calls.",
+    "These fixed regression contexts were not used to fit response weights. No probe result selects parameters."
+  ]
+}

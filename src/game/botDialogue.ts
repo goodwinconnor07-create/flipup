@@ -2,6 +2,7 @@
 // No model download, network, arbitrary text generation or access to anyone's hole cards.
 import { BOTS } from './botStyles';
 import type { TalkEvent } from './botTalk';
+import type { GameTalkEvent } from './botGameLines';
 import type { BotProfile } from './botProfiles';
 import type { Game } from './types';
 
@@ -22,10 +23,11 @@ type ContextEvent =
   | 'replyLaugh'
   | 'replyThanks'
   | 'replyGoodGame';
-/** Moments the legends and AI twins speak to that the planner has no phrasing for: they use the fixed lines in botTalk.ts. */
-export type FixedLineEvent = 'cheer' | 'commiserate' | 'finishWon' | 'finishLost' | 'rematchWon' | 'rematchLost' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg' | 'signature'
+/** Moments the dialogue planner has no phrasing for: they use the fixed lines in botTalk.ts. */
+export type FixedLineEvent = GameTalkEvent | 'cheer' | 'commiserate' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg'
   | 'flop' | 'turn' | 'river' | 'bigPot' | 'longHand' | 'shortStack' | 'chipLead' | 'button' | 'bigBlind' | 'handMilestone'
-  | 'beforeFlop' | 'beforeTurn' | 'beforeRiver' | 'beforeShowdown' | 'addedToTable';
+  | 'beforeFlop' | 'beforeTurn' | 'beforeRiver' | 'beforeShowdown' | 'addedToTable'
+  | 'rememberHello' | 'rememberBluffs' | 'rememberFold3bet' | 'rememberBigBet' | 'rememberCheckRaise' | 'rememberFolds' | 'rememberCalls';
 export type DialogueIntent = Exclude<TalkEvent, FixedLineEvent> | ContextEvent;
 // Indexes are a wire format. Append new lines; don't reorder published entries.
 export const DIALOGUE: Record<DialogueIntent, readonly string[]> = {

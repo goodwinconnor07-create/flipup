@@ -1,9 +1,17 @@
+import { withEntitlementsPlist, type ConfigPlugin } from 'expo/config-plugins';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 import { APP_INFO } from './appInfo.ts';
 
 // The EAS project: from appInfo.ts, or from the build workflow until the ID has been copied there.
 const projectId = APP_INFO.easProjectId || process.env.EAS_PROJECT_ID || '';
+
+/** Takes `aps-environment` back out of the entitlements, whatever added it. */
+const withoutPush: ConfigPlugin = (config) =>
+  withEntitlementsPlist(config, (c) => {
+    delete c.modResults['aps-environment'];
+    return c;
+  });
 
 // The iPhone and iPad app. iOS only: there's no Google Play release.
 export default ({ config }: ConfigContext): ExpoConfig => ({
@@ -21,6 +29,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...(APP_INFO.bundleId ? { bundleIdentifier: APP_INFO.bundleId } : {}),
     // iPhone first: the iPad layout comes after the iPhone version is approved. Until then iPads run it in iPhone mode.
     supportsTablet: false,
+    // Join links (playflipup.com/ACES42) open the app when it's installed. The Worker serves the matching file at
+    // /.well-known/apple-app-site-association once APPLE_TEAM_ID is set in wrangler.jsonc.
+    associatedDomains: [`applinks:${new URL(APP_INFO.apiOrigin).host}`],
     config: {
       // Only standard HTTPS (system networking), so the app is exempt from export documentation.
       usesNonExemptEncryption: false,
@@ -31,6 +42,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       CADisableMinimumFrameDurationOnPhone: true,
       // The QR scanner on the join sheet.
       NSCameraUsageDescription: 'FlipUp uses the camera to scan a table or party QR code so you can join it.',
+      // Share cards and results go out as pictures through the share sheet, which offers Save Image. Without this
+      // string iOS closes the app the moment Save Image is tapped. FlipUp only adds pictures; it never reads Photos.
+      NSPhotoLibraryAddUsageDescription: 'FlipUp saves the share cards you choose to save to your photos.',
     },
     privacyManifests: {
       // FlipUp never tracks anyone and asks for no App Tracking Transparency prompt.
@@ -42,6 +56,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         collected('NSPrivacyCollectedDataTypeDeviceID'),
         collected('NSPrivacyCollectedDataTypeOtherUserContent'),
         collected('NSPrivacyCollectedDataTypeGameplayContent'),
+        // The server keeps Apple's purchase id with the device id, so Premium works at online tables (worker/entitlement.ts).
+        collected('NSPrivacyCollectedDataTypePurchaseHistory'),
       ],
       // Required-reason APIs used by React Native and Expo modules that link statically.
       NSPrivacyAccessedAPITypes: [
@@ -59,21 +75,21 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
+    // The daily reminder is a local notification: no push, so no Push Notifications capability (the signing profile
+    // doesn't have it). expo-notifications adds `aps-environment` on its own; this takes it back out.
+    withoutPush as never,
     'expo-iap',
     ['expo-camera', { cameraPermission: 'FlipUp uses the camera to scan a table or party QR code so you can join it.', microphonePermission: false, recordAudioAndroid: false }],
     ['expo-build-properties', { ios: { deploymentTarget: APP_INFO.iosDeploymentTarget } }],
     [
       'expo-splash-screen',
       {
-        // The app icon on the system's own page colour, so the launch screen hands over to Home without a flash.
-        // Drawn by scripts/makeAppIcon.mjs with the icon.
-        backgroundColor: '#ffffff',
+        // The first colour of the launch cover (components/launch-cover.tsx) in each mode, with no picture, so it
+        // hands over seamlessly: a light blue, and a very dark blue-black in dark mode.
+        backgroundColor: '#e3efff',
         image: './assets/images/splash-icon.png',
-        imageWidth: 100,
-        dark: {
-          backgroundColor: '#000000',
-          image: './assets/images/splash-icon-dark.png',
-        },
+        imageWidth: 1,
+        dark: { backgroundColor: '#02040a', image: './assets/images/splash-icon.png' },
       },
     ],
   ],

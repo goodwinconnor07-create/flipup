@@ -1,17 +1,23 @@
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Pressable, Text, useColorScheme, useWindowDimensions, View, type ViewStyle } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { RAILS } from '@design/tableLooks';
 import { tableThemes } from '@design/tokens';
 import { useTableLook } from '@/state/prefs';
+import { peekCard, powerPill } from '@/state/power-view';
 import {
   bestHand,
   boardSize,
   CIRCLE_HOURS,
   CROSS_CELLS,
+  explainHand,
+  momentCaption,
   pot,
+  showdownWinners,
+  visibleBoard,
+  wildText,
   rankLabel,
   rankOf,
   seatFor,
@@ -24,21 +30,25 @@ import {
   type Player,
 } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { gradient, radius, spacing, usePlainColors } from '@/theme';
+import { stagger } from '@/motion/presets';
+import { brand, gradient, radius, spacing, usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
+import { Icon } from '../icon';
 import { bubblePop } from './bubbles';
 import { PotChips } from './pot-chips';
 import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
 import { FELT_WEAVE, WOOD_GRAIN } from './textures';
 import { TurnTimer } from './turn-timer';
+import { useMomentNow } from './use-moment';
 import { useTableNow } from './use-now';
+import { Announce } from '../announce';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
 /** Mixes a #rrggbb colour toward white (amount > 0) or black (amount < 0). */
-function shade(hex: string, amount: number): string {
+export function shade(hex: string, amount: number): string {
   const n = parseInt(hex.slice(1), 16);
   const to = amount > 0 ? 255 : 0;
   const a = Math.abs(amount);
@@ -56,11 +66,20 @@ export function useHighlight(game: Game, me: Player | undefined) {
   const mySeat = seatFor(hand, me?.id);
   const variant = variantOf(game);
   return useMemo(() => {
-    if (!hand || hand.board.length < 3 || hand.variant === 'imposter') return null;
+    if (!hand || hand.board.length < 3) return null;
     if (hand.result?.showdown) {
-      const winner = hand.result.pots[0]?.winners[0];
-      const seat = seatFor(hand, winner);
-      if (seat?.cards.length) return bestHand(variant, seat.cards, hand.board);
+      // The main pot's winners, each with the board it was won on (run it twice has two, Hit Me lights its poker
+      // half). A split lights every winner's five, so nobody's winning hand is left greyed out.
+      const wins = showdownWinners(hand).flatMap(({ ids, board }) =>
+        ids
+          .map((id) => seatFor(hand, id))
+          .filter((seat) => seat?.cards.length)
+          .map((seat) => bestHand(variant, seat!.cards, board)),
+      );
+      if (wins.length) return wins.length === 1 ? wins[0] : { ...wins[0], best: [...new Set(wins.flatMap((w) => w.best))] };
+      // Nobody beat the ghost: its hand is the one that won, so its cards light up (yours don't).
+      if (hand.ghost?.length) return bestHand(variant, hand.ghost, hand.board);
+      return null;
     }
     if (mySeat && !mySeat.folded && mySeat.cards.length) return bestHand(variant, mySeat.cards, hand.board);
     return null;
@@ -70,7 +89,9 @@ export function useHighlight(game: Game, me: Player | undefined) {
 /** The felt's height for a game on this phone. It depends only on the game and the screen, never on what's shown. */
 export function feltHeight(variant: string, screen: number): number {
   if (variant === 'crucifix' || variant === 'circle' || variant === 'memory') return 330;
-  if (variant === 'ghost' || variant === 'dice') return 290;
+  // Two boards, or a strip of fallen or burned cards under the board.
+  if (variant === 'plo') return 290;
+  if (variant === 'belt' || variant === 'chain') return 262;
   return Math.max(196, Math.min(240, Math.round(screen * 0.3)));
 }
 
@@ -91,19 +112,37 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
   const felt = theme?.felt ?? look.felt;
   const rail = theme?.rail ?? RAILS.find((r) => r.id === look.rail)!.colors;
   const info = variantInfo(variant);
-  // Imposter: you only learn it's you; everyone else in the hand is innocent.
-  const role = hand?.variant === 'imposter' && mySeat ? (hand.imposter === me?.id ? 'imposter' : 'innocent') : null;
   const myValue =
-    mySeat && !mySeat.folded && mySeat.cards.length && hand?.variant !== 'imposter'
+    mySeat && !mySeat.folded && mySeat.cards.length
       ? bestHand(variant, mySeat.cards, hand?.board ?? [])
       : null;
   const named = (v: { name: string; detail?: string }) => (v.detail && v.detail.length <= 16 ? v.detail : v.name);
   const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? named(myValue) : null;
-  const pillName = hand?.result?.showdown ? highlight?.name : myHandName;
+  const basePill = hand?.result?.showdown ? highlight?.name : myHandName;
   const potNow = hand && !hand.result ? pot(hand) : 0;
   const pack = me?.cardPack;
+  const now = useMomentNow(game);
+  // Which line, river or run the hand uses, and what the wild cards became (shown beside the hand's name).
+  const explainSeat = hand?.result?.showdown ? seatFor(hand, hand.result.pots[0]?.winners[0]) : mySeat && !mySeat.folded ? mySeat : undefined;
+  const explained =
+    hand && explainSeat?.cards.length && hand.board.length >= 3 && ['deuces', 'crucifix', 'circle', 'pittsburgh'].includes(variant)
+      ? explainHand(variant, explainSeat.cards, hand.board)
+      : null;
+  const extra = explained ? [explained.note, wildText(explained)].filter(Boolean).join(' · ') : '';
+  const pillName = basePill && extra ? `${basePill} · ${extra}` : basePill;
+  // Memory Poker: after the hand, a tap brings back the 20 cards that were out.
+  const recapKey = hand ? `${game.id}:${hand.number}` : '';
+  const [recapHand, setRecapHand] = useState<string | null>(null);
+  const recap = !!recapKey && recapHand === recapKey;
+  // The table screen never scrolls: a board that needs more room than the phone has left (the cross or the clock on
+  // a small phone) keeps its layout and shrinks to fit, from the top.
+  // At 320pt wide (an SE with Display Zoom) the stadium may get shorter, down to 160pt, before anything is scaled,
+  // so the board keeps its full-size cards instead of the whole oval shrinking to half.
+  const floor = width < 350 && feltHeight(variant, 0) < 300 ? 160 : feltHeight(variant, 0);
+  const natural = Math.min(feltHeight(variant, height), Math.max(floor, heightLimit ?? Infinity));
+  const fit = heightLimit && heightLimit > 0 && heightLimit < natural ? Math.max(0.6, heightLimit / natural) : 1;
 
-  return (
+  const oval = (
     <View
       style={{
         marginHorizontal: spacing.md,
@@ -112,18 +151,21 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
         // A fixed size for the whole game, so nothing on the table (cards shown under seats, the win banner) can
         // squeeze it: a wide stadium from 196pt to 240 by the phone's height; the cross, the clock and the Memory
         // peek take more. Memory Poker plays at that size too, so the board doesn't jump when the peek ends.
-        height: Math.min(feltHeight(variant, height), Math.max(feltHeight(variant, 0), heightLimit ?? Infinity)),
+        height: natural,
         flexShrink: 0,
-        boxShadow: '0 12px 26px -14px rgba(18,18,40,0.55), inset 0 1px 0 rgba(255,255,255,0.28)',
+        // A soft shadow that fades out inside the room under the felt, so the table area's edge never cuts it into a line.
+        boxShadow: '0 8px 16px -12px rgba(18,18,40,0.5), inset 0 1px 0 rgba(255,255,255,0.28)',
         ...gradient(`${look.rail === 'wood' && !theme ? `${WOOD_GRAIN}, ` : ''}linear-gradient(165deg, ${rail[0]}, ${rail[1]})`),
       }}
     >
-      <TurnTimer game={game} mine={!!hand && !hand.result && !!me && hand.toAct === me.id} />
+      <TurnTimer
+        game={game}
+        mine={!!hand && !hand.result && !!me && (hand.toAct === me.id || (!!hand.discarding && !!mySeat && !mySeat.folded && mySeat.cards.length > 2))}
+      />
       <View
         style={{
           flex: 1,
           borderRadius: radius.full,
-          overflow: 'hidden',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: spacing.xs,
@@ -131,86 +173,103 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
           paddingTop: spacing.lg,
           paddingBottom: spacing.md,
           paddingHorizontal: spacing.lg,
-          boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.45)',
-          ...gradient(
-            `${FELT_WEAVE}, radial-gradient(ellipse at 50% 38%, ${shade(felt, 0.14)} 0%, ${felt} 42%, ${shade(felt, -0.42)} 100%)`,
-          ),
         }}
       >
+        {/* The felt itself, on its own layer: what's on it isn't clipped to the oval, so when a board runs long (Red
+            River's two rows) the hand's name hangs over the rail instead of being cut off (the owner's call). */}
         <View
           pointerEvents="none"
           style={{
             position: 'absolute',
-            top: 9,
-            left: 9,
-            right: 9,
-            bottom: 9,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             borderRadius: radius.full,
-            borderWidth: 2,
-            borderColor: 'rgba(255,255,255,0.16)',
+            overflow: 'hidden',
+            boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.45)',
+            ...gradient(
+              `${FELT_WEAVE}, radial-gradient(ellipse at 50% 38%, ${shade(felt, 0.14)} 0%, ${felt} 42%, ${shade(felt, -0.42)} 100%)`,
+            ),
           }}
-        />
-        {!theme && look.logo && (
-          // Texas Hold'em's own mark: the FlipUp wordmark, faded into the felt like the mini games' emoji.
+        >
           <View
             pointerEvents="none"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Text
-              style={{ fontSize: 64, fontWeight: '800', letterSpacing: -1.5, color: '#ffffff', opacity: 0.09 }}
-              maxFontSizeMultiplier={1}
-              accessible={false}
+            style={{
+              position: 'absolute',
+              top: 9,
+              left: 9,
+              right: 9,
+              bottom: 9,
+              borderRadius: radius.full,
+              borderWidth: 2,
+              borderColor: 'rgba(255,255,255,0.16)',
+            }}
+          />
+          {!theme && look.logo && (
+            // Texas Hold'em's own mark: the FlipUp wordmark, faded into the felt like the mini games' emoji.
+            <View
+              pointerEvents="none"
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}
             >
-              FlipUp
-            </Text>
-          </View>
-        )}
-        {theme && (
-          // The game's emoji, faded into the felt.
-          <View
-            pointerEvents="none"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Text style={{ fontSize: 120, opacity: 0.16 }} maxFontSizeMultiplier={1} accessible={false}>
-              {info.emoji}
-            </Text>
-          </View>
-        )}
-        <View style={{ flexDirection: 'row', gap: spacing.xs, minHeight: 28 }}>
+              <Text
+                style={{ fontSize: 64, fontWeight: '800', letterSpacing: -1.5, color: '#ffffff', opacity: 0.09 }}
+                maxFontSizeMultiplier={1}
+                accessible={false}
+              >
+                FlipUp
+              </Text>
+            </View>
+          )}
+          {theme && (
+            // The game's emoji, faded into the felt.
+            <View
+              pointerEvents="none"
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Text style={{ fontSize: 120, opacity: 0.16 }} maxFontSizeMultiplier={1} accessible={false}>
+                {info.emoji}
+              </Text>
+            </View>
+          )}
+        </View>
+        {/* The pot always shows whole: a long game pill (a power's name, a roll) gives way and is cut short instead. */}
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, minHeight: 28, maxWidth: '100%', paddingHorizontal: spacing.md }}>
           {variant !== 'holdem' && (
             <Pressable
+              style={{ flexShrink: 1 }}
+              // The pill is 24pt tall: the slop makes it a full-size target without moving anything.
+              hitSlop={10}
               accessibilityRole="button"
               accessibilityLabel={`${info.name}: how it plays`}
               onPress={() => router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } })}
             >
               <VariantPill
-                text={role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : `${info.emoji} ${info.name}`}
-                hot={role === 'imposter'}
+                text={hand?.dice ? `🎲 Rolled ${hand.dice.roll}` : (powerPill(hand, width < 350) ?? `${info.emoji} ${info.name}`)}
               />
             </Pressable>
           )}
           {hand && !game.memory && <PotPill value={potNow} bigBlind={game.settings.bigBlind} />}
         </View>
-        <Ghost game={game} pack={pack} />
-        {hand?.dice && (
-          <Animated.View key={`dice-${hand.number}`} entering={reduce ? FadeIn : bubblePop}>
-            <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>
-              {hand.dice.out && hand.dice.in
-                ? `🎲 Rolled ${hand.dice.roll}: ${short(hand.dice.out)} → ${short(hand.dice.in)}`
-                : `🎲 Rolled ${hand.dice.roll}: the board stays`}
-            </Text>
-          </Animated.View>
-        )}
         {game.memory ? (
           <MemoryPeek game={game} width={width} pack={pack} />
         ) : (
-          <Board game={game} width={width} dim={dim} glow={glow} pack={pack} />
+          <Board game={game} width={width} dim={dim} glow={glow} pack={pack} now={now} recap={recap} peek={peekCard(hand, me?.id)} />
         )}
         <View style={{ minHeight: 32, justifyContent: 'center' }}>
           {game.memory ? (
             <MemoryCountdown game={game} />
           ) : hand?.result ? (
-            <WinBanner game={game} me={me} />
+            <View style={{ alignItems: 'center', gap: 4 }}>
+              <WinBanner key={hand.number} game={game} me={me} />
+              {variant === 'memory' && !!hand.removed?.length && (
+                <Pressable accessibilityRole="button" onPress={() => setRecapHand(recap ? null : recapKey)} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+                  <VariantPill text={recap ? '🧠 Back to the board' : '🧠 The 20 that were out'} />
+                </Pressable>
+              )}
+            </View>
+          ) : momentLine(game, now) ? (
+            <MomentLine game={game} now={now} reduce={reduce} meId={me?.id} />
           ) : pillName ? (
             <Animated.View key={pillName} entering={reduce ? FadeIn : bubblePop}>
               <HandPill text={pillName} />
@@ -218,6 +277,12 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
           ) : null}
         </View>
       </View>
+    </View>
+  );
+  if (fit === 1) return oval;
+  return (
+    <View style={{ height: natural * fit, flexShrink: 0 }}>
+      <View style={{ transform: [{ scale: fit }], transformOrigin: 'top center' }}>{oval}</View>
     </View>
   );
 }
@@ -232,18 +297,30 @@ function Board({
   dim,
   glow,
   pack,
+  now,
+  recap,
+  peek,
 }: {
   game: Game;
   width: number;
   dim: (c: Card) => boolean;
   glow: (c: Card) => boolean;
   pack?: string;
+  now: number;
+  recap?: boolean;
+  /** Power Cards: the next board card your Peek showed you, drawn faintly in the slot it will land in. */
+  peek?: Card | null;
 }) {
   const hand = game.hand;
   const variant = variantOf(game);
-  const slots = Math.max(boardSize(variant), hand?.board.length ?? 0);
+  // A Peek's card waits in the next slot, which an Extra Card can push past the usual five.
+  const peekAt = peek && hand ? hand.board.length : -1;
+  const slots = Math.max(boardSize(variant), hand?.board.length ?? 0, peekAt + 1);
+  // Cards land on the clock while a street's twist plays (see moments.ts): not-yet-dealt ones are empty slots.
+  const shown = hand ? visibleBoard(hand, now) : [];
+  if (recap && hand?.removed) return <MemoryPeek game={{ ...game, memory: { cards: hand.removed, until: 0 } }} width={width} pack={pack} />;
   const card = (i: number, w: number, style?: ViewStyle) => {
-    const c = hand?.board[i];
+    const c = shown[i];
     return (
       <View key={c ? `${hand!.number}-${c}` : `slot-${i}`} style={style}>
         {c ? (
@@ -254,8 +331,10 @@ function Board({
             dim={dim(c)}
             glow={glow(c)}
             pack={pack}
-            delay={i < streetCards(variant, 'flop') ? i * 160 : 0}
+            delay={!hand?.moment && i < streetCards(variant, 'flop') ? i * 160 : 0}
           />
+        ) : i === peekAt && peek ? (
+          <PeekGhost card={peek} width={w} />
         ) : (
           <CardSlot width={w} />
         )}
@@ -292,53 +371,60 @@ function Board({
       </View>
     );
   }
+  // Run it twice: the first run stays up, small, over the second as it's dealt (Texas Hold'em only).
+  const first = hand?.twice?.first;
+  if (first) {
+    const room2 = width - spacing.md * 2 - 22 - spacing.lg * 2 - 22;
+    const w2 = Math.min(38, Math.floor((room2 - 4 * 4) / 5));
+    const runRow = (n: number, cards: ReactNode[]) => (
+      <View key={n} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <View accessibilityLabel={`Run ${n}`} style={{ width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)' }}>
+          <Text maxFontSizeMultiplier={1} style={{ color: '#ffffff', fontSize: 11, fontWeight: '800' }}>
+            {n}
+          </Text>
+        </View>
+        {cards}
+      </View>
+    );
+    return (
+      <View accessibilityLabel={`Run it twice. First run: ${first.map(short).join(', ')}`} style={{ gap: 4 }}>
+        {runRow(
+          1,
+          first.map((c) => (
+            <PlayingCard key={`r1-${c}`} card={c} width={w2} dim={!!hand?.result && dim(c)} pack={pack} />
+          )),
+        )}
+        {runRow(2, Array.from({ length: 5 }, (_, i) => card(i, w2)))}
+      </View>
+    );
+  }
   const wide = slots > 5;
   const perRow = Math.min(slots, 7);
   const gap = wide ? 4 : 6;
   // Five cards across the felt, smaller on a narrow phone; boards with more cards use the smaller size and wrap.
   const room = width - spacing.md * 2 - 22 - spacing.lg * 2 - (variant === 'pittsburgh' ? 8 : 0);
   const w = Math.min(wide ? 44 : 56, Math.floor((room - (perRow - 1) * gap) / perRow));
-  return (
+  const row = (
     <View accessibilityLabel="Board" style={{ flexDirection: 'row', gap, rowGap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
       {Array.from({ length: slots }, (_, i) => card(i, w, variant === 'pittsburgh' && i === 4 ? { marginLeft: 8 } : undefined))}
     </View>
   );
+  return row;
 }
 
-/** Ghost Hold'em: the ghost's two cards (face down until a showdown) and what it's holding for the next hand. */
-function Ghost({ game, pack }: { game: Game; pack?: string }) {
-  const hand = game.hand;
-  const ghost = hand?.result?.ghost;
-  const holding = hand && !hand.result ? (hand.carry ?? 0) : (game.ghostPot ?? 0);
-  const isGhost = variantOf(game) === 'ghost';
-  if (!isGhost && !holding) return null;
-  const cards = ghost?.cards ?? hand?.ghost ?? [null, null];
+/**
+ * Power Cards: the card your Peek showed you, faint in the slot where it will land, with a gold eye. Only your phone
+ * has it (the server sends a Peek's card to nobody else); it goes once the card is dealt for real.
+ */
+function PeekGhost({ card, width }: { card: Card; width: number }) {
   return (
-    <View
-      accessibilityLabel="The ghost"
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: spacing.xs,
-        paddingVertical: 2,
-        borderRadius: radius.full,
-        backgroundColor: ghost?.kept ? 'rgba(124,92,255,0.45)' : 'rgba(0,0,0,0.28)',
-      }}
-    >
-      <Text style={{ fontSize: 20 }} maxFontSizeMultiplier={1} accessible={false}>
-        👻
-      </Text>
-      {hand && isGhost && (
-        <View style={{ flexDirection: 'row', gap: 2 }}>
-          {cards.map((c, i) =>
-            c ? <PlayingCard key={c} card={c} size="sm" flip pack={pack} /> : <PlayingCard key={i} back size="sm" pack={pack} />,
-          )}
-        </View>
-      )}
-      <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff', fontWeight: '700', fontSize: 13 }}>
-        {ghost ? (ghost.kept ? `Keeps ${chips(ghost.kept)} · ${ghost.name}` : ghost.name) : holding ? `Holding ${chips(holding)}` : 'Ghost'}
-      </Text>
+    <View accessibilityLabel={`Your Peek: the next card is ${short(card)}`}>
+      <View style={{ opacity: 0.5 }}>
+        <PlayingCard card={card} width={width} />
+      </View>
+      <View pointerEvents="none" style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.gold }}>
+        <Icon name="eye.fill" size={10} color={brand.goldInk} />
+      </View>
     </View>
   );
 }
@@ -356,7 +442,7 @@ function MemoryPeek({ game, width, pack }: { game: Game; width: number; pack?: s
       style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 3, justifyContent: 'center', maxWidth: w * 10 + 27 }}
     >
       {cards.map((c, i) => (
-        <PlayingCard key={c} card={c} size="sm" width={w} flip delay={i * 25} pack={pack} />
+        <PlayingCard key={c} card={c} size="sm" width={w} flip delay={stagger(i)} pack={pack} />
       ))}
     </View>
   );
@@ -377,12 +463,15 @@ function HandPill({ text }: { text: string }) {
       style={{
         paddingHorizontal: 14,
         paddingVertical: 5,
-        borderRadius: 999,
+        borderRadius: 16,
+        borderCurve: 'continuous',
+        maxWidth: '100%',
         backgroundColor: c.surface,
         boxShadow: '0 1px 2px rgba(18,18,40,0.12)',
       }}
     >
-      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ color: c.label, fontWeight: '600', fontSize: 15 }}>
+      {/* A long name ("Pair of aces · the column") shrinks a little, then wraps to a second line rather than cut off. */}
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} style={{ color: c.label, fontWeight: '600', fontSize: 15, lineHeight: 18, textAlign: 'center' }}>
         {text}
       </Text>
     </View>
@@ -414,7 +503,7 @@ function PotPill({ value, bigBlind }: { value: number; bigBlind: number }) {
   );
 }
 
-/** The game's name (or your Imposter role), a tap away from how it plays. */
+/** The game's name, a tap away from how it plays. */
 function VariantPill({ text, hot }: { text: string; hot?: boolean }) {
   const c = usePlainColors();
   const dark = useColorScheme() === 'dark';
@@ -427,7 +516,7 @@ function VariantPill({ text, hot }: { text: string; hot?: boolean }) {
         backgroundColor: hot ? c.redBg : dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.75)',
       }}
     >
-      <Text maxFontSizeMultiplier={1.2} style={{ color: hot ? c.redInk : c.label, fontWeight: '600', fontSize: 13 }}>
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ color: hot ? c.redInk : c.label, fontWeight: '600', fontSize: 13 }}>
         {text}
       </Text>
     </View>
@@ -441,6 +530,16 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
   const { width } = useWindowDimensions();
   const hand = game.hand!;
   const result = hand.result!;
+  // The hands turn over first, then the pot is named (a reveal, then the winner, as the clearer poker apps do): a
+  // beat at every showdown, longer when the ghost turns its cards over a beat apart.
+  const wait = result.ghost ? 1700 : result.showdown ? 600 : 0;
+  const [ready, setReady] = useState(wait === 0);
+  useEffect(() => {
+    if (!wait) return;
+    const t = setTimeout(() => setReady(true), wait);
+    return () => clearTimeout(t);
+  }, [wait]);
+  if (!ready) return <View style={{ minHeight: 32 }} />;
   const winners = Object.entries(result.won)
     .map(([id, amount]) => ({ p: game.players.find((x) => x.id === id), id, amount }))
     .filter((w) => w.p)
@@ -448,21 +547,10 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
   let title: string;
   let how: string | undefined;
   let face: string;
-  if (result.imposter) {
-    // Imposter: who it was, and whether the table found them.
-    const imp = game.players.find((p) => p.id === result.imposter!.id);
-    const tally = Object.values(result.imposter.votes).filter((v) => v === result.imposter!.id).length;
-    const total = Object.keys(result.imposter.votes).length;
-    const all = Object.values(result.won).reduce((a, b) => a + b, 0);
-    title = result.imposter.caught
-      ? `Caught! Innocents split ${chips(all)}`
-      : winners.length === 1 && winners[0].id === result.imposter.id
-        ? `${imp?.name ?? 'Imposter'} got away: ${chips(all)}`
-        : `Innocents split ${chips(all)}`;
-    how = `Imposter: ${imp?.name ?? '?'} · ${tally} of ${total} votes`;
-    face = '🕵️';
+  if (result.blackjack && !(result.blackjack.poker[0]?.length === 1 && result.blackjack.winners[0]?.length === 1 && result.blackjack.poker[0][0] === result.blackjack.winners[0][0])) {
+    return <HalvesBanner game={game} me={me} />;
   } else if (result.blackjack) {
-    // Blackjack Hold'em: who took the poker half and who took the 21 half of the main pot.
+    // Hit Me: who took the poker half and who took the 21 half of the main pot.
     const name = (id: string) => (id === me?.id ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
     const poker = result.blackjack.poker[0] ?? [];
     const count = result.blackjack.winners[0] ?? [];
@@ -470,18 +558,34 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
     title = both ? `${name(poker[0])} ${poker[0] === me?.id ? 'win' : 'wins'} both halves` : `Hand: ${poker.map(name).join(' & ')} · 21: ${count.map(name).join(' & ')}`;
     how = `${result.names[poker[0]] ?? ''} · closest to 21: ${result.blackjack.counts[count[0]] ?? '?'}`;
     face = game.players.find((p) => p.id === (poker[0] ?? count[0]))?.emoji ?? '♠️';
+  } else if (result.runs && winners.length && result.runs.some((r) => (r.winners[0] ?? []).join() !== (result.runs![0].winners[0] ?? []).join())) {
+    // Run it twice, and the runs went different ways: who took each half of the main pot.
+    const name = (id: string) => (id === me?.id ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
+    const [one, two] = result.runs.map((r) => r.winners[0] ?? []);
+    title = `Run 1: ${one.map(name).join(' & ')} · Run 2: ${two.map(name).join(' & ')}`;
+    how = `${shortName(result.runs[0].names[one[0]])} · ${shortName(result.runs[1].names[two[0]])}`;
+    face = winners[0].p!.emoji;
+  } else if (!result.runs && winners.length && result.pots.length > 1 && result.pots.some((p) => p.winners.join() !== result.pots[0].winners.join())) {
+    // A main pot and side pots that went to different players: who took which, so the side pot isn't left out.
+    const name = (id: string) => (id === me?.id ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
+    const side = result.pots.slice(1).flatMap((p) => p.winners).filter((id) => !result.pots[0].winners.includes(id));
+    const main = result.pots[0].winners;
+    title = `Main: ${main.map(name).join(' & ')} · Side: ${[...new Set(side)].map(name).join(' & ')}`;
+    how = [main[0], side[0]].map((id) => shortName(result.names[id])).filter(Boolean).join(' · ') || undefined;
+    face = game.players.find((p) => p.id === main[0])?.emoji ?? winners[0].p!.emoji;
   } else if (!winners.length) {
     if (!result.ghost?.kept) return null;
     title = `The ghost keeps ${chips(result.ghost.kept)}`;
-    how = result.ghost.name;
     face = '👻';
   } else {
     const top = winners[0];
-    const split = winners.length > 1;
-    title = split
-      ? `Split pot · ${winners.map((w) => w.p!.name).join(' & ')}`
+    // A real split is one pot with more than one winner; a main pot and a side pot to different people isn't.
+    const tied = result.pots.find((pot) => pot.winners.length > 1);
+    const sharers = tied ? winners.filter((w) => tied.winners.includes(w.id)) : [];
+    title = tied
+      ? `Split pot · ${sharers.map((w) => w.p!.name).join(' & ')}`
       : `${top.p!.id === me?.id ? 'You win' : `${top.p!.name} wins`} ${chips(top.amount)}`;
-    how = result.showdown ? result.names[top.id] : 'Everyone else folded';
+    how = !result.showdown ? 'Everyone else folded' : tied ? `${result.names[sharers[0].id] ?? ''} · ${chips(sharers[0].amount)} each` : result.names[top.id];
     face = top.p!.emoji;
   }
   return (
@@ -489,6 +593,7 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
       key={hand.number}
       accessibilityRole="text"
       accessibilityLiveRegion="polite"
+      accessibilityLabel={`${title}${how ? `. ${how}` : ''}`}
       entering={reduce ? FadeIn : bubblePop}
       style={{
         flexDirection: 'row',
@@ -502,6 +607,7 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
         boxShadow: '0 0 0 3px rgba(245,158,11,0.7), 0 6px 16px -6px rgba(0,0,0,0.5)',
       }}
     >
+      <Announce text={`${title}${how ? `. ${how}` : ''}`} again={hand.number} />
       <Avatar emoji={face} size={34} />
       <View style={{ maxWidth: width - 150 }}>
         <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ color: c.label, fontWeight: '700', fontSize: 15 }}>
@@ -513,6 +619,85 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
           </Text>
         )}
       </View>
+    </Animated.View>
+  );
+}
+
+/** A hand's name without its detail ("Full house, threes full of queens" → "Full house"), for a one-line banner that
+ * also names the board or half and the winner: the full name was cut off on every phone. */
+const shortName = (name: string | undefined) => (name ?? '').split(',')[0];
+
+/** Hit Me when the two halves went to different players: one line for each. */
+function HalvesBanner({ game, me }: { game: Game; me: Player | undefined }) {
+  const reduce = useReduceMotion();
+  const c = usePlainColors();
+  const { width } = useWindowDimensions();
+  const hand = game.hand!;
+  const bj = hand.result!.blackjack!;
+  const name = (id: string) => (id === me?.id ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
+  const face = (id: string) => game.players.find((p) => p.id === id)?.emoji ?? '♠️';
+  const poker = bj.poker[0] ?? [];
+  const count = bj.winners[0] ?? [];
+  const row = (label: string, ids: string[], detail: string) => (
+    <View
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 4, paddingRight: 12, paddingVertical: 2, borderRadius: 999, backgroundColor: c.surface, boxShadow: '0 0 0 2px rgba(245,158,11,0.7)' }}
+    >
+      <Avatar emoji={face(ids[0])} size={24} />
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ maxWidth: width - 170, color: c.label, fontWeight: '700', fontSize: 13 }}>
+        {label} · {ids.map(name).join(' & ')}
+        <Text style={{ color: c.tertiaryLabel, fontWeight: '600' }}>{`  ${detail}`}</Text>
+      </Text>
+    </View>
+  );
+  return (
+    <Animated.View key={hand.number} accessibilityRole="text" accessibilityLiveRegion="polite" entering={reduce ? FadeIn : bubblePop} style={{ gap: 3, alignItems: 'center' }}>
+      <Announce text={`Best hand: ${poker.map(name).join(' and ')}. Closest to 21: ${count.map(name).join(' and ')}`} again={hand.number} />
+      {row('Best hand', poker, shortName(hand.result!.names[poker[0]]))}
+      {row('Closest to 21', count, String(bj.counts[count[0]] ?? '?'))}
+    </Animated.View>
+  );
+}
+
+/** Whether a moment has something to say in the felt's bottom slot right now. */
+function momentLine(game: Game, now: number): boolean {
+  const hand = game.hand;
+  const m = hand?.moment;
+  if (!hand || !m || hand.result || now >= m.until) return false;
+  if (m.kind === 'bust' || m.kind === 'discards') return true;
+  return !!momentCaption(variantOf(game), hand, now);
+}
+
+/** The moment in words: a bust, the thrown-away cards turned up together, or a caption. */
+function MomentLine({ game, now, reduce, meId }: { game: Game; now: number; reduce: boolean; meId?: string }) {
+  const hand = game.hand!;
+  const m = hand.moment!;
+  const name = (id?: string) => game.players.find((p) => p.id === id)?.name ?? '?';
+  if (m.kind === 'bust') {
+    return (
+      <Animated.View key="bust" entering={reduce ? FadeIn : bubblePop}>
+        <HandPill text={`💥 ${name(m.who)} busts with ${m.value}`} />
+      </Animated.View>
+    );
+  }
+  if (m.kind === 'discards' && hand.discards) {
+    const entries = Object.entries(hand.discards);
+    return (
+      <View accessibilityLabel="Cards thrown away" style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+        <Text style={{ fontSize: 16 }} accessible={false}>
+          🍍
+        </Text>
+        {entries.map(([id, card]) => (
+          <View key={id} style={{ alignItems: 'center' }}>
+            <PlayingCard card={card} size="sm" width={22} flip delay={0} dim />
+          </View>
+        ))}
+      </View>
+    );
+  }
+  const text = momentCaption(variantOf(game), hand, now);
+  return (
+    <Animated.View key={text} entering={reduce ? FadeIn : bubblePop}>
+      <HandPill text={text ?? ''} />
     </Animated.View>
   );
 }

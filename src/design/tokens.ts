@@ -131,7 +131,6 @@ export const confettiColors = {
  */
 export const tableThemes = {
   ghost: { felt: '#2e2650', rail: ['#5b4d8a', '#120d22'] },
-  imposter: { felt: '#5b1e22', rail: ['#c9a46a', '#4a3518'] },
   pineapple: { felt: '#0e8577', rail: ['#ffd34d', '#a8740c'] },
   deuces: { felt: '#6b2bd6', rail: ['#ff5fae', '#6e1650'] },
   pittsburgh: { felt: '#1d1d20', rail: ['#ffbf2e', '#6b4c00'] },
@@ -142,6 +141,7 @@ export const tableThemes = {
   memory: { felt: '#2b1f5c', rail: ['#b9a7ff', '#3b2a86'] },
   beanstalk: { felt: '#1f5f2e', rail: ['#9c6b3c', '#3d2410'] },
   bjholdem: { felt: '#0d5a3a', rail: ['#2b2b31', '#0a0a0d'] },
+  power: { felt: '#101a3a', rail: ['#3ee0ff', '#0b4d6b'] },
 } as const satisfies Record<string, { felt: string; rail: readonly [string, string] }>;
 
 /**
@@ -216,6 +216,18 @@ export const motion = {
   base: 250,
   screen: 350,
   sheetOut: 160,
+  /** Exits run 20% shorter than the entrance they undo (250 in, 200 out). See docs/MOTION.md, "The 20 rules". */
+  exit: 200,
+  /** Gap between rows or details that settle one after another. */
+  stagger: 30,
+  /** A popover, menu or chip starts here, never from 0, so it grows out of something that's already there. */
+  popFrom: 0.95,
+  /** How far a moving knob stretches along its travel (its other side shrinks so its area stays the same). */
+  stretch: 0.12,
+  /** How far an object that moves across the screen bows out of a straight line, in points. */
+  arc: 32,
+  /** Menus and dropdowns open in this range of milliseconds. */
+  dropdown: { min: 150, max: 250 },
 } as const;
 
 /** Tap targets are never smaller than this (Apple's minimum). */

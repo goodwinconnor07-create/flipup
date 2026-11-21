@@ -2,6 +2,7 @@
 // (worker/index.ts, worker/room.ts); the phone uses them to show a crown and to ask for Premium before it tries.
 
 import { BUBBLE_STYLES } from './bubbles';
+import { BOTS } from './botStyles';
 import { CARD_PACKS } from './cardPacks';
 import type { Action } from './types';
 import { isPremiumVariant, type Variant } from './variants';
@@ -9,16 +10,46 @@ import { isPremiumVariant, type Variant } from './variants';
 /** A chat bubble that only Premium may wear. The free ones, and the plain default, are open to everyone. */
 export const premiumBubble = (id: string | undefined): boolean => id !== undefined && BUBBLE_STYLES.some((b) => b.id === id && !b.free);
 
-/** A card pack that only Premium may use. A campaign trophy back is won, not bought, so it isn't one. */
-export const premiumPack = (id: string | undefined): boolean => id !== undefined && CARD_PACKS.some((p) => p.id === id && !p.venue);
+/** A card pack that only Premium may use. */
+export const premiumPack = (id: string | undefined): boolean => id !== undefined && CARD_PACKS.some((p) => p.id === id);
+
+/** Hosting this game needs Premium: every game but Texas Hold'em. */
+export const variantNeedsPremium = (v: Variant): boolean => isPremiumVariant(v);
 
 /** Hosting a table or a party with any of these games needs Premium. Joining one never does. */
-export const gamesNeedPremium = (games: readonly Variant[]): boolean => games.some(isPremiumVariant);
+export const gamesNeedPremium = (games: readonly Variant[]): boolean => games.some(variantNeedsPremium);
 
-/** A `setLook` with its Premium parts taken out, for a phone that hasn't shown it owns Premium. Anything else passes through. */
+/**
+ * The bots a free host can seat: the ten original ones, one of each playing style. Premium opens every bot.
+ * Sitting at someone else's table never needs this; only the host picks the bots.
+ */
+export const FREE_BOT_NAMES: readonly string[] = ['Luna', 'Eli', 'Remi', 'Emma', 'Anna', 'Max', 'Zoe', 'Theo', 'Ivy', 'Kai'];
+export const isFreeBot = (name: string): boolean => FREE_BOT_NAMES.includes(name);
+/** Seating any bot outside the free ten needs Premium. Names that aren't in the roster count as Premium. */
+export const botsNeedPremium = (names: readonly string[]): boolean => names.some((n) => !isFreeBot(n));
+/** The roster a host may pick from. */
+export const botsFor = (premium: boolean): typeof BOTS => (premium ? BOTS : BOTS.filter((b) => isFreeBot(b.name)));
+
+/**
+ * Range training: without Premium you get the daily quiz, the same five hands for everyone each day. Every other set
+ * (a plain set of five, practice on chosen spots or your misses) is Premium.
+ */
+export const rangeSetNeedsPremium = (daily: boolean): boolean => !daily;
+
+/**
+ * Whether this action is the host opening a Premium game: changing a table's mode to one, or playing again in one.
+ * The table room refuses it from a phone that hasn't shown it owns Premium, the same rule as opening a table.
+ */
+export function actionNeedsPremium(action: Action): boolean {
+  if (action.type === 'settings') return gamesNeedPremium(action.settings.variant ? [action.settings.variant] : []);
+  if (action.type === 'playAgain') return gamesNeedPremium(action.variant ? [action.variant] : []);
+  return false;
+}
+
+/** A `setLook` with its Premium parts (bubble, card pack, gold name) taken out, for a phone that hasn't shown it owns Premium. Anything else passes through. */
 export function withoutPremiumLook(action: Action): Action {
   if (action.type !== 'setLook') return action;
-  const { bubble, cardPack, ...rest } = action;
+  const { bubble, cardPack, gold: _gold, ...rest } = action;
   return {
     ...rest,
     ...(bubble !== undefined && !premiumBubble(bubble) ? { bubble } : {}),

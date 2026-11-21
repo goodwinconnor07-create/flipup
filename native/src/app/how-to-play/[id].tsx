@@ -5,16 +5,21 @@ import { Pressable, Text, useWindowDimensions, View, type LayoutChangeEvent } fr
 import Animated, { cancelAnimation, Easing, FadeIn, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useAnnounce } from '@/components/announce';
 import { Button } from '@/components/button';
+import { GamePicture } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
+import { SHOT_ASPECT } from '@/components/how-to/shots';
 import { stepsFor, ZOOMS } from '@/components/how-to/steps';
 import { Icon } from '@/components/icon';
 import { isVariant, variantInfo, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { radius, ROUNDED, spacing } from '@/theme';
+import { EASE_OUT } from '@/motion/presets';
+import { motion, radius, ROUNDED, spacing, useScreenReader } from '@/theme';
+import { TightText } from '@/components/themed-text';
 
-/** The pictures are a 390 × 844 phone screen. */
-const ASPECT = 390 / 844;
+/** The pictures are a phone screen, this shape. */
+const ASPECT = SHOT_ASPECT;
 /** How long a step stays before the next, like a story. */
 const STEP_MS = 6500;
 
@@ -23,9 +28,9 @@ const STEP_MS = 6500;
  * matters, zoomed in on what the step is about, with a title and a line under it. Bars along the very top fill and
  * move on by themselves; tap anywhere on the right for the next step, on the left for the one before, and hold to
  * pause. Full screen, so the bars and the close button sit at the top edge. The layout is measured: the picture takes
- * the room between the bars and the words.
+ * the room between the bars and the words. A game with no pictures yet shows its steps written, over its drawing.
  */
-export default function HowToPlay() {
+function HowToPlayInner() {
   const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
   const variant: Variant = isVariant(id) ? id : 'holdem';
   const info = variantInfo(variant);
@@ -33,6 +38,8 @@ export default function HowToPlay() {
   const insets = useSafeAreaInsets();
   const { width: screenW } = useWindowDimensions();
   const reduce = useReduceMotion();
+  // With VoiceOver the story never moves on by itself: each step is read out and waits for Next.
+  const reader = useScreenReader();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [room, setRoom] = useState<{ width: number; height: number } | null>(null);
@@ -50,7 +57,7 @@ export default function HowToPlay() {
 
   // The bar fills over the step's time, then the next step comes (the last one stays).
   useEffect(() => {
-    if (paused || !steps.length) {
+    if (paused || reader || !steps.length) {
       cancelAnimation(progress);
       return;
     }
@@ -62,13 +69,13 @@ export default function HowToPlay() {
       setIndex((i) => Math.min(last, i + 1));
     }, left);
     return () => clearTimeout(timer);
-  }, [index, paused, last, steps.length, progress]);
+  }, [index, paused, reader, last, steps.length, progress]);
   const filling = useAnimatedStyle(() => ({ width: `${progress.get() * 100}%` }));
 
-  // The zoom: the frame takes the shape of the step's strip of the picture, as big as the room allows.
-  const zoom = useSharedValue<{ top: number; height: number }>({ top: 0, height: 1 });
+  // The zoom: the frame takes the shape of the step's part of the picture, as big as the room allows.
+  const zoom = useSharedValue({ top: 0, height: 1, left: 0, width: 1 });
   useEffect(() => {
-    const z = ZOOMS[steps[index]?.zoom ?? 'full'];
+    const z = { left: 0, width: 1, ...ZOOMS[steps[index]?.zoom ?? 'full'] };
     zoom.set(reduce ? z : withTiming(z, { duration: 520, easing: Easing.inOut(Easing.cubic) }));
   }, [index, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -84,19 +91,21 @@ export default function HowToPlay() {
   const roomW = room?.width ?? 0;
   const roomH = room?.height ?? 0;
   const frame = useAnimatedStyle(() => {
-    const { height } = zoom.get();
-    const aspect = ASPECT / height;
+    const { height, width } = zoom.get();
+    const aspect = (ASPECT * width) / height;
     const w = Math.min(roomW, roomH * aspect);
     return { width: w, height: w / aspect };
   });
   const strip = useAnimatedStyle(() => {
-    const { top, height } = zoom.get();
-    const w = Math.min(roomW, roomH * (ASPECT / height));
-    const full = w / ASPECT;
-    return { width: w, height: full, transform: [{ translateY: -top * full }] };
+    const { top, height, left, width } = zoom.get();
+    const w = Math.min(roomW, roomH * ((ASPECT * width) / height));
+    const fullW = w / width;
+    const fullH = fullW / ASPECT;
+    return { width: fullW, height: fullH, transform: [{ translateX: -left * fullW }, { translateY: -top * fullH }] };
   });
   // Tap anywhere: the left third goes back, the rest goes on.
   const tap = (pageX: number) => go(pageX < screenW / 3 ? index - 1 : index + 1);
+  useAnnounce(reader && step ? `Step ${index + 1} of ${steps.length}. ${step.title}. ${step.text}` : null, index);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000000', paddingTop: insets.top + spacing.xxs, paddingBottom: insets.bottom + spacing.md, gap: spacing.sm }}>
@@ -126,14 +135,24 @@ export default function HowToPlay() {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${step?.title ?? info.name}. Tap for the next step`}
+        accessibilityLabel={`${info.name}${steps.length ? `, step ${index + 1} of ${steps.length}` : ''}. ${step?.title ?? info.name}. ${step?.text ?? info.rules[0]}`}
+        accessibilityHint={index < last ? 'Double tap for the next step' : undefined}
+        accessibilityActions={[
+          { name: 'next', label: 'Next step' },
+          { name: 'previous', label: 'Previous step' },
+        ]}
+        onAccessibilityAction={(e) => go(e.nativeEvent.actionName === 'previous' ? index - 1 : index + 1)}
         onPressIn={() => setPaused(true)}
         onPressOut={() => setPaused(false)}
         onPress={(e) => tap(e.nativeEvent.pageX)}
         style={{ flex: 1, gap: spacing.lg }}
       >
         <View onLayout={measure} style={{ flex: 1, minHeight: 0, marginHorizontal: spacing.lg, alignItems: 'center', justifyContent: 'center' }}>
-          {step && roomW > 0 && (
+          {step && roomW > 0 && !step.image && (
+            // Written steps (no pictures recorded for this game yet): the game's own drawing, as big as fits.
+            <GamePicture variant={variant} width={Math.min(roomW, (roomH * 200) / 120)} height={Math.min(roomW, (roomH * 200) / 120) * 0.6} rounded={radius.xl} />
+          )}
+          {step?.image && roomW > 0 && (
             <Animated.View style={[{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: '#111114', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.16)' }, frame]}>
               <Animated.View style={strip}>
                 <Image source={step.image} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={reduce ? 0 : 180} accessible={false} />
@@ -143,7 +162,7 @@ export default function HowToPlay() {
         </View>
 
         <View style={{ paddingHorizontal: spacing.lg }}>
-          <Animated.View key={index} entering={reduce ? undefined : FadeIn.duration(220)} accessibilityLiveRegion="polite" style={{ minHeight: 118, gap: spacing.xs }}>
+          <Animated.View key={index} entering={reduce ? undefined : FadeIn.duration(motion.base).easing(EASE_OUT)} accessibilityLiveRegion="polite" style={{ minHeight: 118, gap: spacing.xs }}>
             <Text maxFontSizeMultiplier={1.2} style={{ color: 'rgba(255, 255, 255, 0.55)', fontSize: 13, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>
               {info.name}
               {steps.length ? ` · ${index + 1} of ${steps.length}` : ''}
@@ -162,5 +181,14 @@ export default function HowToPlay() {
         <Button variant="party" tint="green" size="lg" title={`Play ${info.name}`} onPress={play} />
       </View>
     </View>
+  );
+}
+
+// Fixed layout: text keeps its lower Dynamic Type caps here (TightText).
+export default function HowToPlay() {
+  return (
+    <TightText>
+      <HowToPlayInner />
+    </TightText>
   );
 }

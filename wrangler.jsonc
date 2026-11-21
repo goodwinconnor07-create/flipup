@@ -1,5 +1,5 @@
 // Cloudflare config for FlipUp.
-// One Worker serves the built app (static assets) and the online table API.
+// One Worker serves the website (a landing page, join links, privacy and support) and the iPhone app's API.
 // Each table lives in its own TableRoom Durable Object, keyed by join code.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
@@ -7,8 +7,11 @@
   "main": "./worker/index.ts",
   "workers_dev": true,
   "preview_urls": false,
-  // The app's own domain. Wrangler adds the DNS records and the certificate on deploy.
+  // The app's own domain (playflipup.com, the main one) and the old one, kept so links and builds that still use it
+  // keep working. Wrangler adds the DNS records and the certificate on deploy.
   "routes": [
+    { "pattern": "playflipup.com", "custom_domain": true },
+    { "pattern": "www.playflipup.com", "custom_domain": true },
     { "pattern": "gtoduel.online", "custom_domain": true },
     { "pattern": "www.gtoduel.online", "custom_domain": true },
   ],
@@ -16,17 +19,17 @@
   "assets": {
     // Unknown paths (like /ABCDE join links) fall back to index.html.
     "not_found_handling": "single-page-application",
-    // Only API calls reach the Worker code; everything else is served as a static file.
-    "run_worker_first": ["/api/*"],
+    // Only API calls (and the app-links file) reach the Worker code; everything else is served as a static file.
+    "run_worker_first": ["/api/*", "/.well-known/*"],
+    "binding": "ASSETS",
   },
   "durable_objects": {
     "bindings": [
       { "name": "TABLE_ROOM", "class_name": "TableRoom" },
       { "name": "PARTY_ROOM", "class_name": "PartyRoom" },
-      { "name": "FRIEND_CARD", "class_name": "FriendCard" },
-      { "name": "BLACKJACK_ROOM", "class_name": "BlackjackRoom" },
       { "name": "REPORT_BOX", "class_name": "ReportBox" },
       { "name": "ENTITLEMENTS", "class_name": "Entitlements" },
+      { "name": "WAITLIST", "class_name": "Waitlist" },
     ],
   },
   // Production already recorded v3 without the classes below ever being created, so they are all made in v4.
@@ -44,13 +47,33 @@
     { "tag": "v7", "new_sqlite_classes": ["ReportBox"] },
     // Who has bought FlipUp Premium (checked against Apple's signed purchases), one instance named "premium".
     { "tag": "v8", "new_sqlite_classes": ["Entitlements"] },
+    // Bankroll: one room per player per month, and the boards (bankroll by month, Today's three by day).
+    { "tag": "v9", "new_sqlite_classes": ["BankrollRoom", "Leaderboard"] },
+    // Private, opt-in bot research sessions. Each expires after 30 days.
+    { "tag": "v10", "new_sqlite_classes": ["BotResearchRoom"] },
+    // 15 Nov 2026: the website app is gone and the iPhone app is the only client. Its web-only rooms go, and their
+    // data with them (friend cards, Blackjack tables, bot research, Bankroll and its boards). The launch waitlist comes.
+    { "tag": "v11", "deleted_classes": ["FriendCard", "BlackjackRoom", "BotResearchRoom", "BankrollRoom", "Leaderboard"], "new_sqlite_classes": ["Waitlist"] },
+  ],
+  // Firm rate limits, shared by every Worker instance (the in-memory counters in worker/index.ts only see their own).
+  // Cloudflare counts per key (the caller's address plus the route) over 10 or 60 seconds. The hourly caps stay in the Worker.
+  "ratelimits": [
+    { "name": "LIMIT_CREATE", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
+    { "name": "LIMIT_REPORT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
+    { "name": "LIMIT_WAITLIST", "namespace_id": "1003", "simple": { "limit": 3, "period": 60 } },
+    { "name": "LIMIT_PREMIUM", "namespace_id": "1004", "simple": { "limit": 20, "period": 60 } },
   ],
   "vars": {
     // "1" makes the server refuse Premium games and looks to phones that haven't shown a purchase. Leave it "0" until the
     // iPhone app is the only client that can host them (the web app has no payment yet) and the App Store Server Notifications URL is set.
-    "PREMIUM_ENFORCED": "0",
+    "PREMIUM_ENFORCED": "1",
     "APPLE_BUNDLE_ID": "com.goodwin.flipup",
+    // Your Apple Developer Team ID (10 characters, Membership details in the developer portal; the same value as the
+    // APPLE_TEAM_ID GitHub secret). Join links open the app only once this is set and the Worker is deployed.
+    "APPLE_TEAM_ID": "9FAJRHL979",
     "APPLE_PREMIUM_PRODUCT_ID": "flipup.premium.unlock",
+    // FlipUp Premium's monthly and yearly subscriptions (native/appInfo.ts), comma separated.
+    "APPLE_PREMIUM_SUB_IDS": "flipup.premium.monthly,flipup.premium.yearly",
   },
   "observability": { "enabled": true },
 }

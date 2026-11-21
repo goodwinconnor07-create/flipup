@@ -25,13 +25,17 @@ export function handRecord(game: Game, hand: Hand, now: number): HandRecord | nu
     holes: Object.fromEntries(hand.seats.filter((s) => s.cards.length === 2).map((s) => [s.playerId, [...s.cards]])),
     won: { ...hand.result.won },
     showdown: hand.result.showdown,
+    ...(hand.dead ? { dead: { ...hand.dead } } : {}),
+    ...(hand.bomb ? { bomb: true } : {}),
+    ...(hand.straddle ? { straddle: { ...hand.straddle } } : {}),
+    ...(hand.twice?.first ? { firstBoard: [...hand.twice.first] } : {}),
   };
 }
 
 /** Chips a player won or lost in a recorded hand. */
 export function recordNet(r: HandRecord, playerId: string): number {
   const start = r.players.find((p) => p.id === playerId)?.stack ?? 0;
-  return Math.round((r.won[playerId] ?? 0) - Math.min(putIn(r, playerId), start));
+  return Math.round((r.won[playerId] ?? 0) - Math.min(putIn(r, playerId) + (r.dead?.[playerId] ?? 0), start));
 }
 
 /** What everyone put in on one street (`to` is a street total, so the largest `to`), blinds included. */
@@ -57,8 +61,10 @@ function putIn(r: HandRecord, playerId: string): number {
   return total;
 }
 
-/** The blind a player posted (0 for everyone else). */
+/** The blind a player posted, a straddle included (0 for everyone else, and for everyone in a bomb pot). */
 export function blindFor(r: HandRecord, playerId: string): number {
+  if (r.bomb) return 0;
+  if (r.straddle?.id === playerId) return r.straddle.amount;
   const order = [...r.players].sort((a, b) => a.seat - b.seat);
   const bi = order.findIndex((p) => p.id === r.buttonId);
   const n = order.length;

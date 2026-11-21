@@ -28,11 +28,11 @@ describe('bots', () => {
     }
   });
 
-  it('has 640 bots, 64 of each foundation, with distinct stable identities', () => {
-    expect(BOTS).toHaveLength(640);
-    expect(new Set(BOTS.map((b) => b.name)).size).toBe(640);
-    expect(new Set(BOTS.map((b) => b.profile.id)).size).toBe(640);
-    for (const style of Object.keys(STYLES)) expect(BOTS.filter((b) => b.style === style)).toHaveLength(64);
+  it('has 540 bots, 54 of each foundation, with distinct stable identities', () => {
+    expect(BOTS).toHaveLength(540);
+    expect(new Set(BOTS.map((b) => b.name)).size).toBe(540);
+    expect(new Set(BOTS.map((b) => b.profile.id)).size).toBe(540);
+    for (const style of Object.keys(STYLES)) expect(BOTS.filter((b) => b.style === style)).toHaveLength(54);
   });
 
   it('seats bots in a random order, not top to bottom', () => {
@@ -161,7 +161,9 @@ describe('bots', () => {
     expect(jabQueued).toBe(true);
     expect(streak).toBeGreaterThanOrEqual(2);
     expect(redactForDevice(g, 'h').streaks).toBeUndefined();
-  });
+    // Thousands of production ticks/complete hands; this checks reactions and streaks.
+    // Per-decision latency is checked separately by the bot benchmarks.
+  }, 20000);
 
   it('talks like a real table: most hands get a word, the chatty styles more than the quiet ones', () => {
     const report = simulate(['pro', 'maniac', 'rock', 'gambler'], 150, 9);

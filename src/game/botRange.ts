@@ -130,9 +130,9 @@ export function exploitRead(read: Read, k: number): Read {
 }
 
 /** What a bot has seen of a player, eased towards an average pub player until there are enough hands. */
-function summary(r: PlayerRead | undefined, priorHands = PRIOR.hands): Read {
+function summary(r: PlayerRead | undefined, priorHands = PRIOR.hands, scale = 1): Read {
   const h = r?.hands ?? 0;
-  const mix = (seen: number, n: number, prior: number, k = priorHands) => (seen + prior * k) / (n + k);
+  const mix = (seen: number, n: number, prior: number, k = priorHands) => (seen + prior * k * scale) / (n + k * scale);
   return {
     vpip: mix(r?.vpip ?? 0, h, PRIOR.vpip),
     pfr: mix(r?.pfr ?? 0, h, PRIOR.pfr),
@@ -213,7 +213,8 @@ export function storyOf(game: Game, hand: Hand, playerId: string): Story {
   const bb = game.settings.bigBlind;
   const acts = (hand.actions ?? []).filter((a) => !a.outOfTurn);
   let level = 0;
-  let cur = bb;
+  // A straddle is the bet to beat before the flop, like a third blind.
+  let cur = hand.straddle?.amount ?? bb;
   let pre: PreLine = 'blind';
   let openBb = 0;
   for (const a of acts) {
@@ -754,7 +755,6 @@ export function sampleHand(
   return null;
 }
 
-export const intsOf = (cards: string[]) => cards.map(toInt);
 export const boardCards = (hand: Hand) => hand.board.slice(0, STREET_CARDS[hand.street]).map(toInt);
 
 /** The opponents still in the hand, with their stories and reads. */

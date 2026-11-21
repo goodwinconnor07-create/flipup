@@ -2,7 +2,7 @@
 
 Live at **https://flipup.kavishahtemu11.workers.dev**
 
-Poker night on your phones. No-limit Texas Hold'em for play chips, plus silly mini games (Crazy Pineapple, Crazy Deuces, Ghost, Pittsburgh, Die on the River, Red River, Imposter, Crucifix and Circle Hold'em), each with its own look: the host opens a table, friends join on their own phones with a 5-letter code or link, and bots fill any empty seats. Or play the bots on your own, offline.
+Poker night on your phones. No-limit Texas Hold'em for play chips, plus silly mini games (Crazy Pineapple, Crazy Deuces, Ghost, Pittsburgh, Die on the River, Red River, Crucifix and Round the Clock), each with its own look: the host opens a table, friends join on their own phones with a 5-letter code or link, and bots fill any empty seats. Or play the bots on your own, offline.
 
 - A bold, Apple-like design with big cards, the system font and emoji profile pictures (pick one or type any emoji)
 - Real Hold'em rules: moving button, heads-up blinds, min-raises, short all-ins that don't reopen betting, side pots, split pots, showdown order and auto-muck. See [docs/RULES.md](docs/RULES.md).
@@ -10,6 +10,14 @@ Poker night on your phones. No-limit Texas Hold'em for play chips, plus silly mi
 - Host settings: starting chips, blinds, rebuys, time to act
 - Bots with ten playing styles. AI Legends (bots in the style of famous players) are built but switched off for launch: `LEGENDS_ON` in `src/game/legends.ts`
 - Every mini game dresses the table in its own colours, cards, moving background and sounds
+
+Ordinary Hold’em bots use fresh, independent table personalities, public-action reads and private decision plans. See [the live bot experience and validation](docs/bot_system/LIVE_HUMAN_TABLE.md).
+
+Mobile-browser bot research is available from **Settings → Bot research**, or `/#bot-research`: guided hands, pause/resume, optional feedback and private uploaded reports. See [the research workflow](docs/bot_system/BOT_RESEARCH.md).
+
+## Try BOT_001
+
+For standard Texas Hold’em, turn on **Invite BOT_001** in setup or the host’s table settings. It adds the experimental bot in one extra seat. Choose zero other bots to play it heads up. The setting is off by default. See [behaviour and validation](docs/bot_system/PLAY_BOT_001.md) and [contextual learning experiments](docs/bot_system/LEARNING_LOOP.md).
 
 ## Running it
 

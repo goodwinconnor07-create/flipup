@@ -1,12 +1,17 @@
-// FlipUp Premium through StoreKit 2 (expo-iap): the one non-consumable `APP_INFO.premiumProductId`
-// (docs/APP_STORE.md, 3.1.1). The price always comes from the App Store. A purchase or a restore of it is the only
-// thing that sets `flipup.premium`. The web build uses purchase.web.ts, which sells nothing.
+// FlipUp Premium through StoreKit 2 (expo-iap), docs/APP_STORE.md 3.1.1. Premium is sold as two auto-renewing
+// subscriptions in one group (`APP_INFO.premiumMonthlyId`, `premiumYearlyId`), each with a $1 for the first month introductory
+// offer. The old one-time purchase (`premiumProductId`) is no longer sold, but owning it still means Premium for good.
+// Prices always come from the App Store. A live subscription or the old purchase is the only thing that sets
+// `flipup.premium`. The web build uses purchase.web.ts, which sells nothing.
 import {
+  deepLinkToSubscriptions,
   endConnection,
   fetchProducts,
   finishTransaction,
   getAvailablePurchases,
+  getStorefront,
   initConnection,
+  isEligibleForIntroOfferIOS,
   isUserCancelledError,
   purchaseErrorListener,
   purchaseUpdatedListener,
@@ -18,28 +23,63 @@ import { useSyncExternalStore } from 'react';
 
 import { APP_INFO } from '../../appInfo';
 import { bindPurchase } from './entitlement';
-import { hasPremium, setPremium } from './premium';
+import { premiumDeclined, premiumStored, setPremium, setPremiumDeclined } from './premium';
 
-const SKU = APP_INFO.premiumProductId;
+export type Plan = 'monthly' | 'yearly';
+const SKU: Record<Plan, string> = { monthly: APP_INFO.premiumMonthlyId, yearly: APP_INFO.premiumYearlyId };
+const LIFETIME = APP_INFO.premiumProductId;
+const OURS = new Set<string>([SKU.monthly, SKU.yearly, LIFETIME]);
+
+export interface PlanPrice {
+  /** The App Store's own price string ("$7.00", "7,00 €"). */
+  price: string;
+  /** The price as a number, for working out the yearly saving. */
+  amount: number | null;
+  /** The introductory offer in the App Store's words ("$1.00"), if this Apple Account can still take it. */
+  intro: string | null;
+  /** How long the introductory offer lasts, in days. */
+  introDays: number | null;
+  /** The same length in the App Store's own units, for the words on screen ("2 weeks", "1 month"). */
+  introLength: string | null;
+  /** The introductory offer is a free trial (nothing is charged until it ends). */
+  introFree: boolean;
+}
 
 export interface StoreState {
-  /** The App Store's own price string ("$8.99", "8,99 €"), or null until it has answered. */
-  price: string | null;
+  /** Each plan's price, or null until the App Store has answered. */
+  plans: Record<Plan, PlanPrice | null>;
+  /** What this Apple Account has: a plan, the old lifetime purchase, or nothing. */
+  owned: Plan | 'lifetime' | null;
   /** A purchase or restore is under way. */
   busy: boolean;
   /** Why the store couldn't be reached, if it couldn't. */
   error: string | null;
   /** Ask to Buy: a parent has to approve the purchase. Premium turns on by itself once they do. */
   pending: boolean;
+  /** The live subscription's current period: when it ends, and whether it renews then (null when StoreKit didn't say). */
+  period: { ends: number; renews: boolean | null } | null;
+  /** The App Store country this phone buys from ("AUS"), which sets the prices and offers it sees. Null until known. */
+  storefront: string | null;
 }
 
-let state: StoreState = { price: null, busy: false, error: null, pending: false };
+let state: StoreState = { plans: { monthly: null, yearly: null }, owned: null, busy: false, error: null, pending: false, period: null, storefront: null };
 const listeners = new Set<() => void>();
 let ready: Promise<boolean> | null = null;
 let subscriptions: { remove(): void }[] = [];
 const granting = new Map<string, Promise<void>>();
 const finished = new Set<string>();
 let waiting: { done: (ok: boolean) => void } | null = null;
+
+// After Delete my data the phone starts over without Premium, even though Apple still has the subscription. Until the
+// person taps Restore (or buys again) nothing turns Premium back on by itself, at launch or from a renewal.
+const declined = premiumDeclined;
+
+/** Delete my data: Premium goes off on this phone and stays off until Restore or a new purchase. */
+export function forgetPremium(): void {
+  setPremiumDeclined(true);
+  setPremium(false);
+  publish({ owned: null, period: null, pending: false });
+}
 
 function publish(patch: Partial<StoreState>): void {
   state = { ...state, ...patch };
@@ -56,14 +96,30 @@ export function useStore(): StoreState {
   );
 }
 
-const ours = (p: Purchase) => p.productId === SKU && p.purchaseState === 'purchased';
+const live = (p: Purchase) => OURS.has(p.productId) && p.purchaseState === 'purchased' && !expired(p);
+function expired(p: Purchase): boolean {
+  const at = (p as { expirationDateIOS?: number | null }).expirationDateIOS;
+  return typeof at === 'number' && at > 0 && at < Date.now();
+}
+/** A subscription's period from StoreKit: the renewal date if it gave one, else the expiry. Null for the old lifetime purchase. */
+function periodOf(p: Purchase): StoreState['period'] {
+  const q = p as { expirationDateIOS?: number | null; renewalInfoIOS?: { renewalDate?: number | null; willAutoRenew?: boolean } | null };
+  const ends = q.renewalInfoIOS?.renewalDate ?? q.expirationDateIOS;
+  if (typeof ends !== 'number' || ends <= 0) return null;
+  return { ends, renews: typeof q.renewalInfoIOS?.willAutoRenew === 'boolean' ? q.renewalInfoIOS.willAutoRenew : null };
+}
+
+const planOf = (productId: string): Plan | 'lifetime' | null =>
+  productId === SKU.monthly ? 'monthly' : productId === SKU.yearly ? 'yearly' : productId === LIFETIME ? 'lifetime' : null;
 
 function grant(p: Purchase): Promise<void> {
   const key = p.transactionId || p.id;
   const existing = granting.get(key);
   if (existing) return existing;
-  if (!hasPremium()) setPremium(true);
-  // Restores can rebind a new device even for an already-finished transaction.
+  if (!premiumStored()) setPremium(true);
+  const plan = planOf(p.productId);
+  if (plan && state.owned !== 'lifetime') publish({ owned: plan, ...(plan !== 'lifetime' && periodOf(p) ? { period: periodOf(p) } : {}) });
+  // Every renewal is a new signed transaction with a later expiry: the server keeps the latest.
   void bindPurchase(p.purchaseToken);
   const task = (async () => {
     if (finished.has(key)) return;
@@ -79,21 +135,22 @@ function grant(p: Purchase): Promise<void> {
 }
 
 /**
- * Connects to the App Store once, when the app starts: listens for purchases (including ones that finish later,
- * like Ask to Buy), loads the price, and quietly turns Premium on if this Apple account already owns it.
+ * Connects to the App Store once, when the app starts: listens for purchases (including ones that finish later, like
+ * Ask to Buy and renewals), loads the prices, and turns Premium on or off by what this Apple Account has right now.
  */
 export function startStore(): Promise<boolean> {
   if (ready) return ready;
   if (!subscriptions.length)
     subscriptions = [
       purchaseUpdatedListener((p) => {
-        if (p.productId === SKU && p.purchaseState === 'pending') {
+        if (OURS.has(p.productId) && p.purchaseState === 'pending') {
           publish({ busy: false, pending: true });
           waiting?.done(false);
           waiting = null;
           return;
         }
-        if (!ours(p)) return;
+        if (!live(p)) return;
+        if (declined() && !waiting) return;
         void grant(p).then(() => {
           publish({ busy: false, pending: false });
           waiting?.done(true);
@@ -104,15 +161,16 @@ export function startStore(): Promise<boolean> {
         publish({ busy: false });
         waiting?.done(false);
         waiting = null;
-        if (!isUserCancelledError(e)) publish({ error: e.message || "The App Store couldn't finish the purchase." });
+        if (!isUserCancelledError(e)) publish({ error: `The App Store couldn't finish the purchase.${e.code ? ` (${String(e.code)})` : ''} Try again.` });
       }),
     ];
   ready = (async () => {
     try {
       await initConnection();
-      const [, owned] = await Promise.all([loadPrice(), checkOwned()]);
-      // The App Store answered and this Apple Account owns nothing: the purchase was refunded. Only when it answered.
-      if (!owned && hasPremium()) setPremium(false);
+      void getStorefront().then((storefront) => publish({ storefront: storefront || null }), () => {});
+      const [, owned] = await Promise.all([loadPrices(), checkOwned()]);
+      // The App Store answered and this Apple Account has nothing live: the subscription ended or was refunded.
+      if (!owned && premiumStored()) setPremium(false);
       return true;
     } catch {
       publish({ error: "Couldn't reach the App Store." });
@@ -123,51 +181,206 @@ export function startStore(): Promise<boolean> {
   return ready;
 }
 
-async function loadPrice(): Promise<void> {
-  const products = await fetchProducts({ skus: [SKU], type: 'in-app' });
-  const p = products?.find((x) => x.id === SKU);
-  publish({ price: p?.displayPrice ?? null, error: p ? null : 'Premium isn’t on sale right now.' });
+/** How long the Buy button waits for the App Store before it gives up (long enough for a password and Face ID). */
+const PURCHASE_WAIT_MS = 120_000;
+/** After Apple's sheet closes without a purchase signal, how often the app looks at what the account owns. */
+const OWNED_POLL_MS = 2_500;
+
+const DAYS: Record<string, number> = { day: 1, week: 7, month: 30, year: 365 };
+
+/**
+ * How many days the introductory offer runs, from StoreKit's own description of the product. StoreKit gives an offer
+ * as a period ("P2W") times a count, and the flat fields don't always carry the period's own number (a two-week
+ * offer paid up front is one period of two weeks), so the product's JSON is read first and the flat fields are the
+ * fallback. Null when it can't be told.
+ */
+export function introDaysOf(json: string | null | undefined, periods: number, unit: string): number | null {
+  try {
+    const offers = (JSON.parse(json ?? 'null') as { attributes?: { offers?: { discounts?: { type?: string; numOfPeriods?: number; recurringSubscriptionPeriod?: string }[] }[] } } | null)?.attributes?.offers ?? [];
+    for (const o of offers)
+      for (const d of o.discounts ?? []) {
+        const m = d.type === 'IntroOffer' ? /^P(\d+)([DWMY])$/.exec(d.recurringSubscriptionPeriod ?? '') : null;
+        if (m) return Number(m[1]) * { D: 1, W: 7, M: 30, Y: 365 }[m[2] as 'D' | 'W' | 'M' | 'Y'] * (d.numOfPeriods || 1);
+      }
+  } catch {
+    // Not JSON: use the flat fields.
+  }
+  return DAYS[unit] ? periods * DAYS[unit] : null;
 }
 
-/** True when this Apple account owns Premium. Turns it on here if so. */
-async function checkOwned(): Promise<boolean> {
-  const owned = (await getAvailablePurchases()).filter(ours);
+const UNIT_WORD: Record<'D' | 'W' | 'M' | 'Y', string> = { D: 'day', W: 'week', M: 'month', Y: 'year' };
+const FLAT_UNIT: Record<string, 'D' | 'W' | 'M' | 'Y'> = { day: 'D', week: 'W', month: 'M', year: 'Y' };
+
+/**
+ * The introductory offer's length in the App Store's own units ("2 weeks", "1 month", "3 days"), read the same way as
+ * `introDaysOf()`. A month stays a month: "30 days" would be wrong for a one-month offer that starts in February.
+ * Null when it can't be told.
+ */
+export function introLengthOf(json: string | null | undefined, periods: number, unit: string): string | null {
+  let count = 0;
+  let u: 'D' | 'W' | 'M' | 'Y' | undefined;
+  try {
+    const offers = (JSON.parse(json ?? 'null') as { attributes?: { offers?: { discounts?: { type?: string; numOfPeriods?: number; recurringSubscriptionPeriod?: string }[] }[] } } | null)?.attributes?.offers ?? [];
+    for (const o of offers)
+      for (const d of o.discounts ?? []) {
+        const m = !u && d.type === 'IntroOffer' ? /^P(\d+)([DWMY])$/.exec(d.recurringSubscriptionPeriod ?? '') : null;
+        if (m) {
+          count = Number(m[1]) * (d.numOfPeriods || 1);
+          u = m[2] as 'D' | 'W' | 'M' | 'Y';
+        }
+      }
+  } catch {
+    // Not JSON: use the flat fields.
+  }
+  if (!u) {
+    u = FLAT_UNIT[unit];
+    count = periods;
+  }
+  if (!u || !(count > 0)) return null;
+  if (u === 'D' && count % 7 === 0) {
+    u = 'W';
+    count /= 7;
+  }
+  return `${count} ${UNIT_WORD[u]}${count === 1 ? '' : 's'}`;
+}
+
+async function loadPrices(): Promise<void> {
+  const products = (await fetchProducts({ skus: [SKU.monthly, SKU.yearly], type: 'subs' })) ?? [];
+  const plans: Record<Plan, PlanPrice | null> = { monthly: null, yearly: null };
+  for (const plan of ['monthly', 'yearly'] as Plan[]) {
+    const p = products.find((x) => x.id === SKU[plan]) as
+      | (typeof products)[number] & {
+          introductoryPriceIOS?: string | null;
+          introductoryPriceNumberOfPeriodsIOS?: string | null;
+          introductoryPriceSubscriptionPeriodIOS?: string | null;
+          introductoryPricePaymentModeIOS?: string | null;
+          jsonRepresentationIOS?: string | null;
+          subscriptionGroupIdIOS?: string | null;
+        }
+      | undefined;
+    if (!p) continue;
+    let eligible = true;
+    try {
+      if (p.subscriptionGroupIdIOS) eligible = await isEligibleForIntroOfferIOS(p.subscriptionGroupIdIOS);
+    } catch {
+      // Not knowing is fine: Apple only charges the offer price to someone who can still have it.
+    }
+    const periods = Number(p.introductoryPriceNumberOfPeriodsIOS ?? 1) || 1;
+    const unit = String(p.introductoryPriceSubscriptionPeriodIOS ?? '').toLowerCase();
+    plans[plan] = {
+      price: p.displayPrice,
+      amount: typeof p.price === 'number' ? p.price : null,
+      intro: eligible && p.introductoryPriceIOS ? p.introductoryPriceIOS : null,
+      introDays: eligible && p.introductoryPriceIOS ? introDaysOf(p.jsonRepresentationIOS, periods, unit) : null,
+      introLength: eligible && p.introductoryPriceIOS ? introLengthOf(p.jsonRepresentationIOS, periods, unit) : null,
+      introFree: p.introductoryPricePaymentModeIOS === 'free-trial',
+    };
+  }
+  publish({ plans, error: plans.monthly || plans.yearly ? null : 'Premium isn’t on sale right now.' });
+}
+
+/** True when this Apple Account has Premium now (a live subscription or the old lifetime purchase). Turns it on if so. */
+async function checkOwned(force = false): Promise<boolean> {
+  if (declined() && !force) return false;
+  const owned = (await getAvailablePurchases()).filter(live);
+  const best = owned.find((p) => p.productId === LIFETIME) ?? owned.find((p) => p.productId === SKU.yearly) ?? owned[0];
+  publish({ owned: best ? planOf(best.productId) : null, period: best && planOf(best.productId) !== 'lifetime' ? periodOf(best) : null });
   for (const p of owned) await grant(p);
   return owned.length > 0;
 }
 
-/** Opens Apple's purchase sheet. Resolves true once Premium is bought, false if cancelled or refused. */
-export async function buyPremium(): Promise<boolean> {
+/** Opens Apple's purchase sheet for a plan. Resolves true once Premium is on, false if cancelled or refused. */
+export async function buyPremium(plan: Plan = 'yearly'): Promise<boolean> {
   if (state.busy) return false;
+  setPremiumDeclined(false);
   publish({ busy: true, error: null });
   if (!(await startStore())) {
     publish({ busy: false });
     return false;
   }
   return new Promise<boolean>((done) => {
-    waiting = { done };
-    requestPurchase({ type: 'in-app', request: { apple: { sku: SKU } } }).catch((e: unknown) => {
-      publish({ busy: false, error: e instanceof Error ? e.message : "The App Store couldn't start the purchase." });
+    // StoreKit doesn't always send the "purchase done" signal: an Apple Account that already owns Premium (a sandbox
+    // tester after Delete my data, or a person who bought on another phone) closes the sheet with nothing new to
+    // report, and the button would spin until the app next opened. So once the sheet has answered, and again at the
+    // end of the wait, the app also asks the App Store what this account owns.
+    let poll: ReturnType<typeof setInterval> | undefined;
+    const settleIfOwned = async (): Promise<void> => {
+      if (!waiting) return;
+      try {
+        if (!(await checkOwned(true)) || !waiting) return;
+      } catch {
+        return;
+      }
+      publish({ busy: false, pending: false });
+      waiting?.done(true);
       waiting = null;
-      done(false);
-    });
+    };
+    // If Apple's sheet never shows and nothing answers, the button must not spin for ever. A purchase that finishes
+    // after this still turns Premium on (the purchase listener doesn't need `waiting`).
+    const giveUp = setTimeout(() => {
+      void settleIfOwned().then(() => {
+        if (!state.busy || !waiting) return;
+        publish({ busy: false, error: "The App Store didn't answer. Check your connection and try again." });
+        waiting = null;
+        done(false);
+      });
+    }, PURCHASE_WAIT_MS);
+    const finish = (ok: boolean) => {
+      clearTimeout(giveUp);
+      clearInterval(poll);
+      done(ok);
+    };
+    waiting = { done: finish };
+    requestPurchase({ type: 'subs', request: { apple: { sku: SKU[plan] } } })
+      .then(() => {
+        // The sheet has closed: if the listener doesn't speak up, look at what the account owns every few seconds.
+        if (waiting?.done === finish) poll = setInterval(() => void settleIfOwned(), OWNED_POLL_MS);
+      })
+      .catch((e: unknown) => {
+        if (isUserCancelledError(e)) publish({ busy: false });
+        else publish({ busy: false, error: "The App Store couldn't start the purchase. Try again." });
+        waiting = null;
+        finish(false);
+      });
   });
 }
 
-/** Restore Purchases: asks the App Store for this Apple account's purchases. Resolves true if Premium is among them. */
+/** The store's last error, read after a restore (a component's own copy of the state is from before it ran). */
+export const storeError = (): string | null => state.error;
+
+/** Restore Purchases: asks the App Store for this Apple Account's purchases. Resolves true if Premium is among them. */
 export async function restorePremium(): Promise<boolean> {
   if (state.busy) return false;
+  const was = declined();
+  setPremiumDeclined(false);
   publish({ busy: true, error: null });
   try {
-    if (!(await startStore())) return false;
+    if (!(await startStore())) return was ? (setPremiumDeclined(true), false) : false;
     await restorePurchases();
-    return await checkOwned();
-  } catch (e) {
-    publish({ error: e instanceof Error ? e.message : "Couldn't reach the App Store." });
+    const found = await checkOwned(true);
+    if (!found && was) setPremiumDeclined(true);
+    return found;
+  } catch {
+    if (was) setPremiumDeclined(true);
+    publish({ error: "Couldn't reach the App Store. Check your connection and try again." });
     return false;
   } finally {
     publish({ busy: false });
   }
+}
+
+/** Apple's own page for changing or cancelling the subscription. */
+export function manageSubscription(): Promise<void> {
+  return deepLinkToSubscriptions({}).catch(() => undefined);
+}
+
+/** How much a year saves against twelve months, as a whole percentage, from the App Store's prices. */
+export function yearlySaving(plans: StoreState['plans']): number | null {
+  const m = plans.monthly?.amount;
+  const y = plans.yearly?.amount;
+  if (!m || !y) return null;
+  const pct = Math.round((1 - y / (m * 12)) * 100);
+  return pct > 0 ? pct : null;
 }
 
 export function stopStore(): void {

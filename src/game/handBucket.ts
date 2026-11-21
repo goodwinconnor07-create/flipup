@@ -1,5 +1,5 @@
 // Hand and board features: what a hand is made of and what the board looks like. Pure functions of
-// cards, shared by the bots' charts and the AI twin's memory. Keep in step with gto/scripts/train_bots.py.
+// cards, used by the bots' charts. Keep in step with gto/scripts/train_bots.py.
 
 import { rankOf, suitOf, type Card } from './cards';
 

@@ -1,337 +1,512 @@
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
-import { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
+import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
+import { Alert, Linking, Pressable, ScrollView, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import Animated, { Easing, FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CARD_BACKS } from '@design/premiumLooks';
 import { Button } from '@/components/button';
-import { GameThumb } from '@/components/game-picture';
 import { GrainBackground } from '@/components/grain-background';
+import { PANEL_RADIUS, Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
-import { Icon } from '@/components/icon';
+import { Icon, type IconName } from '@/components/icon';
+import { isReason, PERKS, REASON_PERK, type Perk, type PerkId } from '@/components/premium/perks';
+import { PerkScreen, PhoneFrame } from '@/components/premium/phone-shots';
 import { PressableScale } from '@/components/pressable-scale';
-import { SheetScroll } from '@/components/sheet-scroll';
-import { MoveBubble } from '@/components/table/bubbles';
-import { PlayingCard } from '@/components/table/playing-card';
+import { Confetti } from '@/components/table/confetti';
+import { Swap } from '@/components/swap';
+import { RoundButton } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
-import { BUBBLE_STYLES, CARD_PACKS, FREE_VARIANTS, isVariant, VARIANTS, variantInfo } from '@/engine';
+import { isVariant, VARIANTS, variantInfo, FREE_VARIANTS } from '@/engine';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePremium } from '@/state/premium';
-import { buyPremium, ON_SALE, restorePremium, startStore, useStore } from '@/state/purchase';
-import { gradient, party, radius, spacing, useColors } from '@/theme';
+import { buyPremium, manageSubscription, ON_SALE, restorePremium, startStore, storeError, useStore, yearlySaving, type Plan, type StoreState } from '@/state/purchase';
+import { brand, ForceScheme, radius, ROUNDED, spacing, useScreenReader } from '@/theme';
 
 import { APP_INFO } from '../../appInfo';
 
-type Reason = 'game' | 'pack' | 'bubble';
-type Part = 'games' | 'packs' | 'bubbles';
-
-const FIRST: Record<Reason, Part> = { game: 'games', pack: 'packs', bubble: 'bubbles' };
-const glass = 'rgba(255,255,255,0.1)';
+/** The plan cards: solid, so the phone pictures they sit over never show through the prices. */
+const CARD_BG = '#111b3d';
+const CARD_EDGE = 'rgba(255,255,255,0.12)';
+const MUTED = 'rgba(255,255,255,0.72)';
+/** How long each perk stays up before the next slides in. */
+const HERO_MS = 4200;
+/** How much of the phone shows under each perk's words before the plans cut across it, like the App Store's shots. */
+const PHONE_SHOW = 0.56;
 
 /**
- * FlipUp Premium (docs/APP_STORE.md, 3.1.1; docs/PREMIUM_PLAN.md). A night-purple sheet that shows what you get
- * before it asks for money: the eight games, every card back (tap to see it big), every bubble effect, and what's
- * free against what's not. It opens with whatever you tapped first (a locked game, a card back or a bubble). The price
- * comes from the App Store and sits in a bar pinned to the bottom, with Restore Purchases.
+ * FlipUp Premium (docs/APP_STORE.md 3.1.1 and 3.1.2; docs/PREMIUM_PLAN.md), laid out after Flighty Pro's page (owner,
+ * 2026-11-11): the FlipUp | PREMIUM pill and a round close button, then every perk as its own big picture with a title
+ * and a line, sliding on by itself every few seconds (swipe them too; still under Reduce Motion), and under it the
+ * plans as big dark cards you swipe between, each with its badge, name, line, the App Store's price, one big button
+ * and what it includes. Opened with `?reason=` (a locked game, bot, range hand, look, Replay, an icon
+ * or the gold name), whose perk comes first. With Premium the card says what plan you're on.
  */
-export default function PremiumSheet() {
+export default function PremiumScreen() {
+  return (
+    <ForceScheme scheme="dark">
+      <PremiumPage />
+    </ForceScheme>
+  );
+}
+
+function PremiumPage() {
   const params = useLocalSearchParams<{ reason?: string; game?: string }>();
-  const reason: Reason | undefined = params.reason === 'game' || params.reason === 'pack' || params.reason === 'bubble' ? params.reason : undefined;
+  const reason = isReason(params.reason) ? params.reason : undefined;
   const wanted = params.game && isVariant(params.game) ? params.game : undefined;
   const has = usePremium();
   const store = useStore();
   const insets = useSafeAreaInsets();
   useEffect(() => void startStore(), []);
-  const night = CARD_BACKS.obsidian.base;
   const open = (url: string) => void openBrowserAsync(url).catch(() => Linking.openURL(url));
+  const lit = reason ? REASON_PERK[reason] : undefined;
+  const perks = lit ? [...PERKS.filter((p) => p.id === lit), ...PERKS.filter((p) => p.id !== lit)] : PERKS;
 
-  const buy = async () => {
-    if (await buyPremium()) haptic.success();
-  };
+  // Just bought: a moment to enjoy it before the page closes.
+  const [celebrate, setCelebrate] = useState(0);
+  const pageRef = useRef<ComponentRef<typeof ScrollView>>(null);
+
   const restore = async () => {
     const ok = await restorePremium();
     if (ok) {
       haptic.success();
       Alert.alert('Premium is back', 'Thanks for backing FlipUp.');
-    } else if (!store.error) Alert.alert('Nothing to restore', 'This Apple Account hasn’t bought FlipUp Premium.');
+    } else if (!storeError()) Alert.alert('Nothing to restore', 'This Apple Account has no FlipUp Premium.');
   };
-
-  const title = has ? 'You have Premium' : reason === 'game' && wanted ? `Host ${variantInfo(wanted).name}` : reason === 'pack' ? 'Get the card packs' : reason === 'bubble' ? 'Get the chat bubbles' : 'FlipUp Premium';
-  const line = has
-    ? 'Thank you for backing FlipUp. Everything below is yours.'
-    : reason === 'game'
-      ? 'This game needs Premium to host. Your friends can join it for free.'
-      : reason === 'pack' || reason === 'bubble'
-        ? 'Everyone at your table sees your look. One payment, yours for good.'
-        : 'Make every table yours. One payment, yours for good.';
-
-  const parts: Record<Part, React.ReactNode> = {
-    games: <Games key="games" first={wanted} />,
-    packs: <Packs key="packs" />,
-    bubbles: <Bubbles key="bubbles" />,
-  };
-  const order: Part[] = ['games', 'packs', 'bubbles'];
-  if (reason) order.sort((a, b) => (a === FIRST[reason] ? -1 : b === FIRST[reason] ? 1 : 0));
 
   return (
-    <GrainBackground colors={[night[0], night[1], night[1]]} glow="rgba(150, 120, 255, 0.16)" glow2="rgba(245, 183, 0, 0.06)">
-      <Stack.Screen options={{ title: 'FlipUp Premium' }} />
-      <SheetScroll style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xl, gap: spacing.xl }}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={() => router.back()} style={({ pressed }) => ({ position: 'absolute', top: spacing.md, right: spacing.md, zIndex: 1, width: 32, height: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)', opacity: pressed ? 0.6 : 1 })}>
-          <Icon name="xmark" size={14} color="white" />
-        </Pressable>
-
-        <Fan />
-        <View style={{ gap: spacing.xs, alignItems: 'center' }}>
-          <ThemedText variant="largeTitle" tone="onColor" accessibilityRole="header" style={{ textAlign: 'center' }}>
-            {title}
-          </ThemedText>
-          <ThemedText tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
-            {line}
-          </ThemedText>
+    <GrainBackground>
+      <ScrollView
+        ref={pageRef}
+        contentInsetAdjustmentBehavior="never"
+        scrollEnabled={!celebrate}
+        contentContainerStyle={{ paddingTop: insets.top + spacing.xs, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, marginBottom: spacing.md }}>
+          <BrandPill />
+          <RoundButton icon="xmark" label="Close" onPress={() => router.back()} />
         </View>
 
-        {has && (
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <View style={{ flex: 1 }}>
-              <Button title="Card packs" variant="secondary" onPress={() => router.push('/card-packs')} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button title="Chat bubbles" variant="secondary" onPress={() => router.push('/chat-bubbles')} />
-            </View>
-          </View>
-        )}
+        {/* With Premium there's nothing to sell: the plan card, then what's unlocked. */}
+        {!has && <HeroPager perks={perks} wanted={reason === 'game' ? wanted : undefined} />}
 
-        <View accessible accessibilityLabel="Friends play free. Only the host needs Premium. Everyone else joins by code for free." style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center', padding: spacing.md, borderRadius: radius.md, backgroundColor: glass }}>
-          <View style={{ width: 36, height: 36, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', ...gradient(`linear-gradient(180deg, ${party.yellow}, ${party.orange})`) }}>
-            <Icon name="person.2.fill" size={18} color="white" />
-          </View>
-          <View style={{ flex: 1, gap: 2 }}>
-            <ThemedText variant="headline" tone="onColor">
-              Friends play free
-            </ThemedText>
-            <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.75 }}>
-              Only the host needs Premium. Everyone else joins by code, with no payment.
-            </ThemedText>
-          </View>
+        {/* The plans cut across the bottom of the phone, as the reference does. */}
+        <View style={{ marginTop: has ? spacing.md : -spacing.xxl }}>
+          <Plans store={store} has={has} onBought={() => (pageRef.current?.scrollTo({ y: 0, animated: false }), setCelebrate(Date.now()))} />
         </View>
 
-        {order.map((p) => parts[p])}
-
-        <Compare />
-      </SheetScroll>
-
-      <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: Math.max(insets.bottom, spacing.md), gap: spacing.sm, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(10,6,24,0.92)' }}>
-        {has ? (
-          <Button title="Done" variant="party" tint="gold" size="lg" onPress={() => router.back()} />
-        ) : !ON_SALE ? (
-          <Button title="On the iPhone app" variant="secondary" size="lg" disabled />
-        ) : store.pending ? (
-          <>
-            <Button title="Waiting for approval" variant="secondary" size="lg" disabled />
-            <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
-              Someone has to approve this purchase. Premium turns on by itself when they do.
+        {/* The terms sit right under the plans, beside the buttons that buy them (App Review 3.1.2), not under the perks. */}
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.sm }}>
+          {!has && ON_SALE && (
+            <ThemedText variant="caption1" tone="secondaryLabel" style={{ textAlign: 'center' }}>
+              Payment is charged to your Apple Account. A subscription renews automatically at the price shown unless you cancel it at least 24 hours before the period ends; cancel anytime in Settings, Apple Account, Subscriptions. Play chips only, no cash value. Friends always join your games free.
             </ThemedText>
-          </>
-        ) : store.error && !store.price ? (
-          <>
-            <Button title="Try again" variant="party" tint="gold" size="lg" loading={store.busy} onPress={() => void startStore()} />
-            <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
-              {store.error}
-            </ThemedText>
-          </>
-        ) : (
-          <Button title={store.price ? `Unlock for ${store.price}` : 'Loading price…'} variant="party" tint="gold" size="lg" loading={store.busy} disabled={!store.price} onPress={() => void buy()} />
-        )}
-        {!has && store.error && store.price && (
-          <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
-            {store.error}
-          </ThemedText>
-        )}
-        {ON_SALE && !has && (
-          <Button title="Restore Purchases" variant="secondary" onPress={() => void restore()} disabled={store.busy} />
-        )}
-        <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.6 }}>
-          One payment through the App Store. It never buys chips: they’re play chips with no cash value.{' '}
-          <ThemedText variant="footnote" tone="onColor" style={{ textDecorationLine: 'underline' }} onPress={() => open(APP_INFO.privacyUrl)}>
-            Privacy policy
-          </ThemedText>
-        </ThemedText>
-      </View>
+          )}
+          {ON_SALE && (
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg }}>
+              {!has && <Link text="Restore" onPress={() => void restore()} />}
+              <Link text="Terms" onPress={() => open(APP_INFO.termsUrl)} />
+              <Link text="Privacy" onPress={() => open(APP_INFO.privacyUrl)} />
+            </View>
+          )}
+        </View>
+
+        <PerkList has={has} />
+      </ScrollView>
+      <Celebration at={celebrate} />
     </GrainBackground>
   );
 }
 
-/** The fan of every Premium card back at the top. */
-function Fan() {
-  const packs = CARD_PACKS.filter((p) => !p.venue);
-  const mid = (packs.length - 1) / 2;
+/**
+ * After a purchase: the whole screen says thank you, with confetti (none under Reduce Motion) and what just
+ * unlocked, and Done closes the page.
+ */
+function Celebration({ at }: { at: number }) {
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  // Mounted only after a purchase, and drawn over the page itself rather than in a native Modal (a Modal inside a
+  // form sheet can fail to present, and an empty one is a risk for nothing).
+  if (!at) return null;
   return (
-    <View accessible={false} importantForAccessibility="no-hide-descendants" style={{ height: 120, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end' }}>
-      {packs.map((p, i) => (
-        <View key={p.id} style={{ marginHorizontal: -14, transform: [{ rotate: `${(i - mid) * 6}deg` }, { translateY: Math.abs(i - mid) * 3 }] }}>
-          <PlayingCard back size="md" pack={p.id} />
+    <Animated.View entering={FadeIn.duration(250)} style={{ position: 'absolute', top: 0, left: 0, right: 0, height, zIndex: 50 }}>
+      <GrainBackground style={{ flex: 1, paddingTop: insets.top + spacing.xl, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md, paddingHorizontal: spacing.lg, gap: spacing.lg }}>
+        <View style={{ alignItems: 'center', gap: spacing.sm }}>
+          <View style={{ width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.085)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
+            <Icon name="crown.fill" size={40} color={brand.gold} />
+          </View>
+          <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 34, lineHeight: 40, fontWeight: '800', color: '#ffffff', textAlign: 'center' }}>
+            Premium is on
+          </Text>
+          <ThemedText variant="body" style={{ color: 'rgba(255,255,255,0.85)', textAlign: 'center' }}>
+            Thanks for backing FlipUp. Here’s what just unlocked.
+          </ThemedText>
         </View>
-      ))}
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: spacing.xs }} showsVerticalScrollIndicator={false}>
+          {PERKS.map((p) => (
+            <View key={p.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.sm, paddingHorizontal: spacing.md, borderRadius: 18, borderCurve: 'continuous', backgroundColor: 'rgba(255,255,255,0.085)' }}>
+              <Icon name={p.icon} size={20} color={brand.gold} />
+              <ThemedText variant="headline" style={{ flex: 1, color: '#ffffff' }}>
+                {p.title}
+              </ThemedText>
+              <Icon name="checkmark" size={16} color="rgba(255,255,255,0.8)" />
+            </View>
+          ))}
+        </ScrollView>
+        <BlueButton title="Done" onPress={() => router.back()} />
+        <Confetti burst={at} origin={{ x: width / 2, y: height * 0.25 }} amount={90} />
+      </GrainBackground>
+    </Animated.View>
+  );
+}
+
+/**
+ * Every perk in one place under the plans (the pictures above show one at a time): its icon, its name and a line.
+ * A tap opens the perk's own page, which with Premium has a button to go there.
+ */
+function PerkList({ has }: { has: boolean }) {
+  return (
+    <View style={{ marginHorizontal: spacing.md, marginTop: spacing.xl }}>
+      <Section header={has ? 'Your Premium' : 'Everything in Premium'}>
+        {PERKS.map((p) => (
+          <Row
+            key={p.id}
+            title={p.title}
+            subtitle={p.about}
+            icon={{ symbol: p.icon, color: brand.gold }}
+            onPress={() => router.push({ pathname: '/premium-perk', params: { id: p.id } })}
+          />
+        ))}
+      </Section>
     </View>
   );
 }
 
-function Heading({ children, note }: { children: string; note?: string }) {
+/** A soft block that breathes while the App Store's price is on its way (still under Reduce Motion). */
+function Shimmer({ width, height }: { width: number; height: number }) {
+  const reduce = useReduceMotion();
+  const glow = useSharedValue(0.18);
+  useEffect(() => {
+    if (!reduce) glow.set(withRepeat(withTiming(0.34, { duration: 850, easing: Easing.out(Easing.quad) }), -1, true));
+  }, [reduce]); // eslint-disable-line react-hooks/exhaustive-deps
+  const style = useAnimatedStyle(() => ({ backgroundColor: `rgba(255,255,255,${glow.get()})` }));
+  return <Animated.View accessible accessibilityLabel="Loading the price" style={[{ width, height, borderRadius: 8 }, style]} />;
+}
+
+/** "FlipUp" on a dark grey capsule, then PREMIUM on black, as one pill. */
+function BrandPill() {
   return (
-    <View style={{ gap: 2 }}>
-      <ThemedText variant="title2" tone="onColor" accessibilityRole="header">
-        {children}
-      </ThemedText>
-      {note && (
-        <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.7 }}>
-          {note}
+    <View accessible accessibilityLabel="FlipUp Premium" style={{ flexDirection: 'row', alignItems: 'center', borderRadius: radius.full, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.085)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
+      <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 17, fontWeight: '700', color: '#ffffff', paddingLeft: 14, paddingRight: 8, paddingVertical: 7 }}>FlipUp</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: 'rgba(245,183,0,0.16)' }}>
+        <Icon name="crown.fill" size={13} color={brand.gold} />
+        <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '800', color: brand.gold, letterSpacing: 0.5 }}>PREMIUM</Text>
+      </View>
+    </View>
+  );
+}
+
+/** The words over each perk's picture: shorter and louder than the grid's. */
+const HERO_WORDS: Partial<Record<PerkId, { title: string; line: string }>> = {
+  review: { title: 'Hand review', line: 'Your odds at every move, against the real cards.' },
+  range: { title: 'Every range hand', line: 'Every real spot, as many sets as you like.' },
+  botlab: { title: 'Bot Lab', line: 'Make your own bots and set how they play.' },
+  games: { title: `${VARIANTS.length - FREE_VARIANTS} more games`, line: 'Host every mini game. Friends join free.' },
+  gold: { title: 'Gold name', line: 'Everyone at the table sees it.' },
+  packs: { title: 'Card backs', line: 'On your cards, for the whole table to see.' },
+};
+
+/**
+ * One perk at a time: a big picture with its title and line under it. It moves on by itself every few seconds and
+ * loops; a swipe takes over. It stays put under Reduce Motion and while the page is covered (a sheet over it).
+ */
+function HeroPager({ perks, wanted }: { perks: Perk[]; wanted?: string }) {
+  const { width } = useWindowDimensions();
+  const reduce = useReduceMotion();
+  // Under VoiceOver the pictures only move when the person swipes them: a page that changes while it's being read is lost.
+  const reader = useScreenReader();
+  const focused = useIsFocused();
+  const ref = useRef<ComponentRef<typeof ScrollView>>(null);
+  const [page, setPage] = useState(0);
+  const [held, setHeld] = useState(false);
+
+  useEffect(() => {
+    if (reduce || reader || held || !focused || perks.length < 2) return;
+    const t = setTimeout(() => {
+      const next = (page + 1) % perks.length;
+      ref.current?.scrollTo({ x: next * width, animated: next !== 0 });
+      setPage(next);
+    }, HERO_MS);
+    return () => clearTimeout(t);
+  }, [page, held, reduce, reader, focused, perks.length, width]);
+
+  const settle = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setPage(Math.round(e.nativeEvent.contentOffset.x / width));
+    setHeld(false);
+  };
+  const phone = Math.min(Math.round(width * 0.7), 310);
+
+  return (
+    <View>
+      <View accessible accessibilityLabel={`${page + 1} of ${perks.length}`} style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: spacing.md }}>
+        {perks.map((p, i) => (
+          <View key={p.id} style={{ width: i === page ? 16 : 6, height: 6, borderRadius: 3, backgroundColor: i === page ? '#ffffff' : 'rgba(255,255,255,0.35)' }} />
+        ))}
+      </View>
+      <ScrollView
+        ref={ref}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScrollBeginDrag={() => setHeld(true)}
+        onMomentumScrollEnd={settle}
+      >
+        {perks.map((p, i) => {
+          const words = HERO_WORDS[p.id] ?? { title: p.title, line: p.short };
+          const title = i === 0 && wanted && p.id === 'games' ? `Host ${variantInfo(wanted as never).name}` : words.title;
+          return (
+            // Each perk the way the App Store shows the app: its name and a line, then the phone showing it.
+            <Pressable
+              key={p.id}
+              accessibilityRole="button"
+              accessibilityLabel={`${title}. ${words.line} Show me more.`}
+              onPress={() => {
+                haptic.select();
+                router.push({ pathname: '/premium-perk', params: { id: p.id } });
+              }}
+              style={{ width, alignItems: 'center', paddingHorizontal: spacing.lg, gap: spacing.lg }}
+            >
+              <View style={{ alignItems: 'center', gap: spacing.xxs, minHeight: 92 }}>
+                <ThemedText variant="largeTitle" numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: ROUNDED, fontWeight: '800', textAlign: 'center' }}>
+                  {title}
+                </ThemedText>
+                <ThemedText variant="callout" tone="secondaryLabel" style={{ textAlign: 'center' }}>
+                  {words.line}
+                </ThemedText>
+              </View>
+              <PhoneFrame width={phone} show={PHONE_SHOW}>
+                <PerkScreen id={p.id} />
+              </PhoneFrame>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
+interface PlanInfo {
+  plan: Plan;
+  badge: string;
+  name: string;
+  line: string;
+  per: string;
+  under: string;
+  button: string;
+  points: { icon: IconName; text: string }[];
+}
+
+/**
+ * The plans as big dark cards you swipe between, the next one peeking in at the edge. Yearly first (Best value),
+ * then Monthly (Most flexible). With Premium it's one card with your plan; while the store is busy or can't sell,
+ * one card says so.
+ */
+function Plans({ store, has, onBought }: { store: StoreState; has: boolean; onBought: () => void }) {
+  const { width } = useWindowDimensions();
+  const cardW = Math.min(width - spacing.md * 2 - 20, 420);
+  const gap = spacing.sm;
+  const saving = yearlySaving(store.plans);
+
+  const buy = async (plan: Plan) => {
+    if (await buyPremium(plan)) {
+      haptic.success();
+      onBought();
+    }
+  };
+
+  if (has || !ON_SALE || store.pending || (store.error && !store.plans.monthly && !store.plans.yearly)) {
+    const body: ReactNode = has ? (
+      <>
+        <Badge text={store.owned === 'lifetime' ? 'YOURS FOR GOOD' : 'ACTIVE'} />
+        <ThemedText variant="title1" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>You have Premium</ThemedText>
+        <ThemedText variant="body" tone="secondaryLabel">
+          {store.owned === 'monthly' || store.owned === 'yearly' ? `On the ${store.owned} plan. Thank you for backing FlipUp.` : 'Thank you for backing FlipUp.'}
+        </ThemedText>
+        <BlueButton title="Done" onPress={() => router.back()} />
+        {store.owned && store.owned !== 'lifetime' && <Button title="Manage subscription" variant="secondary" onPress={() => void manageSubscription()} />}
+      </>
+    ) : !ON_SALE ? (
+      <>
+        <ThemedText variant="title2" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>On the iPhone app</ThemedText>
+        <ThemedText tone="secondaryLabel">Premium is sold in the FlipUp iPhone app.</ThemedText>
+      </>
+    ) : store.pending ? (
+      <>
+        <ThemedText variant="title2" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>Waiting for approval</ThemedText>
+        <ThemedText tone="secondaryLabel">Someone has to approve this purchase. Premium turns on by itself when they do.</ThemedText>
+      </>
+    ) : (
+      <>
+        <ThemedText variant="title2" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>Can’t reach the App Store</ThemedText>
+        <ThemedText tone="secondaryLabel">{store.error}</ThemedText>
+        <BlueButton title="Try again" loading={store.busy} onPress={() => void startStore()} />
+      </>
+    );
+    return <View style={{ marginHorizontal: spacing.md, padding: spacing.lg, gap: spacing.md, borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: CARD_BG, borderWidth: 1, borderColor: CARD_EDGE, boxShadow: '0 -10px 30px rgba(0,0,0,0.35)' }}>{body}</View>;
+  }
+
+  const yearly = store.plans.yearly;
+  const monthly = store.plans.monthly;
+  // The offer in the App Store's own terms: a free trial says free, a paid one its price, and the length only when StoreKit gave one.
+  const offerOf = (p: StoreState['plans'][Plan]) => (!p?.intro ? null : `${p.introLength ?? (p.introDays ? `${p.introDays} days` : 'your first period')} ${p.introFree ? 'free' : `for ${p.intro}`}`);
+  const trialOf = (p: StoreState['plans'][Plan]) => (offerOf(p) ? `${offerOf(p)}, then ` : '');
+  const tryOf = (p: StoreState['plans'][Plan], plain: string) => (!p?.intro ? plain : p.introLength || p.introDays ? `Try ${offerOf(p)}` : p.introFree ? 'Start free trial' : `Start for ${p.intro}`);
+  const cards: PlanInfo[] = [
+    {
+      plan: 'yearly',
+      badge: 'BEST VALUE',
+      name: 'Yearly',
+      line: 'Every game, every bot and every range hand, all year.',
+      per: 'year',
+      under: yearly?.intro ? `${trialOf(yearly)}${yearly.price} a year` : 'Billed yearly',
+      button: tryOf(yearly, 'Continue'),
+      points: [
+        { icon: 'crown', text: 'The most for your money' },
+        { icon: 'infinity', text: 'Everything in Premium' },
+      ],
+    },
+    {
+      plan: 'monthly',
+      badge: 'MOST FLEXIBLE',
+      name: 'Monthly',
+      line: 'Everything in Premium, a month at a time.',
+      per: 'month',
+      under: monthly?.intro ? `${trialOf(monthly)}${monthly.price} a month` : 'Cancel anytime',
+      button: tryOf(monthly, 'Get Monthly'),
+      points: [
+        { icon: 'calendar', text: 'Stop whenever you like' },
+        { icon: 'infinity', text: 'Everything in Premium' },
+      ],
+    },
+  ];
+
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={cardW + gap}
+        decelerationRate="fast"
+        contentContainerStyle={{ paddingHorizontal: spacing.md, gap }}
+        onMomentumScrollEnd={() => haptic.select()}
+      >
+        {cards.map((c) => {
+          const price = store.plans[c.plan];
+          return (
+            <View key={c.plan} style={{ width: cardW, padding: spacing.lg, gap: spacing.md, borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: CARD_BG, borderWidth: 1, borderColor: CARD_EDGE, boxShadow: '0 -10px 30px rgba(0,0,0,0.35)' }}>
+              <Badge text={c.badge} />
+              <View style={{ gap: 6 }}>
+                <ThemedText variant="title1" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
+                  {c.name}
+                </ThemedText>
+                <ThemedText variant="body" tone="secondaryLabel">
+                  {c.line}
+                </ThemedText>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  {/* Until the App Store answers, soft blocks where the price and its line will be, not dashes. */}
+                  {price ? (
+                    <>
+                      <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff' }}>
+                        <Text style={{ fontFamily: ROUNDED, fontSize: 30, fontWeight: '800', fontVariant: ['tabular-nums'] }}>{price.price}</Text>
+                        <Text style={{ fontSize: 19, color: MUTED }}> / {c.per}</Text>
+                      </Text>
+                      <ThemedText variant="subhead" tone="secondaryLabel">
+                        {c.under}
+                      </ThemedText>
+                    </>
+                  ) : (
+                    <View style={{ gap: 10, paddingVertical: 4 }}>
+                      <Shimmer width={150} height={30} />
+                      <Shimmer width={110} height={16} />
+                    </View>
+                  )}
+                </View>
+                {c.plan === 'yearly' && saving && (
+                  <View style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full, backgroundColor: brand.gold }}>
+                    <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '800', color: brand.goldInk }}>Save {saving}%</Text>
+                  </View>
+                )}
+              </View>
+              {price ? (
+                <BlueButton title={c.button} loading={store.busy} onPress={() => void buy(c.plan)} />
+              ) : (
+                <View style={{ minHeight: 56, borderRadius: radius.full, overflow: 'hidden' }}>
+                  <Shimmer width={cardW - spacing.lg * 2} height={56} />
+                </View>
+              )}
+              <View style={{ gap: spacing.sm }}>
+                {c.points.map((p) => (
+                  <View key={p.text} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+                    <View style={{ width: 28, alignItems: 'center' }}>
+                      <Icon name={p.icon} size={18} color="#cfe0ff" />
+                    </View>
+                    <ThemedText variant="subhead" tone="secondaryLabel" style={{ flex: 1 }}>
+                      {p.text}
+                    </ThemedText>
+                  </View>
+                ))}
+              </View>
+            </View>
+          );
+        })}
+      </ScrollView>
+      {store.error && (
+        <ThemedText variant="footnote" style={{ textAlign: 'center', color: 'rgba(255,255,255,0.8)', paddingHorizontal: spacing.lg }}>
+          {store.error}
         </ThemedText>
       )}
     </View>
   );
 }
 
-/** The eight Premium games, with the one you tapped first. A tap shows how it plays. */
-function Games({ first }: { first?: string }) {
-  const colors = useColors();
-  const games = VARIANTS.slice(FREE_VARIANTS);
-  if (first) games.sort((a, b) => (a.id === first ? -1 : b.id === first ? 1 : 0));
+function Badge({ text }: { text: string }) {
   return (
-    <View style={{ gap: spacing.sm }}>
-      <Heading note="Tap one to see how it plays.">{`${games.length} more games`}</Heading>
-      <View style={{ borderRadius: radius.md, backgroundColor: glass, overflow: 'hidden' }}>
-        {games.map((g, i) => (
-          <PressableScale
-            key={g.id}
-            accessibilityRole="button"
-            accessibilityLabel={`${g.name}. ${g.tagline}. See how it plays.`}
-            onPress={() => {
-              haptic.select();
-              router.push(`/how-to-play/${g.id}`);
-            }}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderTopWidth: i ? 1 : 0, borderTopColor: 'rgba(255,255,255,0.1)', backgroundColor: g.id === first ? 'rgba(255,255,255,0.08)' : undefined }}
-          >
-            <GameThumb variant={g.id} size={44} />
-            <View style={{ flex: 1 }}>
-              <ThemedText variant="headline" tone="onColor" numberOfLines={1}>
-                {g.name}
-              </ThemedText>
-              <ThemedText variant="footnote" tone="onColor" style={{ opacity: 0.7 }} numberOfLines={2}>
-                {g.tagline}
-              </ThemedText>
-            </View>
-            <Icon name="crown.fill" size={15} color={colors.gold} />
-          </PressableScale>
-        ))}
-      </View>
+    <View style={{ alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full, backgroundColor: 'rgba(91,139,255,0.18)' }}>
+      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '700', letterSpacing: 0.8, color: '#cfe0ff' }}>{text}</Text>
     </View>
   );
 }
 
-/** Every card back in a strip, with the chosen one shown large. */
-function Packs() {
-  const packs = CARD_PACKS.filter((p) => !p.venue);
-  const [pick, setPick] = useState(packs[0].id);
-  const chosen = packs.find((p) => p.id === pick) ?? packs[0];
+/** The plan card's one big button: the brand blue, full width, a capsule. */
+function BlueButton({ title, onPress, loading, disabled }: { title: string; onPress: () => void; loading?: boolean; disabled?: boolean }) {
   return (
-    <View style={{ gap: spacing.sm }}>
-      <Heading note="Everyone at your table sees the back of your cards.">{`${packs.length} card packs`}</Heading>
-      <View accessible accessibilityLabel={`${chosen.name}. ${chosen.note}`} style={{ alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: glass }}>
-        <View style={{ flexDirection: 'row' }}>
-          <View style={{ transform: [{ rotate: '-7deg' }, { translateX: 10 }] }}>
-            <PlayingCard back size="xl" pack={chosen.id} />
-          </View>
-          <View style={{ transform: [{ rotate: '7deg' }, { translateX: -10 }] }}>
-            <PlayingCard back size="xl" pack={chosen.id} />
-          </View>
-        </View>
-        <ThemedText variant="headline" tone="onColor">
-          {chosen.name}
-        </ThemedText>
-        <ThemedText variant="footnote" tone="onColor" style={{ opacity: 0.7 }}>
-          {chosen.note}
-        </ThemedText>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
-        {packs.map((p) => (
-          <PressableScale
-            key={p.id}
-            accessibilityRole="button"
-            accessibilityLabel={`${p.name} card pack`}
-            accessibilityState={{ selected: p.id === pick }}
-            onPress={() => {
-              haptic.select();
-              setPick(p.id);
-            }}
-            style={{ alignItems: 'center', gap: 4, padding: 6, borderRadius: radius.md, borderWidth: 2, borderColor: p.id === pick ? 'white' : 'transparent' }}
-          >
-            <PlayingCard back size="md" pack={p.id} />
-            <ThemedText variant="caption1" tone="onColor" style={{ opacity: p.id === pick ? 1 : 0.7 }} numberOfLines={1}>
-              {p.name}
-            </ThemedText>
-          </PressableScale>
-        ))}
-      </ScrollView>
-    </View>
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: !!disabled, busy: !!loading }}
+      disabled={disabled || loading}
+      onPress={onPress}
+      style={{ minHeight: 56, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet, opacity: disabled ? 0.5 : 1 }}
+    >
+      {/* Loading… turns into the price, and Try into Continue, in place (rules 16 and 17). */}
+      <Swap id={loading ? '…' : title} kind="text">
+        <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 20, fontWeight: '700', color: '#ffffff' }}>
+          {loading ? '…' : title}
+        </Text>
+      </Swap>
+    </PressableScale>
   );
 }
 
-/** Every Premium bubble effect as a live bubble. */
-function Bubbles() {
-  const fx = BUBBLE_STYLES.filter((b) => !b.free);
+function Link({ text, onPress }: { text: string; onPress: () => void }) {
   return (
-    <View style={{ gap: spacing.sm }}>
-      <Heading note="Your moves and messages show in this colour for the whole table.">{`${fx.length} bubble effects`}</Heading>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-        {fx.map((b) => (
-          <View key={b.id} accessible accessibilityLabel={`${b.name}. ${b.note}`} style={{ width: '48%', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: glass }}>
-            <MoveBubble text="Raise 40" tone="blue" fx={b.id} big />
-            <ThemedText variant="footnote" tone="onColor" style={{ opacity: 0.8 }}>
-              {b.name}
-            </ThemedText>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-/** Free against Premium, from the real counts. */
-function Compare() {
-  const rows = [
-    { what: 'Games to host', free: String(FREE_VARIANTS), premium: String(VARIANTS.length) },
-    { what: 'Card backs', free: '1', premium: String(1 + CARD_PACKS.filter((p) => !p.venue).length) },
-    { what: 'Bubble looks', free: String(1 + BUBBLE_STYLES.filter((b) => b.free).length), premium: String(1 + BUBBLE_STYLES.length) },
-    { what: 'Joining any game', free: 'Yes', premium: 'Yes' },
-  ];
-  return (
-    <View style={{ gap: spacing.sm }}>
-      <Heading>Free and Premium</Heading>
-      <View style={{ borderRadius: radius.md, backgroundColor: glass, overflow: 'hidden' }}>
-        <View style={{ flexDirection: 'row', padding: spacing.sm }}>
-          <View style={{ flex: 1 }} />
-          <ThemedText variant="footnote" tone="onColor" style={{ width: 64, textAlign: 'center', opacity: 0.7 }}>
-            Free
-          </ThemedText>
-          <ThemedText variant="footnote" tone="onColor" style={{ width: 80, textAlign: 'center', fontWeight: '700' }}>
-            Premium
-          </ThemedText>
-        </View>
-        {rows.map((r) => (
-          <View key={r.what} accessible accessibilityLabel={`${r.what}: ${r.free} free, ${r.premium} with Premium`} style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.sm, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' }}>
-            <ThemedText tone="onColor" style={{ flex: 1 }}>
-              {r.what}
-            </ThemedText>
-            <ThemedText tone="onColor" style={{ width: 64, textAlign: 'center', opacity: 0.7 }}>
-              {r.free}
-            </ThemedText>
-            <ThemedText tone="onColor" style={{ width: 80, textAlign: 'center', fontWeight: '700' }}>
-              {r.premium}
-            </ThemedText>
-          </View>
-        ))}
-      </View>
-    </View>
+    <Pressable accessibilityRole="link" onPress={onPress} hitSlop={8}>
+      <ThemedText variant="footnote" style={{ color: 'rgba(255,255,255,0.8)', textDecorationLine: 'underline' }}>
+        {text}
+      </ThemedText>
+    </Pressable>
   );
 }

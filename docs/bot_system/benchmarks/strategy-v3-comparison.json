@@ -1,0 +1,102 @@
+{
+  "strategy": "baseline-3",
+  "opponentStrategy": "baseline-2",
+  "identityPolicy": "identity-2",
+  "baseCommit": "4ae6cc11d45c9edbe42584ee6e1d3ba26731576f",
+  "reports": [
+    {
+      "opponent": "previous",
+      "seed": 17,
+      "hands": 200,
+      "dealPairs": 100,
+      "bbPer100": -463.6,
+      "approximate95CI": [-1014.5238387890843, 87.32383878908422],
+      "p95DecisionMsByLeg": [11.566054999999778, 14.315901999999369],
+      "actionCountsByLeg": [
+        {
+          "fold": 27,
+          "check": 3,
+          "call": 51,
+          "bet": 8,
+          "raise": 157,
+          "allin": 0
+        },
+        {
+          "fold": 27,
+          "check": 3,
+          "call": 54,
+          "bet": 13,
+          "raise": 148,
+          "allin": 0
+        }
+      ],
+      "warnings": [
+        "Normal interval uses deal-pair means; adaptive memory creates serial dependence, so the interval is descriptive, not a formal strength claim. Scripted opponents are uncalibrated."
+      ]
+    },
+    {
+      "opponent": "previous",
+      "seed": 37,
+      "hands": 200,
+      "dealPairs": 100,
+      "bbPer100": 231.64999999999995,
+      "approximate95CI": [-308.62371989065366, 771.9237198906536],
+      "p95DecisionMsByLeg": [8.871908999999505, 6.980928999999378],
+      "actionCountsByLeg": [
+        {
+          "fold": 22,
+          "check": 3,
+          "call": 47,
+          "bet": 5,
+          "raise": 158,
+          "allin": 0
+        },
+        {
+          "fold": 27,
+          "check": 2,
+          "call": 49,
+          "bet": 7,
+          "raise": 146,
+          "allin": 0
+        }
+      ],
+      "warnings": [
+        "Normal interval uses deal-pair means; adaptive memory creates serial dependence, so the interval is descriptive, not a formal strength claim. Scripted opponents are uncalibrated."
+      ]
+    },
+    {
+      "opponent": "previous",
+      "seed": 67,
+      "hands": 200,
+      "dealPairs": 100,
+      "bbPer100": -126.09999999999997,
+      "approximate95CI": [-649.1403359039002, 396.94033590390035],
+      "p95DecisionMsByLeg": [10.90396200000032, 11.822860999998738],
+      "actionCountsByLeg": [
+        {
+          "fold": 19,
+          "check": 2,
+          "call": 57,
+          "bet": 11,
+          "raise": 179,
+          "allin": 0
+        },
+        {
+          "fold": 26,
+          "check": 5,
+          "call": 58,
+          "bet": 6,
+          "raise": 180,
+          "allin": 0
+        }
+      ],
+      "warnings": [
+        "Normal interval uses deal-pair means; adaptive memory creates serial dependence, so the interval is descriptive, not a formal strength claim. Scripted opponents are uncalibrated."
+      ]
+    }
+  ],
+  "limitations": [
+    "600 hands total, three seeds; descriptive intervals cross zero in all runs. No demonstrated superiority.",
+    "Both strategies use identical game rules and persistent identity policy. Both range inference and blueprint blending changed, so this does not isolate either component."
+  ]
+}

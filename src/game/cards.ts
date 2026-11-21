@@ -42,7 +42,6 @@ export function rankLabel(card: Card): string {
   return RANK_LABEL[card[0]] ?? card[0];
 }
 
-export const SUIT_SYMBOL: Record<Suit, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
 const SUIT_NAME: Record<Suit, string> = { s: 'spades', h: 'hearts', d: 'diamonds', c: 'clubs' };
 const RANK_NAME = ['', '', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'jack', 'queen', 'king', 'ace'];
 const RANK_PLURAL = [

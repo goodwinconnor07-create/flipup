@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FlipUp ideas: three mockups</title>
+<style>
+:root{--bg:#02040a;--card:#0c1530;--blue:#1f46d4;--blue2:#4673f2;--ink:#fff;--mut:#a9b4de;--gold:#f5c542;--line:#223253;--ok:#2fb36b}
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:var(--ink);font:15px/1.4 -apple-system,"SF Pro Rounded",system-ui,sans-serif;padding:24px;display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
+.col{width:390px}
+.cap{font-size:13px;color:#9aa;margin:0 0 10px;max-width:390px}
+.cap b{color:#fff}
+.phone{position:relative;width:390px;height:844px;background:var(--bg);border-radius:44px;overflow:hidden;border:1px solid #2a2a2a}
+.h1{font-size:40px;font-weight:800;margin:0;letter-spacing:-.5px}
+.pad{padding:62px 20px 0}
+.row{display:flex;align-items:center}
+.hero{margin:22px 16px 0;height:262px;gap:10px;border-radius:30px;padding:20px;background:linear-gradient(160deg,var(--blue2),#1b2c8a 70%,#0b1233);display:flex;flex-direction:column;justify-content:space-between}
+.hero h2{margin:0;font-size:30px;font-weight:800;line-height:1.05}
+.hero p{margin:4px 0 0;color:rgba(255,255,255,.82);font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:50px;padding:0 22px;border-radius:25px;font-weight:800;font-size:17px;background:#fff;color:#1a2d8a}
+.faces{display:flex}.faces i{width:40px;height:40px;border-radius:20px;background:#f1f1f4;border:2px solid #1b2c8a;margin-left:-8px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:20px}.faces i:first-child{margin-left:0}
+.pill{margin:12px 16px 0;height:56px;border-radius:28px;background:#1c1c1e;display:flex;align-items:center;padding:0 18px;gap:12px;font-weight:700}
+.pill small{color:#a0a0a8;font-weight:500}
+.sec{display:flex;justify-content:space-between;align-items:baseline;padding:26px 20px 10px}.sec b{font-size:26px}.sec span{color:var(--blue2);font-weight:600}
+.tiles{display:flex;gap:12px;padding:0 16px}
+.tile{flex:1;height:130px;border-radius:26px;padding:14px;display:flex;align-items:flex-end;font-weight:800;font-size:18px}
+.t1{background:linear-gradient(160deg,#1f8a52,#0c4a2b)}.t2{background:linear-gradient(160deg,#f5ae2e,#e2641b)}.t3{background:linear-gradient(160deg,#f04ba6,#7c3aed)}
+.tab{position:absolute;left:96px;right:96px;bottom:22px;height:62px;border-radius:31px;background:rgba(40,40,46,.92);border:1px solid rgba(255,255,255,.12);display:flex;padding:6px}
+.tab div{flex:1;border-radius:25px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.tab .on{background:rgba(255,255,255,.12);color:var(--blue2)}
+/* frame 2: connection */
+.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 36px}
+.center h3{font-size:26px;margin:18px 0 8px}.center p{color:var(--mut);margin:0 0 26px;font-size:17px}
+.ring{width:84px;height:84px;border-radius:42px;border:3px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:34px}
+.btn2{width:100%;height:54px;border-radius:27px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;margin-bottom:12px}
+.btn3{width:100%;height:54px;border-radius:27px;background:#1c1c1e;color:#ff6b6b;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px}
+/* frame 3: showdown caption */
+.felt{position:absolute;left:18px;right:18px;top:120px;height:300px;border-radius:150px;background:radial-gradient(ellipse at 50% 40%,#17408f,#0b2056 70%);border:6px solid #0a1230;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.cards{display:flex;gap:6px}.c{width:44px;height:62px;border-radius:7px;background:#fff;color:#111;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:20px}.c.r{color:#d92b2b}.c.w{background:linear-gradient(160deg,#fff3b0,#f5c542);box-shadow:0 0 14px #f5c54299}
+.banner{position:absolute;left:24px;right:24px;top:450px;border-radius:22px;background:rgba(255,255,255,.1);padding:14px 16px}
+.banner b{font-size:20px;display:block}.banner span{color:var(--mut);font-size:15px}
+.why{margin-top:8px;display:flex;gap:8px;align-items:flex-start;color:#fff;font-size:15px;border-top:1px solid rgba(255,255,255,.14);padding-top:8px}
+.banner .why .tag{background:var(--gold);color:#3b2300;font-weight:800;font-size:11px;letter-spacing:.8px;border-radius:6px;padding:2px 6px;margin-top:2px}
+</style></head><body>
+
+<div class="col"><p class="cap"><b>1. Deal me in.</b> Before the first hand, one hero card sits down with bots straight away (no lobby, no name page). The two tiles return after hand one. Game modes stay visible below.</p>
+<div class="phone"><div class="pad row" style="justify-content:space-between"><h1 class="h1">Play</h1></div>
+<div class="hero"><div class="faces"><i>🦊</i><i>🐼</i><i>🦉</i><i>😎</i></div><div><h2>Deal me in</h2><p>Your first hand, with three bots. About 2 minutes.</p></div><span class="btn" style="align-self:flex-start">Play now</span></div>
+<div class="pill"><span>How to play</span><small>· Texas Hold'em, step by step</small></div>
+<div class="sec"><b>Game modes</b><span>See all</span></div>
+<div class="tiles"><div class="tile t1">Texas Hold'em</div><div class="tile t2">Crazy Pineapple</div><div class="tile t3">Crazy Deuces</div></div>
+<div class="tab"><div class="on">Play</div><div>Train</div></div></div></div>
+
+<div class="col"><p class="cap"><b>2. A calm "can't connect" page.</b> After about 20 seconds of failing, say the thing players actually worry about: are my chips safe?</p>
+<div class="phone"><div class="center"><div class="ring"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#a9b4de" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1" fill="#a9b4de"/><path d="M3 3l18 18"/></svg></div><h3>Still can't reach the table</h3><p>Your seat and chips are safe. We'll keep trying while you wait.</p><div class="btn2">Try again</div><div class="btn3">Leave table</div></div></div></div>
+
+<div class="col"><p class="cap"><b>3. One line on why that hand won.</b> The existing explanation of a wild 2, the third river or the 21 half, under the winner banner for about 3 seconds.</p>
+<div class="phone"><div class="pad"><b style="font-size:20px">Crazy Deuces</b></div>
+<div class="felt"><div class="cards"><div class="c">K</div><div class="c r">9</div><div class="c">4</div><div class="c r">7</div><div class="c">Q</div></div><div class="cards"><div class="c w">2</div><div class="c r">K</div></div></div>
+<div class="banner"><b>Alex wins 640</b><span>Three of a kind, kings</span><div class="why"><span class="tag">WILD</span><span>The gold 2 counted as a king.</span></div></div></div></div>
+</body></html>

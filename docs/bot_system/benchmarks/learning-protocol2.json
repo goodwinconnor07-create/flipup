@@ -1,0 +1,3220 @@
+{
+  "protocol": "river-learning-2",
+  "completedCycles": 6,
+  "candidate": {
+    "version": "contextual-1",
+    "contextDecay": 0.96,
+    "minimumSamples": 8,
+    "confidenceSamples": 24,
+    "confidenceZ": 1.64,
+    "profitMargin": 0.02,
+    "maximumBlend": 0.5
+  },
+  "syntheticGatePassed": true,
+  "holdout": {
+    "seeds": [
+      2391747783, 2374970164, 2425303021, 2408525402, 2324637307, 2307859688, 2358192545, 2341414926, 2257526831, 2240749212, 3697325900,
+      3714103519
+    ],
+    "observationsPerPhase": 120,
+    "meanGain": 2.011243112246154,
+    "descriptiveSessionInterval": [2.003152528917772, 2.0193336955745362],
+    "scenarios": [
+      {
+        "scenario": "overfolder",
+        "gain": 6.045289917583458,
+        "meanCandidateChips": 7.690417368384602
+      },
+      {
+        "scenario": "station",
+        "gain": 0.05561955994125778,
+        "meanCandidateChips": -0.9609905636930413
+      },
+      {
+        "scenario": "balanced",
+        "gain": 0,
+        "meanCandidateChips": 0
+      },
+      {
+        "scenario": "switching",
+        "gain": 3.7867528407119817,
+        "meanCandidateChips": 4.511700756980734
+      },
+      {
+        "scenario": "conflicting-context",
+        "gain": 0.16855324299407157,
+        "meanCandidateChips": -0.9608192649586077
+      }
+    ],
+    "recovery": true,
+    "sessions": [
+      {
+        "seed": 2391747783,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 2391747783,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7503220697430785
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 2391747783,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019941948210482226,
+                  "tailBluff": 0.02022617286923979,
+                  "expectedChipsPerOpportunity": 1.645210727364782,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7503220697430785
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.645210727364782
+            },
+            "gain": 6.04520664101982
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 2391747783,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016778903289802513,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9647869391636449,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.1504133544011235
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9647869391636449
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 2391747783,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.017720763316512286,
+                  "tailBluff": 0.017395735005727872,
+                  "expectedChipsPerOpportunity": -1.0189438906994566,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.1504133544011235
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.0189438906994566
+            },
+            "gain": 0.05415695153581168
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 2391747783,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018786695184072548,
+                  "tailBluff": 0.018786695184072603,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.3822856773775984
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 2391747783,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018512378620312516,
+                  "tailBluff": 0.018424763564519702,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.3822856773775984
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 2391747783,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7503220697430785
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.022327621304002888,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.283838224980165,
+                  "activeExploitShare": 0.058333333333333334,
+                  "correctionOpportunities": 7,
+                  "posteriorFold": 0.18962907507989707
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.08411603798181534,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 6.939573133499767,
+                  "activeExploitShare": 0.7333333333333333,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8398164468352255
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.448717425634735
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 2391747783,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019941948210482226,
+                  "tailBluff": 0.02022617286923979,
+                  "expectedChipsPerOpportunity": 1.645210727364782,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7503220697430785
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01825853013391027,
+                  "tailBluff": 0.017575787740851924,
+                  "expectedChipsPerOpportunity": -1.0498654826998404,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.18962907507989707
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.01913336023606197,
+                  "tailBluff": 0.019845093666896532,
+                  "expectedChipsPerOpportunity": 1.5785022194751115,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8398164468352255
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.7246158213800177
+            },
+            "gain": 3.724101604254717
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 2391747783,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016737279317153308,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.962393560736316,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.14376823052495705
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.962393560736316
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 2391747783,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01959083989045938,
+                  "tailBluff": 0.019642878796896655,
+                  "expectedChipsPerOpportunity": -1.126473293701415,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.14376823052495705
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.126473293701415
+            },
+            "gain": 0.16407973296509903
+          }
+        ],
+        "gain": 1.9975089859550894
+      },
+      {
+        "seed": 2374970164,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 2374970164,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8731829243627802
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 2374970164,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.01994828661965785,
+                  "tailBluff": 0.020242339916449366,
+                  "expectedChipsPerOpportunity": 1.645733646121772,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8731829243627802
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.645733646121772
+            },
+            "gain": 6.04468372226283
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 2374970164,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016722953719609638,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9615698388775548,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.14162617885468382
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9615698388775548
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 2374970164,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.017734723571380503,
+                  "tailBluff": 0.017558492880318265,
+                  "expectedChipsPerOpportunity": -1.0197466053543793,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.14162617885468382
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.0197466053543793
+            },
+            "gain": 0.05817676647682457
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 2374970164,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018786695184072548,
+                  "tailBluff": 0.018786695184072603,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.44064202601503133
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 2374970164,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018684902582757377,
+                  "tailBluff": 0.018732171503169717,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.44064202601503133
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 2374970164,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8731829243627802
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.02531498742400783,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.4556117768804497,
+                  "activeExploitShare": 0.09166666666666666,
+                  "correctionOpportunities": 11,
+                  "posteriorFold": 0.1627346970968087
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09006450755877848,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 7.430321873599227,
+                  "activeExploitShare": 0.8,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.9107628856027077
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.555042488367793
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 2374970164,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.01994828661965785,
+                  "tailBluff": 0.020242339916449366,
+                  "expectedChipsPerOpportunity": 1.645733646121772,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8731829243627802
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.018385806191502187,
+                  "tailBluff": 0.017681602441692413,
+                  "expectedChipsPerOpportunity": -1.057183856011376,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.1627346970968087
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019308142354502723,
+                  "tailBluff": 0.020088508345660352,
+                  "expectedChipsPerOpportunity": 1.592921744246474,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.9107628856027077
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.7271571781189566
+            },
+            "gain": 3.827885310248836
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 2374970164,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.23384513064651186
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 2374970164,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.019678894817514767,
+                  "tailBluff": 0.019756080692881577,
+                  "expectedChipsPerOpportunity": -1.1315364520070987,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.23384513064651186
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.1315364520070987
+            },
+            "gain": 0.17195619854065614
+          }
+        ],
+        "gain": 2.0205403995058293
+      },
+      {
+        "seed": 2425303021,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 2425303021,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.846183724986139
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 2425303021,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.01999825014428761,
+                  "tailBluff": 0.020337488649560084,
+                  "expectedChipsPerOpportunity": 1.6498556369037276,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.846183724986139
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.6498556369037276
+            },
+            "gain": 6.040561731480874
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 2425303021,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.15556186705638592
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 2425303021,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01754661690964892,
+                  "tailBluff": 0.017337599722799583,
+                  "expectedChipsPerOpportunity": -1.0089304723048131,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.15556186705638592
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.0089304723048131
+            },
+            "gain": 0.04935021883837054
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 2425303021,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018786695184072548,
+                  "tailBluff": 0.018786695184072603,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.46023215357381175
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 2425303021,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018578564821852384,
+                  "tailBluff": 0.01869606942723885,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.46023215357381175
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 2425303021,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.846183724986139
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.024344022124362825,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.3997812721508618,
+                  "activeExploitShare": 0.08333333333333333,
+                  "correctionOpportunities": 10,
+                  "posteriorFold": 0.16322944265960868
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.08855653861894953,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 7.305914436063339,
+                  "activeExploitShare": 0.7833333333333333,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7902108335004439
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.532183510765694
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 2425303021,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.01999825014428761,
+                  "tailBluff": 0.020337488649560084,
+                  "expectedChipsPerOpportunity": 1.6498556369037276,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.846183724986139
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.018269913868061052,
+                  "tailBluff": 0.017598581211859945,
+                  "expectedChipsPerOpportunity": -1.050520047413511,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.16322944265960868
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019167327237062784,
+                  "tailBluff": 0.019781397966189978,
+                  "expectedChipsPerOpportunity": 1.5813044970576804,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7902108335004439
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.726880028849299
+            },
+            "gain": 3.8053034819163947
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 2425303021,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.19950460922108368
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 2425303021,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.019617390380423903,
+                  "tailBluff": 0.019705480253192405,
+                  "expectedChipsPerOpportunity": -1.1279999468743744,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.19950460922108368
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.1279999468743744
+            },
+            "gain": 0.16841969340793184
+          }
+        ],
+        "gain": 2.012727025128714
+      },
+      {
+        "seed": 2408525402,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 2408525402,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8206640271171453
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 2408525402,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.0198232650608375,
+                  "tailBluff": 0.020154193002944642,
+                  "expectedChipsPerOpportunity": 1.6354193675190936,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8206640271171453
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.6354193675190936
+            },
+            "gain": 6.054998000865508
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 2408525402,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01682017151331041,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9671598620153492,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.15096181882051032
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9671598620153492
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 2408525402,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.017769469585168556,
+                  "tailBluff": 0.0173610701886664,
+                  "expectedChipsPerOpportunity": -1.0217445011471922,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.15096181882051032
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.0217445011471922
+            },
+            "gain": 0.05458463913184297
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 2408525402,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018786695184072548,
+                  "tailBluff": 0.018786695184072603,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4617560284861221
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 2408525402,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018678780641327584,
+                  "tailBluff": 0.018597295860775843,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4617560284861221
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 2408525402,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8206640271171453
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.023810712217610875,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.3691159525126253,
+                  "activeExploitShare": 0.075,
+                  "correctionOpportunities": 9,
+                  "posteriorFold": 0.17198766993835102
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.08709027515106689,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 7.184947699963021,
+                  "activeExploitShare": 0.7666666666666667,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8389744673767514
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.502083038611666
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 2408525402,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.0198232650608375,
+                  "tailBluff": 0.020154193002944642,
+                  "expectedChipsPerOpportunity": 1.6354193675190936,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8206640271171453
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.018385646299376574,
+                  "tailBluff": 0.017788495730566005,
+                  "expectedChipsPerOpportunity": -1.0571746622141525,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.17198766993835102
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.01926032011155981,
+                  "tailBluff": 0.019975692403280843,
+                  "expectedChipsPerOpportunity": 1.5889764092036853,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8389744673767514
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.7224070381695421
+            },
+            "gain": 3.7796760004421235
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 2408525402,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016699295212915948,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9602094747426675,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.18142309684233876
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9602094747426675
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 2408525402,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.019607425812426416,
+                  "tailBluff": 0.019823111630589196,
+                  "expectedChipsPerOpportunity": -1.1274269842145186,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.18142309684233876
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.1274269842145186
+            },
+            "gain": 0.1672175094718511
+          }
+        ],
+        "gain": 2.011295229982265
+      },
+      {
+        "seed": 2324637307,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 2324637307,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.9232451899811875
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 2324637307,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.02003152063530891,
+                  "tailBluff": 0.020491406465082143,
+                  "expectedChipsPerOpportunity": 1.6526004524129858,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.9232451899811875
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.6526004524129858
+            },
+            "gain": 6.037816915971616
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 2324637307,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.14927584242550754
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 2324637307,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.017595869939035,
+                  "tailBluff": 0.017344219603210354,
+                  "expectedChipsPerOpportunity": -1.011762521494512,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.14927584242550754
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.011762521494512
+            },
+            "gain": 0.05218226802806947
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 2324637307,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018786695184072548,
+                  "tailBluff": 0.018786695184072603,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4843274133627398
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 2324637307,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.01863301859509667,
+                  "tailBluff": 0.018705726682459282,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4843274133627398
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 2324637307,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.9232451899811875
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.028962282534225902,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.665331245717988,
+                  "activeExploitShare": 0.13333333333333333,
+                  "correctionOpportunities": 16,
+                  "posteriorFold": 0.13842706134880337
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.08927924324354186,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 7.365537567592205,
+                  "activeExploitShare": 0.7916666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8417231825230158
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.463541230086273
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 2324637307,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.02003152063530891,
+                  "tailBluff": 0.020491406465082143,
+                  "expectedChipsPerOpportunity": 1.6526004524129858,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.9232451899811875
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01842340933251997,
+                  "tailBluff": 0.017569207259041198,
+                  "expectedChipsPerOpportunity": -1.0593460366198983,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.13842706134880337
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019204328890051314,
+                  "tailBluff": 0.019904265399194453,
+                  "expectedChipsPerOpportunity": 1.5843571334292335,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8417231825230158
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.7258705164074403
+            },
+            "gain": 3.7376707136788325
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 2324637307,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.14308744244230914
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 2324637307,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.019667282963672157,
+                  "tailBluff": 0.01971415767381194,
+                  "expectedChipsPerOpportunity": -1.1308687704111486,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.14308744244230914
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.1308687704111486
+            },
+            "gain": 0.17128851694470604
+          }
+        ],
+        "gain": 1.999791682924645
+      },
+      {
+        "seed": 2307859688,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 2307859688,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.9149756445539522
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 2307859688,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019869657398757654,
+                  "tailBluff": 0.02035021987819458,
+                  "expectedChipsPerOpportunity": 1.6392467353975064,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.9149756445539522
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.6392467353975064
+            },
+            "gain": 6.051170632987096
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 2307859688,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016700974965655688,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9603060605252026,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.12290065333308045
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9603060605252026
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 2307859688,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.017735277488205702,
+                  "tailBluff": 0.017477960750564646,
+                  "expectedChipsPerOpportunity": -1.0197784555718286,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.12290065333308045
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.0197784555718286
+            },
+            "gain": 0.05947239504662594
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 2307859688,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.01930228638174473,
+                  "tailBluff": 0.018786695184072603,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0.008333333333333333,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.48023070943193563
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 2307859688,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.01869209962424099,
+                  "tailBluff": 0.018720445163568175,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.48023070943193563
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 2307859688,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.9149756445539522
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.027132219428679927,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.5601026171490957,
+                  "activeExploitShare": 0.10833333333333334,
+                  "correctionOpportunities": 13,
+                  "posteriorFold": 0.11961824322875543
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.08706942183098913,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 7.183227301056606,
+                  "activeExploitShare": 0.7666666666666667,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8103730714430828
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.437847350764037
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 2307859688,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019869657398757654,
+                  "tailBluff": 0.02035021987819458,
+                  "expectedChipsPerOpportunity": 1.6392467353975064,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.9149756445539522
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.018532970875545382,
+                  "tailBluff": 0.017714010257067397,
+                  "expectedChipsPerOpportunity": -1.0656458253438603,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.11961824322875543
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019242314098648867,
+                  "tailBluff": 0.019930652793715135,
+                  "expectedChipsPerOpportunity": 1.5874909131385317,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8103730714430828
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.7203639410640593
+            },
+            "gain": 3.7174834096999776
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 2307859688,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.12917354445086293
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 2307859688,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.019598939339851202,
+                  "tailBluff": 0.01958531378712636,
+                  "expectedChipsPerOpportunity": -1.1269390120414433,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.12917354445086293
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.1269390120414433
+            },
+            "gain": 0.1673587585750007
+          }
+        ],
+        "gain": 1.99909703926174
+      },
+      {
+        "seed": 2358192545,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 2358192545,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8713887005878382
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 2358192545,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.01996611027616219,
+                  "tailBluff": 0.020334063950738425,
+                  "expectedChipsPerOpportunity": 1.6472040977833813,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8713887005878382
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.6472040977833813
+            },
+            "gain": 6.043213270601221
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 2358192545,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.13563080502777694
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 2358192545,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.017725343733164072,
+                  "tailBluff": 0.017442042986791202,
+                  "expectedChipsPerOpportunity": -1.019207264656934,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.13563080502777694
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.019207264656934
+            },
+            "gain": 0.0596270111904913
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 2358192545,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.02384784331854179,
+                  "tailBluff": 0.02316642214315233,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0.058333333333333334,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4538428025244966
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 2358192545,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018760363863748887,
+                  "tailBluff": 0.01878515464008507,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4538428025244966
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 2358192545,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8713887005878382
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.026265247040473696,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.5102517048272377,
+                  "activeExploitShare": 0.1,
+                  "correctionOpportunities": 12,
+                  "posteriorFold": 0.21728265547449443
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09084977019079452,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 7.4951060407405485,
+                  "activeExploitShare": 0.8083333333333333,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.895918872808329
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.558423901432637
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 2358192545,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.01996611027616219,
+                  "tailBluff": 0.020334063950738425,
+                  "expectedChipsPerOpportunity": 1.6472040977833813,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8713887005878382
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01852655464098185,
+                  "tailBluff": 0.01784998742258307,
+                  "expectedChipsPerOpportunity": -1.0652768918564566,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.21728265547449443
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.01940693687636321,
+                  "tailBluff": 0.020091642765571023,
+                  "expectedChipsPerOpportunity": 1.6010722922999654,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.895918872808329
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.7276664994089633
+            },
+            "gain": 3.830757402023674
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 2358192545,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01682629632735323,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9675120388228112,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.1727114641624857
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9675120388228112
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 2358192545,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01968950358990163,
+                  "tailBluff": 0.019709716088874195,
+                  "expectedChipsPerOpportunity": -1.1321464564193442,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.1727114641624857
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.1321464564193442
+            },
+            "gain": 0.16463441759653297
+          }
+        ],
+        "gain": 2.019646420282384
+      },
+      {
+        "seed": 2341414926,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 2341414926,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8893473325083033
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 2341414926,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019966684990279156,
+                  "tailBluff": 0.020416280008068534,
+                  "expectedChipsPerOpportunity": 1.647251511698031,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8893473325083033
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.647251511698031
+            },
+            "gain": 6.043165856686571
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 2341414926,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01671308329512423,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9610022894696438,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.1826605683701131
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9610022894696438
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 2341414926,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01779319828439924,
+                  "tailBluff": 0.017543724001846138,
+                  "expectedChipsPerOpportunity": -1.0231089013529562,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.1826605683701131
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.0231089013529562
+            },
+            "gain": 0.062106611883312346
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 2341414926,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.021005884242223275,
+                  "tailBluff": 0.02544426235852479,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0.025,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.5907034946070143
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 2341414926,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.01877239563718527,
+                  "tailBluff": 0.018890024576220514,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.5907034946070143
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 2341414926,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8893473325083033
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.02541919718829052,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.4616038383267052,
+                  "activeExploitShare": 0.09166666666666666,
+                  "correctionOpportunities": 11,
+                  "posteriorFold": 0.1096921626750573
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09002280090137012,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 7.426881074363036,
+                  "activeExploitShare": 0.8,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.810667534474918
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.551898201473644
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 2341414926,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019966684990279156,
+                  "tailBluff": 0.020416280008068534,
+                  "expectedChipsPerOpportunity": 1.647251511698031,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8893473325083033
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.018443685429353675,
+                  "tailBluff": 0.017678142208088898,
+                  "expectedChipsPerOpportunity": -1.060511912187837,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.1096921626750573
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019222613745940746,
+                  "tailBluff": 0.019909672635914248,
+                  "expectedChipsPerOpportunity": 1.5858656340401118,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.810667534474918
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.7242017445167687
+            },
+            "gain": 3.827696456956876
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 2341414926,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016735576451066336,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9622956459363149,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.16856141188341053
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9622956459363149
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 2341414926,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01963223879802544,
+                  "tailBluff": 0.019655438868730928,
+                  "expectedChipsPerOpportunity": -1.128853730886462,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.16856141188341053
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.128853730886462
+            },
+            "gain": 0.166558084950147
+          }
+        ],
+        "gain": 2.019905402095381
+      },
+      {
+        "seed": 2257526831,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 2257526831,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7971386574323883
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 2257526831,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019918307574608708,
+                  "tailBluff": 0.020051741463330768,
+                  "expectedChipsPerOpportunity": 1.6432603749052177,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7971386574323883
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.6432603749052177
+            },
+            "gain": 6.047156993479384
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 2257526831,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.16476972236832493
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 2257526831,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.017561739055144472,
+                  "tailBluff": 0.01723749916193987,
+                  "expectedChipsPerOpportunity": -1.0097999956708075,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.16476972236832493
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.0097999956708075
+            },
+            "gain": 0.05021974220436487
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 2257526831,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018786695184072548,
+                  "tailBluff": 0.018786695184072603,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4374904351988907
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 2257526831,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018484064578526988,
+                  "tailBluff": 0.018393123487140017,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4374904351988907
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 2257526831,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7971386574323883
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.025377511847726512,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.4592069312442744,
+                  "activeExploitShare": 0.09166666666666666,
+                  "correctionOpportunities": 11,
+                  "posteriorFold": 0.14212916227447134
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.08853568528161891,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 7.304194035733563,
+                  "activeExploitShare": 0.7833333333333333,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8945720339098581
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.511801490957963
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 2257526831,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019918307574608708,
+                  "tailBluff": 0.020051741463330768,
+                  "expectedChipsPerOpportunity": 1.6432603749052177,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7971386574323883
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.018376336769188515,
+                  "tailBluff": 0.017631307895586514,
+                  "expectedChipsPerOpportunity": -1.0566393642283407,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.14212916227447134
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019137871438272558,
+                  "tailBluff": 0.019886694404597723,
+                  "expectedChipsPerOpportunity": 1.5788743936574867,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8945720339098581
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.7218318014447879
+            },
+            "gain": 3.7899696895131756
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 2257526831,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.20341656264370564
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 2257526831,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.019695202811611478,
+                  "tailBluff": 0.019824149704464254,
+                  "expectedChipsPerOpportunity": -1.1324741616676604,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.20341656264370564
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.1324741616676604
+            },
+            "gain": 0.17289390820121775
+          }
+        ],
+        "gain": 2.012048066679628
+      },
+      {
+        "seed": 2240749212,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 2240749212,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.831454925147536
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 2240749212,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019906704869689273,
+                  "tailBluff": 0.020098855511473057,
+                  "expectedChipsPerOpportunity": 1.642303151749365,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.831454925147536
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.642303151749365
+            },
+            "gain": 6.048114216635237
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 2240749212,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.20687314088063666
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 2240749212,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.017714066937977304,
+                  "tailBluff": 0.017457650043593707,
+                  "expectedChipsPerOpportunity": -1.0185588489336952,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.20687314088063666
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.0185588489336952
+            },
+            "gain": 0.05897859546725259
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 2240749212,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018786695184072548,
+                  "tailBluff": 0.018786695184072603,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4963987391310608
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 2240749212,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018607690558916718,
+                  "tailBluff": 0.01859091913709886,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4963987391310608
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 2240749212,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.831454925147536
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.025273307105607806,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.4532151585724484,
+                  "activeExploitShare": 0.09166666666666666,
+                  "correctionOpportunities": 11,
+                  "posteriorFold": 0.10271211836142648
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09002280090137012,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 7.426881074363036,
+                  "activeExploitShare": 0.8,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.862358332299352
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.554694428058396
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 2240749212,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019906704869689273,
+                  "tailBluff": 0.020098855511473057,
+                  "expectedChipsPerOpportunity": 1.642303151749365,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.831454925147536
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.018338569368778514,
+                  "tailBluff": 0.01758949961523537,
+                  "expectedChipsPerOpportunity": -1.0544677387047645,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.10271211836142648
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.01927031407336122,
+                  "tailBluff": 0.019952572904100956,
+                  "expectedChipsPerOpportunity": 1.5898009110523001,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.862358332299352
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.7258787746989669
+            },
+            "gain": 3.8288156533594293
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 2240749212,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016701890173914477,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9603586850000829,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.15097993727594963
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9603586850000829
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 2240749212,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.01961880526275052,
+                  "tailBluff": 0.019763522602462287,
+                  "expectedChipsPerOpportunity": -1.1280813026081549,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.15097993727594963
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.1280813026081549
+            },
+            "gain": 0.16772261760807194
+          }
+        ],
+        "gain": 2.0207262166139985
+      },
+      {
+        "seed": 3697325900,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 3697325900,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8684335874684723
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 3697325900,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.020024161265402567,
+                  "tailBluff": 0.020278857997593023,
+                  "expectedChipsPerOpportunity": 1.6519933043957116,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8684335874684723
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.6519933043957116
+            },
+            "gain": 6.038424063988891
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 3697325900,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.1328407829837727
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 3697325900,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.017615240172466403,
+                  "tailBluff": 0.017297120161381324,
+                  "expectedChipsPerOpportunity": -1.012876309916818,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.1328407829837727
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.012876309916818
+            },
+            "gain": 0.053296056450375495
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 3697325900,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018786695184072548,
+                  "tailBluff": 0.018786695184072603,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.36883345635041137
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 3697325900,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018582001236696087,
+                  "tailBluff": 0.01840065358381835,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.36883345635041137
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 3697325900,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8684335874684723
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.02591094464462847,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.4898793170661364,
+                  "activeExploitShare": 0.1,
+                  "correctionOpportunities": 12,
+                  "posteriorFold": 0.18655994612775667
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09006450754080671,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 7.430321872116555,
+                  "activeExploitShare": 0.8,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7837746412091271
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.54361997447834
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 3697325900,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.020024161265402567,
+                  "tailBluff": 0.020278857997593023,
+                  "expectedChipsPerOpportunity": 1.6519933043957116,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8684335874684723
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.018410657723066746,
+                  "tailBluff": 0.01777311858173799,
+                  "expectedChipsPerOpportunity": -1.058612819076338,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.18655994612775667
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019173048065346823,
+                  "tailBluff": 0.019740898492477652,
+                  "expectedChipsPerOpportunity": 1.581776465391115,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.7837746412091271
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.7250523169034961
+            },
+            "gain": 3.818567657574844
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 3697325900,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.17205894865010982
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 3697325900,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.019629272679053154,
+                  "tailBluff": 0.01969968858331459,
+                  "expectedChipsPerOpportunity": -1.1286831790455563,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.17205894865010982
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.1286831790455563
+            },
+            "gain": 0.16910292557911366
+          }
+        ],
+        "gain": 2.015878140718645
+      },
+      {
+        "seed": 3714103519,
+        "scenarios": [
+          {
+            "scenario": "overfolder",
+            "candidate": {
+              "scenario": "overfolder",
+              "seed": 3714103519,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8603892641521612
+                }
+              ],
+              "expectedChipsPerOpportunity": 7.690417368384602
+            },
+            "incumbent": {
+              "scenario": "overfolder",
+              "seed": 3714103519,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019896368525601758,
+                  "tailBluff": 0.020163488219816804,
+                  "expectedChipsPerOpportunity": 1.641450403362145,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8603892641521612
+                }
+              ],
+              "expectedChipsPerOpportunity": 1.641450403362145
+            },
+            "gain": 6.048966965022457
+          },
+          {
+            "scenario": "station",
+            "candidate": {
+              "scenario": "station",
+              "seed": 3714103519,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.18658444905380556
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "station",
+              "seed": 3714103519,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.017649803765359892,
+                  "tailBluff": 0.017381425093202514,
+                  "expectedChipsPerOpportunity": -1.0148637165081942,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.18658444905380556
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.0148637165081942
+            },
+            "gain": 0.05528346304175158
+          },
+          {
+            "scenario": "balanced",
+            "candidate": {
+              "scenario": "balanced",
+              "seed": 3714103519,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.021162781130268624,
+                  "tailBluff": 0.018786695184072603,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0.03333333333333333,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4771245507967621
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "incumbent": {
+              "scenario": "balanced",
+              "seed": 3714103519,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.42857142857142855,
+                  "observations": 120,
+                  "meanBluff": 0.018801525473129587,
+                  "tailBluff": 0.01872745712348988,
+                  "expectedChipsPerOpportunity": 0,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.4771245507967621
+                }
+              ],
+              "expectedChipsPerOpportunity": 0
+            },
+            "gain": 0
+          },
+          {
+            "scenario": "switching",
+            "candidate": {
+              "scenario": "switching",
+              "seed": 3714103519,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.09321718022284367,
+                  "tailBluff": 0.10716555964513139,
+                  "expectedChipsPerOpportunity": 7.690417368384602,
+                  "activeExploitShare": 0.9166666666666666,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8603892641521612
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.02591094464462847,
+                  "tailBluff": 0.016284408426125555,
+                  "expectedChipsPerOpportunity": -1.4898793170661364,
+                  "activeExploitShare": 0.1,
+                  "correctionOpportunities": 12,
+                  "posteriorFold": 0.11703201125677898
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.087771273673872,
+                  "tailBluff": 0.10801447975495992,
+                  "expectedChipsPerOpportunity": 7.241130078094441,
+                  "activeExploitShare": 0.775,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8891010012502494
+                }
+              ],
+              "expectedChipsPerOpportunity": 4.480556043137636
+            },
+            "incumbent": {
+              "scenario": "switching",
+              "seed": 3714103519,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019896368525601758,
+                  "tailBluff": 0.020163488219816804,
+                  "expectedChipsPerOpportunity": 1.641450403362145,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8603892641521612
+                },
+                {
+                  "phase": 1,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.018327599114229296,
+                  "tailBluff": 0.017582775192292684,
+                  "expectedChipsPerOpportunity": -1.0538369490681847,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.11703201125677898
+                },
+                {
+                  "phase": 2,
+                  "foldProbability": 0.9,
+                  "observations": 120,
+                  "meanBluff": 0.019330115739323993,
+                  "tailBluff": 0.02013053080177444,
+                  "expectedChipsPerOpportunity": 1.5947345484942304,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.8891010012502494
+                }
+              ],
+              "expectedChipsPerOpportunity": 0.7274493342627303
+            },
+            "gain": 3.7531067088749053
+          },
+          {
+            "scenario": "conflicting-context",
+            "candidate": {
+              "scenario": "conflicting-context",
+              "seed": 3714103519,
+              "mode": "contextual",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.016688352234198994,
+                  "tailBluff": 0.016306439168323365,
+                  "expectedChipsPerOpportunity": -0.9595802534664426,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.0899923618593484
+                }
+              ],
+              "expectedChipsPerOpportunity": -0.9595802534664426
+            },
+            "incumbent": {
+              "scenario": "conflicting-context",
+              "seed": 3714103519,
+              "mode": "pooled",
+              "phases": [
+                {
+                  "phase": 0,
+                  "foldProbability": 0.1,
+                  "observations": 120,
+                  "meanBluff": 0.019669335748782147,
+                  "tailBluff": 0.019760108497215823,
+                  "expectedChipsPerOpportunity": -1.1309868055549728,
+                  "activeExploitShare": 0,
+                  "correctionOpportunities": null,
+                  "posteriorFold": 0.0899923618593484
+                }
+              ],
+              "expectedChipsPerOpportunity": -1.1309868055549728
+            },
+            "gain": 0.17140655208853017
+          }
+        ],
+        "gain": 2.005752737805529
+      }
+    ],
+    "limitation": "Known-payoff synthetic river subgame with exogenous public probes. This tests learning and response reversal, not full Hold\u2019em profitability or calibrated confidence."
+  },
+  "poker": {
+    "seed": 3714986351,
+    "matchups": [
+      {
+        "opponent": "river-overfolder",
+        "hands": 2000,
+        "dealPairs": 500,
+        "deltaBbPer100": -0.26000000000000123,
+        "descriptive95Interval": [-3.6917333175533362, 3.171733317553334],
+        "candidateP95Ms": [27.974256999999852, 25.34834899999987],
+        "candidateContextCounts": [11, 11]
+      },
+      {
+        "opponent": "calling-station",
+        "hands": 2000,
+        "dealPairs": 500,
+        "deltaBbPer100": -6.929999999999999,
+        "descriptive95Interval": [-36.17573134342744, 22.315731343427437],
+        "candidateP95Ms": [27.603440999999293, 27.447744000004604],
+        "candidateContextCounts": [11, 11]
+      },
+      {
+        "opponent": "changing",
+        "hands": 2000,
+        "dealPairs": 500,
+        "deltaBbPer100": -0.11000000000000042,
+        "descriptive95Interval": [-0.6761743725392741, 0.4561743725392733],
+        "candidateP95Ms": [26.541786000016145, 24.960267000016756],
+        "candidateContextCounts": [11, 11]
+      },
+      {
+        "opponent": "competent",
+        "hands": 2000,
+        "dealPairs": 500,
+        "deltaBbPer100": 0.5799999999999994,
+        "descriptive95Interval": [-0.6798295569421609, 1.8398295569421597],
+        "candidateP95Ms": [34.31783899999573, 32.894310000003316],
+        "candidateContextCounts": [18, 16]
+      }
+    ],
+    "hands": 8000,
+    "promotionToProduction": false,
+    "limitation": "Small full-game smoke comparison; serial adaptation makes pair-based intervals descriptive. A synthetic-learning gain alone never authorizes automatic production promotion."
+  },
+  "productionConfigChanged": false,
+  "limitation": "Parameter calibration and Bayesian online learning, not neural-network training. New weights remain offline until broader representative validation. Historical checkpoints and reports can be resumed."
+}

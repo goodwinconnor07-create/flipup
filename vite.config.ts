@@ -1,13 +1,10 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
 import { cloudflare } from '@cloudflare/vite-plugin';
 
-// The Cloudflare plugin runs the Worker (and its Durable Object) inside the
-// Vite dev server, so `npm run dev` gives you the app and the online API together.
+// The website is a static landing page (index.html, site/) plus the privacy and support pages (public/). The
+// Cloudflare plugin runs the Worker (the iPhone app's API and its Durable Objects) inside the Vite dev server, so
+// `npm run dev` gives the page and the API together.
 export default defineConfig({
-  plugins: [react(), cloudflare()],
+  plugins: [cloudflare()],
   server: { host: true },
-  // three.js is only reached through a lazy import (the live cam, mid-game), which the dev server would otherwise
-  // find late, bundle, and reload the page for.
-  optimizeDeps: { include: ['three'] },
 });

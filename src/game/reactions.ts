@@ -17,13 +17,25 @@ export const REACTIONS: Reaction[] = [
   { id: 'gl', text: 'Good luck!' },
   { id: 'oops', text: 'Oops!' },
   { id: 'gg', text: 'GG' },
+  { id: 'nicefold', text: 'Nice fold!' },
+  { id: 'bigbet', text: 'Big bet?' },
+  { id: 'runit', text: 'Run it!' },
   { id: 'clap', text: '👏' },
   { id: 'laugh', text: '😂' },
   { id: 'grimace', text: '😬' },
   { id: 'fire', text: '🔥' },
+  { id: 'cool', text: '😎' },
+  { id: 'cry', text: '😭' },
+  { id: 'pray', text: '🙏' },
+  { id: 'eyes', text: '👀' },
+  { id: 'mindblown', text: '🤯' },
+  { id: 'shrug', text: '🤷' },
 ];
 
-export const isReactionId = (v: unknown): v is string => typeof v === 'string' && REACTIONS.some((r) => r.id === v);
+/** The emoji reactions, sent with one tap from the row along the top of the quick messages. */
+export const EMOJI_REACTIONS: Reaction[] = REACTIONS.filter((r) => !/[A-Za-z]/.test(r.text));
+
+export const isReactionId = (v: unknown): v is string => typeof v === 'string' && (REACTIONS.some((r) => r.id === v));
 
 const template = (id: string): string => REACTIONS.find((r) => r.id === id)?.text ?? botLineText(id);
 

@@ -1,18 +1,20 @@
-import { Children, useState, type ReactNode } from 'react';
+import { Children, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, Text, useColorScheme, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
-import { count21, lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '@/engine';
+import { count21, lastStanding, options, pot, TIMING, type Game, type Hand, type Player, type Seat } from '@/engine';
+import { detail, rise, sink } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { dispatch, me as myDevice } from '@/state/session';
+import { lastHand } from '@/state/replays';
+import { dispatch, me as myDevice, RECAP_COUNTDOWN_MS, startReview, useTable } from '@/state/session';
 import { brand, minTap, radius, spacing, useColors, usePlainColors, useShadows } from '@/theme';
 
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
+import { Swap } from '../swap';
 import { PressableScale } from '../pressable-scale';
 import { ThemedText } from '../themed-text';
 import { Dot } from './bubbles';
-import { shoveTime, ShoveTurn } from './challenge';
 import { RaiseSlider } from './raise-slider';
 import { useTableNow } from './use-now';
 
@@ -51,10 +53,13 @@ function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, b
       style={{ minHeight: height, borderRadius: radius.md, borderCurve: 'continuous', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, backgroundColor: look[tone].bg }}
     >
       {fill !== undefined && <View style={{ position: 'absolute', left: 0, bottom: 0, height: 4, width: `${fill * 100}%`, backgroundColor: 'rgba(255,255,255,0.85)' }} />}
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ color: look[tone].ink, fontSize: big ? 20 : 17, lineHeight: big ? 24 : 20, textAlign: 'center', fontWeight: big ? '800' : tone === 'pre' || tone === 'preOn' ? '600' : '700', fontVariant: ['tabular-nums'] }}>
-        {label}
-        {sub ? ` ${sub}` : ''}
-      </Text>
+      <Swap id={label} kind="text">
+        {/* Pre-actions stay on one line (shrinking a little if they must), so Check / Fold never stands taller than its neighbours. */}
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={tone === 'pre' || tone === 'preOn' ? 1 : 2} adjustsFontSizeToFit={tone === 'pre' || tone === 'preOn'} minimumFontScale={0.75} style={{ color: look[tone].ink, fontSize: big ? 20 : 17, lineHeight: big ? 24 : 20, textAlign: 'center', fontWeight: big ? '800' : tone === 'pre' || tone === 'preOn' ? '600' : '700', fontVariant: ['tabular-nums'] }}>
+          {label}
+          {sub ? ` ${sub}` : ''}
+        </Text>
+      </Swap>
     </PressableScale>
   );
 }
@@ -103,16 +108,36 @@ const Row = ({ children }: { children: ReactNode }) => (
 export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRaise }: { game: Game; me?: Player; seat?: Seat; myTurn: boolean; sending: boolean; pre: PreAction; setPre: (p: PreAction) => void; onRaise: () => void }) {
   const hand = game.hand;
   const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
-  const now = useTableNow(game.fast, waiting ? 200 : 60_000);
+  const now = useTableNow(game.fast, hand?.moment?.gate || waiting || hand?.twice?.until != null ? 200 : 60_000);
+  const recap = useTable();
+  // Real time for the Review countdown (the table's clock can run fast); ticks only while it counts.
+  const [wall, setWall] = useState(0);
+  useEffect(() => {
+    if (!recap.recapEnds) return;
+    const tick = () => setWall(Date.now());
+    tick();
+    const id = setInterval(tick, 200);
+    return () => clearInterval(id);
+  }, [recap.recapEnds]);
 
   if (!me) return <Note>You&apos;re watching this table.</Note>;
 
   if (hand && !hand.result) {
     // Short Stack, at 12 big blinds or less: Fold, Call and a big Shove in place of the raise panel.
-    if (myTurn && seat && shoveTime(game, seat)) return <ShoveTurn game={game} hand={hand} seat={seat} sending={sending} />;
-    if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} onRaise={onRaise} />;
+    // A bust is on show: nobody acts until it has been seen.
+    // Power Cards: a power on show has its own banner over the felt (power-banner.tsx). The buttons stay where they
+    // are, greyed until it's been seen, so the bottom of the table never changes height.
+    const onShow = !!hand.moment?.gate && now < hand.moment.until;
+    if (myTurn && onShow && hand.moment?.kind === 'bust') {
+      const who = game.players.find((p) => p.id === hand.moment!.who)?.name ?? 'Someone';
+      return <Note strong>{`💥 ${who} busts with ${hand.moment.value}`}</Note>;
+    }
+    if (myTurn && seat)
+      return (
+        <MyTurn game={game} hand={hand} seat={seat} sending={sending || onShow} onRaise={onRaise} />
+      );
     const who = game.players.find((p) => p.id === hand.toAct);
-    if (hand.runout) return <Note>Running it out…</Note>;
+    if (hand.runout) return <RunOut game={game} hand={hand} me={me} now={now} />;
     const canPre = !!seat && !seat.folded && !seat.allIn && !me.sittingOut;
     const o = canPre && seat ? options(game, hand, seat) : null;
     const set = (kind: 'checkfold' | 'callany' | 'current') => {
@@ -124,7 +149,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
         {who ? (
           <Thinking name={who.name} what={who.bot ? 'is thinking' : who.offline ? 'is offline' : 'to act'} />
         ) : (
-          <Note>{hand.showdownAt != null ? 'Showdown…' : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
+          <Note>{hand.bettingAt != null ? (hand.moment?.kind === 'rivers' ? 'Three rivers…' : hand.moment?.kind === 'redriver' ? 'Is the river red?' : 'Look at the board…') : hand.showdownAt != null ? (hand.moment?.kind === 'suspense' ? 'Hold your breath…' : 'Showdown…') : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
         )}
         {me.sittingOut && <TableButton label="I'm back" tone="pre" onPress={() => dispatch({ type: 'sitOut', out: false })} />}
         {o && (
@@ -166,14 +191,22 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   const ready = game.ready.includes(me.id);
   // The next hand deals itself when the bar along the bottom of the button runs out.
   const total = waitFor(hand.number, game.nextHandAt - now);
-  const left = Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
-  const next = <TableButton label={ready ? 'Waiting for the others…' : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
+  // Review after every hand: a 10 second countdown to the deal instead (it stops once Review is opened).
+  const reviewing = !!recap.recap && recap.recap === lastHand()?.id;
+  const counting = reviewing && recap.recapEnds !== null;
+  const wallNow = wall || (recap.recapEnds ? recap.recapEnds - RECAP_COUNTDOWN_MS : 0);
+  const secsLeft = counting ? Math.max(0, Math.ceil((recap.recapEnds! - wallNow) / 1000)) : 0;
+  const left = counting ? Math.max(0, Math.min(1, (recap.recapEnds! - wallNow) / RECAP_COUNTDOWN_MS)) : reviewing ? undefined : Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
+  const next = <TableButton label={ready ? 'Waiting for the others…' : counting ? `Next hand · ${secsLeft}` : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
+  const review = reviewing ? <TableButton label="Review" tone="blue" onPress={() => (haptic.tap(), startReview())} /> : null;
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): once the hand is over you can turn
   // them over. Tapping sends the `show` action; the greyed cards turn white as the answer. Never during play.
-  const canShow = !!seat && !seat.shown && seat.cards.length === 2;
-  if (!canShow) return next;
+  const canShow = !!seat && !seat.shown && seat.cards.length > 0;
+  if (!canShow && !review) return next;
   return (
     <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+      {review && <View>{review}</View>}
+      {canShow && (
       <View>
         <TableButton
           label="Show cards"
@@ -184,9 +217,42 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
           }}
         />
       </View>
+      )}
       <View style={{ flex: 1 }}>{next}</View>
     </View>
   );
+}
+
+/**
+ * An all-in run-out. With Run it twice on, everyone in it is asked first: Once or Twice, with a bar that drains to
+ * the deal (no answer runs it once). Then the line says which run is coming.
+ */
+function RunOut({ game, hand, me, now }: { game: Game; hand: Hand; me: Player; now: number }) {
+  const t = hand.twice;
+  if (!t) return <Note>Running it out…</Note>;
+  const name = (id: string) => game.players.find((p) => p.id === id)?.name ?? 'Someone';
+  if (t.until != null) {
+    const left = Math.max(0, Math.min(1, (t.until - now) / TIMING.runTwiceAsk));
+    if (t.asked.includes(me.id) && t.votes[me.id] === undefined) {
+      const vote = (yes: boolean) => {
+        haptic.tap();
+        dispatch({ type: 'runTwice', hand: hand.number, yes });
+      };
+      return (
+        <View style={{ gap: spacing.sm }}>
+          <Note strong>Run it twice?</Note>
+          <Row>
+            <TableButton label="Once" tone="pre" onPress={() => vote(false)} />
+            <TableButton label="Twice" tone="blue" fill={left} onPress={() => vote(true)} />
+          </Row>
+        </View>
+      );
+    }
+    const waiting = t.asked.filter((id) => t.votes[id] === undefined).map(name);
+    return <Note>{waiting.length ? `Run it twice? Waiting for ${waiting.join(', ')}…` : 'Run it twice?'}</Note>;
+  }
+  if (!t.agreed) return <Note>Running it once…</Note>;
+  return <Note strong>{t.first ? 'Second run…' : 'Running it twice: first run…'}</Note>;
 }
 
 /** How long this pause was when it began, so the bar drains from full whatever extra time was added. */
@@ -200,11 +266,13 @@ function waitFor(hand: number, remaining: number): number {
 function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand; seat: Seat; sending: boolean; onRaise: () => void }) {
   const o = options(game, hand, seat);
   const act = (move: 'fold' | 'check' | 'call') => dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move });
+  // Power Cards: silenced players can only check, call or fold this street, so the line says why Raise is gone.
+  const silenced = hand.silenced?.[seat.playerId] === hand.street;
   return (
     <View style={{ gap: spacing.sm }}>
-      <Note strong>Your turn</Note>
+      <Note strong>{silenced ? 'Your turn · 🤐 no betting this street' : 'Your turn'}</Note>
       {o.canHit && (
-        // Blackjack Hold'em: take another card before your move. Over 21 folds your hand.
+        // Hit Me: take another card before your move. Over 21 folds your hand.
         <Row>
           <TableButton label={`Hit · you're on ${count21(seat.cards)}`} tone="pre" height={48} disabled={sending} onPress={() => dispatch({ type: 'hit', hand: hand.number, seq: hand.seq })} />
         </Row>
@@ -216,7 +284,13 @@ function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand
         ) : (
           <TableButton label={o.callIsAllIn ? 'All in' : 'Call'} sub={chips(o.toCall)} tone="blue" disabled={sending} onPress={() => act('call')} />
         )}
-        {o.canRaise && <TableButton label={o.word} tone="raise" disabled={sending} onPress={onRaise} />}
+        {o.canRaise &&
+          (o.minTo >= o.maxTo ? (
+            // The smallest raise is already everything you have: no sizer, just All in.
+            <TableButton label="All in" sub={chips(o.maxTo)} tone="raise" disabled={sending} onPress={() => dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move: 'allin' })} />
+          ) : (
+            <TableButton label={o.word} tone="raise" disabled={sending} onPress={onRaise} />
+          ))}
       </Row>
     </View>
   );
@@ -258,12 +332,12 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
   };
   return (
     <Animated.View
-      entering={reduce ? FadeIn.duration(150) : SlideInDown.duration(250)}
-      exiting={reduce ? FadeOut.duration(120) : SlideOutDown.duration(160)}
+      entering={rise(reduce)}
+      exiting={sink(reduce)}
       accessibilityViewIsModal
-      style={{ position: 'absolute', left: 0, right: 0, bottom: -inset, padding: spacing.md, paddingBottom: inset + spacing.sm, gap: spacing.md, backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, boxShadow: shadow.raised }}
+      style={{ transformOrigin: '50% 100%', position: 'absolute', left: 0, right: 0, bottom: -inset, padding: spacing.md, paddingBottom: inset + spacing.sm, gap: spacing.md, backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, boxShadow: shadow.raised }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: spacing.xs }}>
+      <Animated.View entering={detail(0, reduce)} style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: spacing.xs }}>
         <ThemedText tone="tertiaryLabel">{o.word} to</ThemedText>
         <ThemedText variant="title1" style={{ fontWeight: '800', fontVariant: ['tabular-nums'] }}>
           {chips(to)}
@@ -272,7 +346,8 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
         <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onCancel} hitSlop={12} style={{ position: 'absolute', right: 0, top: 4 }}>
           <Icon name="xmark" size={20} color={colors.label} />
         </Pressable>
-      </View>
+      </Animated.View>
+      <Animated.View entering={detail(1, reduce)}>
       <Row>
         {presets.map((p) => {
           const on = p.to === to;
@@ -298,7 +373,8 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
           );
         })}
       </Row>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+      </Animated.View>
+      <Animated.View entering={detail(2, reduce)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <Pressable accessibilityRole="button" accessibilityLabel="Less" disabled={to <= o.minTo} onPress={() => nudge(-1)} hitSlop={10} style={{ opacity: to <= o.minTo ? 0.3 : 1 }}>
           <Icon name="minus" size={22} color={colors.label} />
         </Pressable>
@@ -308,8 +384,8 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
         <Pressable accessibilityRole="button" accessibilityLabel="More" disabled={to >= o.maxTo} onPress={() => nudge(1)} hitSlop={10} style={{ opacity: to >= o.maxTo ? 0.3 : 1 }}>
           <Icon name="plus" size={22} color={colors.label} />
         </Pressable>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+      </Animated.View>
+      <Animated.View entering={detail(3, reduce)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
         {/* Imposter has no folding: the panel follows the action row and leaves Fold out. */}
         {o.canFold && (
           <View style={{ flex: 1 }}>
@@ -322,7 +398,7 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
         <View style={{ flex: 1 }}>
           <TableButton label={o.canCheck ? 'Check' : o.callIsAllIn ? 'All in' : 'Call'} sub={!o.canCheck && !o.callIsAllIn ? chips(o.toCall) : undefined} tone="quietCall" height={52} onPress={onCall} />
         </View>
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 }

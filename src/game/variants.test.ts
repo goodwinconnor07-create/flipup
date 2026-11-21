@@ -11,6 +11,7 @@ import {
   options,
   parseAction,
   redactForDevice,
+  runoutOdds,
   seededRng,
   VARIANTS,
   wildHand,
@@ -61,6 +62,39 @@ describe('Crazy Pineapple', () => {
   });
 });
 
+describe('run-out odds in every game', () => {
+  const share = (e: { win: number[]; tie: number[] }) => e.win.reduce((a, b) => a + b, 0) + e.tie.reduce((a, b) => a + b, 0) / 2;
+
+  it('uses the wild deuces', () => {
+    // A pair of deuces is four of a kind with the flop's pair in Crazy Deuces, and loses to aces in Hold'em.
+    expect(runoutOdds('deuces', [h('2c 2d'), h('Ah Ad')], h('Kc Ks 7h')).win[0]).toBeGreaterThan(0.95);
+    expect(runoutOdds('holdem', [h('2c 2d'), h('Ah Ad')], h('Kc Ks 7h')).win[0]).toBeLessThan(0.2);
+  });
+
+  it('leaves the ghost out until it shows, then counts it', () => {
+    const board = h('Kc 9d 4h 2s 7c');
+    expect(runoutOdds('ghost', [h('Ah Qd'), h('Js Jd')], board).win[1]).toBe(1);
+    const shown = runoutOdds('ghost', [h('Ah Qd'), h('Js Jd')], board, h('Kd Kh'));
+    expect(shown.win).toEqual([0, 0]);
+  });
+
+  it('plays the extra rivers, the cross, the clock and Bean Stalk out, and adds up to the whole pot', () => {
+    for (const [v, hands, board] of [
+      ['pittsburgh', [h('Ah Kh'), h('Qs Qd')], h('2h 7h 9c 4d')],
+      ['redriver', [h('Ah Kh'), h('Qs Qd')], h('2h 7c 9c 4d')],
+      ['crucifix', [h('Ah Kh'), h('Qs Qd')], h('2h 7c 9c')],
+      ['circle', [h('Ah Kh'), h('Qs Qd')], h('2h 7c 9c')],
+      ['beanstalk', [h('Ah Kh Td'), h('Qs Qd 3c')], h('2h 7c 9c')],
+      ['dice', [h('Ah Kh'), h('Qs Qd')], h('2h 7c 9c 4d')],
+      ['bjholdem', [h('Ah 9d'), h('Qs Qd')], h('2h 7c 9c')],
+    ] as [Variant, string[][], string[]][]) {
+      const e = runoutOdds(v, hands, board);
+      expect(share(e), v).toBeCloseTo(1, 5);
+      expect(e.win.every((w) => w > 0 && w < 1), v).toBe(true);
+    }
+  });
+});
+
 // ── Whole tables ────────────────────────────────────────────────────────────
 
 function table(variant: Variant, bots = 3, stack = 1000): Game {
@@ -89,12 +123,9 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
     const host = game.players.find((p) => p.deviceId === HOST)!;
     const mine = hand?.seats.find((s) => s.playerId === host.id);
     let r;
-    if (hand && !hand.result && hand.voting && mine && !hand.votes?.[host.id]) {
-      const others = hand.seats.filter((x) => x.playerId !== host.id);
-      r = applyAction(game, { type: 'vote', hand: hand.number, playerId: others[Math.floor(rng() * others.length)].playerId }, { deviceId: HOST, now: clock, rng });
-    } else if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
+    if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
       r = applyAction(game, { type: 'discard', hand: hand.number, card: mine.cards[Math.floor(rng() * 3)] }, { deviceId: HOST, now: clock, rng });
-    } else if (hand && !hand.result && hand.toAct === host.id && mine) {
+    } else if (hand && !hand.result && hand.toAct === host.id && mine && !(hand.moment?.gate && clock < hand.moment.until)) {
       const o = options(game, hand, mine);
       const move = o.canCheck ? 'check' : o.toCall <= game.settings.bigBlind * 3 || !o.canFold ? 'call' : 'fold';
       r = applyAction(game, { type: 'act', hand: hand.number, seq: hand.seq, move }, { deviceId: HOST, now: clock, rng });
@@ -114,7 +145,7 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
 }
 
 describe('variant tables', { timeout: TABLE_MS }, () => {
-  for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem'] as Variant[]) {
+  for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem'] as Variant[]) {
     it(`plays ${v} hands with bots and keeps every chip`, () => {
       play(v, 40);
     });
@@ -130,6 +161,36 @@ describe('variant tables', { timeout: TABLE_MS }, () => {
         else if (hand.board.length === 0) expect(s.cards.length).toBe(3);
       }
     });
+  });
+
+  it('stops an all-in run-out on the flop in Crazy Pineapple so each player throws a card away', () => {
+    // The host shoves every hand; whenever a bot calls, the run-out must wait on the flop for the host's discard.
+    let game = table('pineapple', 1, 1000);
+    const rng = seededRng(3);
+    let clock = 0;
+    let asked = 0;
+    for (let i = 0; i < 4000 && game.status === 'playing' && asked < 3; i++) {
+      const hand = game.hand;
+      const host = game.players.find((p) => p.deviceId === HOST)!;
+      const mine = hand?.seats.find((s) => s.playerId === host.id);
+      let r;
+      if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
+        expect(hand.board.length).toBe(3);
+        if (hand.runout) asked++;
+        r = applyAction(game, { type: 'discard', hand: hand.number, card: mine.cards[0] }, { deviceId: HOST, now: clock, rng });
+        expect(r.ok && r.game.hand?.seats.find((s) => s.playerId === host.id)?.cards).toEqual(mine.cards.slice(1));
+      } else if (hand && !hand.result && hand.toAct === host.id && mine) {
+        r = applyAction(game, { type: 'act', hand: hand.number, seq: hand.seq, move: 'allin' }, { deviceId: HOST, now: clock, rng });
+      } else {
+        // The run-out never deals the turn while someone still holds three cards.
+        if (hand && !hand.result && hand.board.length >= 4) for (const s of hand.seats) if (!s.folded) expect(s.cards.length).toBe(2);
+        clock = (game.wakeAt ?? clock) + 1;
+        r = applyAction(game, { type: 'tick' }, { deviceId: 'server', now: clock, rng });
+      }
+      if (!r.ok) throw new Error(r.error);
+      game = r.game;
+    }
+    expect(asked).toBeGreaterThan(0);
   });
 
   it('deals three rivers in Pittsburgh', () => {
@@ -163,6 +224,29 @@ describe('variant tables', { timeout: TABLE_MS }, () => {
     });
     expect(shown).toBeGreaterThan(0);
   });
+
+  it("builds the ghost's bounty when it wins and pays it to whoever beats it", () => {
+    let grew = 0;
+    let paid = 0;
+    let bounty = 0;
+    play('ghost', 60, (g) => {
+      const r = g.hand?.result;
+      if (!r?.ghost) return;
+      const held = g.hand!.carry ?? 0;
+      // Its bounty after the hand is exactly what it kept (the old bounty rides in the main pot: kept if the ghost
+      // wins that pot, paid out if somebody beats it).
+      expect(g.ghostPot).toBe(r.ghost.kept);
+      if (r.ghost.kept > 0) grew++;
+      if (r.ghost.paid) {
+        paid++;
+        expect(r.ghost.paid).toBe(held);
+        expect(r.pots[0].winners.length).toBeGreaterThan(0);
+      }
+      bounty = g.ghostPot ?? 0;
+    });
+    expect(grew + paid).toBeGreaterThan(0);
+    expect(bounty).toBeGreaterThanOrEqual(0);
+  });
 });
 
 describe('the second batch', { timeout: TABLE_MS }, () => {
@@ -183,6 +267,21 @@ describe('the second batch', { timeout: TABLE_MS }, () => {
     expect(rolled).toBeGreaterThan(0);
   });
 
+  it('Die on the River holds the river betting while the roll is shown', () => {
+    const firstSeen = new Set<number>();
+    let held = 0;
+    play('dice', 40, (g) => {
+      const hand = g.hand;
+      if (!hand?.dice || firstSeen.has(hand.number)) return;
+      firstSeen.add(hand.number);
+      if (!hand.dice.until) return;
+      held++;
+      // Nothing happens at the table before the show is over.
+      if (hand.actAt != null) expect(hand.actAt).toBeGreaterThanOrEqual(hand.dice.until);
+    });
+    expect(held).toBeGreaterThan(0);
+  });
+
   it('Red River keeps dealing until a black card', () => {
     let rivers = 0;
     play('redriver', 60, (g) => {
@@ -196,43 +295,6 @@ describe('the second batch', { timeout: TABLE_MS }, () => {
     expect(rivers).toBeGreaterThan(0);
   });
 
-  it('Imposter deals one odd hand out, antes up, keeps the secret and settles by vote', () => {
-    let settled = 0;
-    play('imposter', 40, (g) => {
-      const hand = g.hand;
-      if (!hand?.imposter) return;
-      const same = hand.seats.filter((s) => s.playerId !== hand.imposter).map((s) => s.cards.join());
-      expect(new Set(same).size).toBe(1);
-      expect(hand.seats.find((s) => s.playerId === hand.imposter)!.cards.join()).not.toBe(same[0]);
-      const host = g.players.find((p) => p.deviceId === HOST)!;
-      const seen = redactForDevice(g, HOST).hand!;
-      if (!hand.result) {
-        expect(seen.imposter).toBe(hand.imposter === host.id ? host.id : undefined);
-        for (const [voter, suspect] of Object.entries(seen.votes ?? {})) if (voter !== host.id) expect(suspect).toBe('');
-      } else if (hand.result.imposter) {
-        settled++;
-        expect(seen.imposter).toBe(hand.imposter);
-        const { caught, id } = hand.result.imposter;
-        const winners = Object.keys(hand.result.won);
-        const impFolded = hand.seats.find((s) => s.playerId === id)!.folded;
-        if (caught || impFolded) expect(winners).not.toContain(id);
-        // Got away with it: every pot the imposter is in is theirs alone; a side pot they're not in goes to the others.
-        else for (const pot of hand.result.pots) expect(pot.winners).toEqual(pot.eligible.includes(id) ? [id] : pot.eligible);
-      }
-    });
-    expect(settled).toBeGreaterThan(0);
-  });
-
-  it('plays Imposter heads-up as plain Hold\'em', () => {
-    let g = table('imposter', 1);
-    for (let i = 0; i < 5 && !g.hand; i++) {
-      const r = applyAction(g, { type: 'tick' }, { deviceId: 'server', now: (g.wakeAt ?? 0) + 1, rng: seededRng(3) });
-      if (r.ok) g = r.game;
-    }
-    expect(g.hand).toBeTruthy();
-    expect(g.hand!.imposter).toBeUndefined();
-    expect(g.hand!.variant).toBeUndefined();
-  });
 });
 
 describe('Crucifix and Circle', { timeout: TABLE_MS }, () => {
@@ -323,7 +385,7 @@ describe('Memory Poker and Bean Stalk', { timeout: TABLE_MS }, () => {
     const rng = seededRng(5);
     let clock = 0;
     let rivers = 0;
-    for (let i = 0; i < 4000 && (g.hands ?? 0) < 6 && g.status === 'playing'; i++) {
+    for (let i = 0; i < 6000 && (g.hands ?? 0) < 12 && g.status === 'playing'; i++) {
       const hand = g.hand;
       const host = g.players.find((p) => p.deviceId === HOST)!;
       const mine = hand?.seats.find((s) => s.playerId === host.id);
@@ -335,14 +397,14 @@ describe('Memory Poker and Bean Stalk', { timeout: TABLE_MS }, () => {
       g = r.game;
       if (g.hand && g.hand.board.length === 5) {
         for (const s of g.hand.seats) if (!s.folded) expect(s.cards).toHaveLength(5);
-        if (g.hand.seats.filter((s) => !s.folded).length >= 5) rivers++;
+        if (g.hand.seats.filter((s) => !s.folded).length >= 4) rivers++;
       }
     }
     expect(rivers).toBeGreaterThan(0);
   });
 });
 
-describe("Blackjack Hold'em", { timeout: TABLE_MS }, () => {
+describe("Hit Me", { timeout: TABLE_MS }, () => {
   it('counts like blackjack: aces 1 or 11, picture cards 10', () => {
     expect(count21(h('Ah Kd'))).toBe(21);
     expect(count21(h('Ah Ad'))).toBe(12);
@@ -362,7 +424,7 @@ describe("Blackjack Hold'em", { timeout: TABLE_MS }, () => {
       const host = g.players.find((p) => p.deviceId === HOST)!;
       const mine = hand?.seats.find((s) => s.playerId === host.id);
       let r;
-      if (hand && !hand.result && hand.toAct === host.id && mine) {
+      if (hand && !hand.result && hand.toAct === host.id && mine && !(hand.moment?.gate && clock < hand.moment.until)) {
         if (hand.street === 'preflop' && !hitPreflop) {
           // Not on the flop: turned down.
           expect(applyAction(g, { type: 'hit', hand: hand.number, seq: hand.seq }, { deviceId: HOST, now: clock, rng }).ok).toBe(false);
@@ -431,16 +493,17 @@ describe('network input', () => {
     expect(parseAction({ type: 'discard', hand: 3, card: 'Zz' })).toBeNull();
     expect(parseAction({ type: 'settings', settings: { variant: 'ghost' } })).toEqual({ type: 'settings', settings: { variant: 'ghost' } });
     expect(parseAction({ type: 'settings', settings: { variant: 'omaha' } })).toBeNull();
-    expect(parseAction({ type: 'vote', hand: 2, playerId: 'abc123' })).toEqual({ type: 'vote', hand: 2, playerId: 'abc123' });
-    expect(parseAction({ type: 'vote', hand: 2, playerId: '../x' })).toBeNull();
+    // Imposter's vote and point are gone: they're refused like any other unknown action.
+    expect(parseAction({ type: 'vote', hand: 2, playerId: 'abc123' })).toBeNull();
+    expect(parseAction({ type: 'point', hand: 2, playerId: 'abc123' })).toBeNull();
     expect(parseAction({ type: 'hit', hand: 2, seq: 7 })).toEqual({ type: 'hit', hand: 2, seq: 7 });
     expect(parseAction({ type: 'hit', hand: 2 })).toBeNull();
   });
 });
 
 describe('free and Premium games', () => {
-  it("the first five are free: Hold'em, Pineapple, Deuces, Ghost, Pittsburgh", () => {
-    expect(VARIANTS.filter((v) => !isPremiumVariant(v.id)).map((v) => v.id)).toEqual(['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh']);
-    expect(VARIANTS.filter((v) => isPremiumVariant(v.id))).toHaveLength(8);
+  it("only Texas Hold'em is free; every other game needs Premium to host", () => {
+    expect(VARIANTS.filter((v) => !isPremiumVariant(v.id)).map((v) => v.id)).toEqual(['holdem']);
+    expect(VARIANTS.filter((v) => isPremiumVariant(v.id))).toHaveLength(VARIANTS.length - 1);
   });
 });

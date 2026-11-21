@@ -7,44 +7,24 @@ import { useSyncExternalStore } from 'react';
 
 import {
   applyAction,
-  beforeDeal,
-  challengeRng,
-  checkDue,
   cleanName,
   createTable,
   cryptoRng,
-  dealDue,
-  decisionPoint,
-  heroOf,
   newId,
-  openChallenge,
-  publicStats,
-  recordNet,
   redactForDevice,
   redactLogs,
-  replayFrom,
-  rewindChoices,
-  rightCount,
-  runOver,
-  scoreRun,
-  STYLE_LABEL,
-  STYLE_TELL,
   toTableTime,
-  truthOf,
-  usuallyGoes,
   type Action,
-  type ChallengeId,
-  type ChallengeRun,
-  type Choice,
-  type DecisionPoint,
+  variantOf,
+  type Variant,
   type Game,
   type HandLog,
-  type HandRecord,
-  type Label,
-  type Move,
   type ServerMessage,
   type Settings,
-  type StyleId,
+  type LabBotSpec,
+  FREE_BOT_NAMES,
+  isFreeBot,
+  isVariant,
 } from '@/engine';
 
 import { createOnlineTable, PremiumRequiredError } from './api';
@@ -53,45 +33,19 @@ import { hasPremium } from './premium';
 import { restorePremium } from './purchase';
 import { Connection, type ConnStatus } from './connection';
 import { deviceId } from './device';
+import { UserError } from './user-error';
 import { isFast } from './prefs';
 import { wornLook } from './profile';
-import { noteRun } from './challenges';
 import { noteGame, noteHand } from './record';
-import { markPlayedToday } from './streak';
+import { recordFeel, rivalsFor } from './table-feel';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
+import { forgetLastHand, lastHand, noteReplay, playedPastPreflop } from './replays';
+import { markRulesSeen, rulesSeen } from './rules-seen';
 import { save, subscribe } from './storage';
 
 const KEY = 'flipup.session';
 
-type Session = { mode: 'local'; code: null; game: Game; challenge?: ChallengeRun & { result?: ChallengeResult } } | { mode: 'online'; code: string; game: Game | null; joining?: boolean };
-
-/** How a finished challenge run came out. */
-export interface ChallengeResult {
-  score: number;
-  best: number;
-  newBest: boolean;
-}
-
-/**
- * What the table screen may know about the challenge running at it. Never the answer key: Detective's styles stay
- * in the phone's own copy of the table until the run is over (`revealSuspects()`).
- */
-export interface ChallengeView {
-  id: ChallengeId;
-  /** Detective: your tags, by player id. */
-  tags: Record<string, Label>;
-  /** Detective: checks answered so far, and the one waiting to be answered before the next deal (-1: none). */
-  checks: number;
-  checkWaiting: number;
-  rewindsLeft: number;
-  /** Rewind: the hand just played can be rewound now. */
-  canRewind: boolean;
-  /** Rewind: a rewound hand has finished, and how it came out against the first time (chips), with both moves. */
-  whatIf: { hand: number; was: number; now: number; did: string; tried: string; bigBlind: number } | null;
-  result: ChallengeResult | null;
-  /** Rewind: the hands rewound so far, and what each came to the first time and after (chips). */
-  rewound: { hand: number; was: number; now: number }[];
-}
+type Session = { mode: 'local'; code: null; game: Game } | { mode: 'online'; code: string; game: Game | null; joining?: boolean};
 
 /** What the table screen reads: the view of the table, the link's state, and a notice to show (a refused move). */
 export interface TableState {
@@ -104,15 +58,23 @@ export interface TableState {
   notice: { id: number; text: string } | null;
   /** The hand log, once asked for (null while it's on its way from the server). */
   logs: HandLog[] | null;
-  /** A solo challenge at this table, if it is one. */
-  challenge: ChallengeView | null;
+  /** Replay after every hand (a bots-only house rule): the finished hand the table is waiting on, by its replay id.
+   * The next deal holds until `releaseRecap()`. */
+  recap: string | null;
+  /** While the Review countdown runs: when it ends (real time, ms). Null once it's stopped by opening Review. */
+  recapEnds: number | null;
+  /** The Review card is open. */
+  review: boolean;
+  /** A mini game you've never played: its rules card is up on the table and a bots-only table's first deal waits for
+   * Continue (`releaseRules()`). */
+  rules: Variant | null;
 }
 
 export let me = deviceId();
 
 let session: Session | null = null;
 let identityVersion = 0;
-let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, challenge: null };
+let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, recapEnds: null, review: false, rules: null };
 let conn: Connection | null = null;
 let sendingId: string | null = null;
 let profile = { name: '', emoji: '' };
@@ -126,19 +88,19 @@ function publish(patch: Partial<TableState>): void {
 }
 
 function set(next: Session | null): void {
+  // A notice belongs to the table it was about: a refusal from an earlier lobby ("You need at least two players") must not greet the next one.
+  const fresh = session?.game?.id !== next?.game?.id || session?.mode !== next?.mode;
   session = next;
-  if (next?.mode === 'local' && next.challenge) {
-    watchWhatIf();
-    finishRun(next);
-  }
   publish({
+    ...(fresh ? { notice: null } : {}),
     mode: next?.mode ?? null,
     code: next?.code ?? null,
     game: !next?.game ? null : maskBlocked(next.mode === 'local' ? redactForDevice(next.game, me) : next.game),
-    challenge: challengeView(),
   });
   schedule();
   noteDay(state.game);
+  if (next) noteReplay(state.game, me, next.mode === 'local' ? 'bots' : 'online', next.mode === 'local' ? next.game : null);
+  holdForRecap(next);
   syncLook();
   // Writing the whole table on every move is a lot of work mid-hand, so it waits a moment and goes in one go.
   clearTimeout(saveTimer);
@@ -151,7 +113,7 @@ subscribe(BLOCKED_KEY, () => {
 });
 
 /**
- * Keeps your bubble effect and card back on your seat (the web's `syncLook()`): a table you just opened or joined
+ * Keeps your card back on your seat (the web's `syncLook()`): a table you just opened or joined
  * doesn't know them yet, and picking a new one mid-game should show at once. Sent once per table and look.
  */
 let lookSent = '';
@@ -160,35 +122,29 @@ export function syncLook(): void {
   const mine = game?.players.find((p) => p.deviceId === me);
   if (!game || !mine || game.status === 'ended') return;
   const want = wornLook();
-  const key = `${game.id}:${want.bubble ?? ''}:${want.cardPack ?? ''}`;
-  if (((mine.bubble ?? '') === (want.bubble ?? '') && (mine.cardPack ?? '') === (want.cardPack ?? '')) || lookSent === key) return;
+  const key = `${game.id}:${want.cardPack ?? ''}:${want.gold ? 'g' : ''}`;
+  if (((mine.cardPack ?? '') === (want.cardPack ?? '') && !!mine.gold === !!want.gold) || lookSent === key) return;
   lookSent = key;
   // After this update has gone out, so a bots-only table doesn't change inside its own set().
-  setTimeout(() => dispatch({ type: 'setLook', name: mine.name, emoji: mine.emoji, ...want }), 0);
+  // (Only if it's still the same table by then: a table opened in the meantime has its own name and look.)
+  setTimeout(() => session?.game?.id === game.id && dispatch({ type: 'setLook', name: mine.name, emoji: mine.emoji, ...want }), 0);
 }
 
-/** A finished hand you were dealt into counts today toward the daily streak (once per hand, as on the web). */
+/** A finished hand you were dealt into counts once toward your poker record; a table that ends is noted once. */
 let lastCounted = '';
 function noteDay(game: Game | null): void {
   const hand = game?.hand;
   const mine = game?.players.find((p) => p.deviceId === me);
   if (!game || !mine) return;
   const key = `${game.id}/${hand?.number}`;
-  // A challenge's chips are pretend: its hands count for the streak, never for your poker record.
-  const challenge = !!game.challenge;
   if (hand?.result && key !== lastCounted && hand.seats.some((s) => s.playerId === mine.id && s.cards.length > 0)) {
     lastCounted = key;
-    markPlayedToday();
-    if (!challenge) noteHand(game, mine.id);
+    noteHand(game, mine.id);
   }
   // Home's record of your games: where you finished, once the table is over.
-  if (game.status === 'ended' && !challenge) noteGame(game, mine.id);
-}
-
-// The How to Play shooter (scripts/shootHowTo.mjs) reads the bots table it photographs through this. It only exists in
-// a web build exported with EXPO_PUBLIC_RECORDER=1; every other build compiles it away.
-if (process.env.EXPO_PUBLIC_RECORDER === '1' && typeof window !== 'undefined') {
-  (window as unknown as { __flipupTable: () => Game | null }).__flipupTable = () => session?.game ?? null;
+  if (game.status === 'ended') noteGame(game, mine.id);
+  // How the table felt (hands, rebuys, coming back) and the bots you've now met, on this phone only.
+  recordFeel(game, mine.id);
 }
 
 /** The table as it is right now, outside a component (the setup page waits on its new lobby with it). */
@@ -204,26 +160,180 @@ export function useTable(): TableState {
   );
 }
 
+/** The next hand is due to be dealt (a little early, so the timer's rounding never misses it). */
+function dealDue(game: Game, now: number): boolean {
+  const hand = game.hand;
+  return game.status === 'playing' && (!hand || !!hand.result) && game.nextHandAt !== null && now >= game.nextHandAt - 20;
+}
+
 /** A bots-only table's clock: one timer for the next thing that's due. Online, the server keeps the clock. */
-function schedule(): void {
+function schedule(minDelay = 0): void {
   clearTimeout(timer);
   const wakeAt = session?.mode === 'local' ? session.game.wakeAt : null;
   if (wakeAt == null || session?.mode !== 'local') return;
-  // A challenge's sheets stop the clock while they're open (and a Detective check waits to be answered).
-  if (session.challenge && (paused || checkWaiting >= 0)) return;
   // A fast table's clock runs twice as fast: its waits are half as long in real time.
   const fast = !!session.game.fast;
   timer = setTimeout(
     () => {
       if (session?.mode !== 'local') return;
       const now = toTableTime(Date.now(), session.game.fast);
-      if (session.challenge && dealDue(session.game, now) && !readyToDeal()) return;
-      const r = applyAction(session.game, { type: 'tick' }, { deviceId: 'clock', now, rng: rngFor(session.game) });
+      // The rules card is up on a first mini game: nothing moves until Continue.
+      if (rulesHeld) return;
+      // Replay after every hand: the recap is up, so the deal waits for Next hand (bots may still talk).
+      if (recapHeld && dealDue(session.game, now)) return;
+      let r: ReturnType<typeof applyAction>;
+      try {
+        r = applyAction(session.game, { type: 'tick' }, { deviceId: 'clock', now, rng: cryptoRng });
+      } catch (e) {
+        clockFailed(e);
+        return;
+      }
+      clockFails = 0;
       if (r.ok && r.changed) set({ ...session, game: r.game });
-      else schedule();
+      // Nothing changed though it was due: wait a beat rather than spin on a 0ms timer.
+      else schedule(wakeAt <= now ? IDLE_RETRY_MS : 0);
     },
-    Math.max(0, (wakeAt - toTableTime(Date.now(), fast)) / (fast ? 2 : 1)),
+    Math.max(minDelay, (wakeAt - toTableTime(Date.now(), fast)) / (fast ? 2 : 1)),
   );
+}
+
+// ── Replay after every hand ─────────────────────────────────────────────────
+// A bots-only house rule (`settings.replayEachHand`): once a hand you played past preflop is over, the recap card
+// comes up and the deal waits for you. Held in memory only: a table reopened after the app was closed just deals.
+
+/** True while the recap is up and the next deal waits. */
+let recapHeld = false;
+/** Ends the countdown: the next hand deals when it fires unless Review was opened. */
+let recapTimer: ReturnType<typeof setTimeout> | undefined;
+/** Seconds the table waits after a hand you played, when Review after every hand is on. */
+export const RECAP_COUNTDOWN_MS = 10_000;
+/** The last hand a recap was shown for, so it comes up once per hand. */
+let recapDone = '';
+/** True while a saved table is being put back at launch: the hand it holds was played before the app closed, so no recap for it. */
+let restoring = false;
+
+function holdForRecap(next: Session | null): void {
+  const hand = lastHand();
+  const game = next?.mode === 'local' ? next.game : null;
+  const on = !!game?.settings.replayEachHand && game.status === 'playing' && !!game.hand?.result;
+  if (!on || !hand || hand.tableId !== game!.id || hand.number !== game!.hand!.number || recapDone === hand.id) {
+    // The rule switched off (or the table went) while the recap was up: let it deal.
+    if (recapHeld && !game?.settings.replayEachHand) releaseRecap();
+    return;
+  }
+  recapDone = hand.id;
+  if (restoring) return;
+  if (!playedPastPreflop(hand)) return;
+  recapHeld = true;
+  clearTimeout(recapTimer);
+  recapTimer = setTimeout(releaseRecap, RECAP_COUNTDOWN_MS);
+  publish({ recap: hand.id, recapEnds: Date.now() + RECAP_COUNTDOWN_MS, review: false });
+}
+
+/** Review: the countdown stops and the Review card opens. The deal waits until Next hand. */
+export function startReview(): void {
+  if (!recapHeld) return;
+  clearTimeout(recapTimer);
+  publish({ recapEnds: null, review: true });
+}
+
+/** Back to the table from the Review card: the countdown stays stopped, Next hand deals. */
+export function closeReview(): void {
+  if (state.review) publish({ review: false });
+}
+
+/** Next hand on the recap: it goes away and the table deals as soon as it's due (at once if it already was). */
+export function releaseRecap(): void {
+  if (!recapHeld && !state.recap) return;
+  recapHeld = false;
+  clearTimeout(recapTimer);
+  publish({ recap: null, recapEnds: null, review: false });
+  if (session?.mode !== 'local') return;
+  const hand = session.game.hand;
+  // You've seen it: deal now rather than wait out the rest of the pause.
+  if (hand?.result && session.game.status === 'playing') {
+    try {
+      const r = applyAction(session.game, { type: 'next', hand: hand.number }, { deviceId: me, now: toTableTime(Date.now(), session.game.fast), rng: cryptoRng });
+      if (r.ok && r.changed) {
+        set({ ...session, game: r.game });
+        return;
+      }
+    } catch (e) {
+      console.warn('[recap next]', e);
+    }
+  }
+  schedule();
+}
+
+// ── The first-time rules card ───────────────────────────────────────────────
+// The first time you play a mini game against bots, its rules card comes up on the table itself (the owner, 16 Nov
+// 2026: in the game screen, not before it opens). The table's first deal and the greeting wait for Continue, and the
+// clock shifts by however long the card was up, so "Dealing in 3…" still counts from the start.
+
+/** True while the rules card is up and a bots-only table's clock waits. */
+let rulesHeld = false;
+/** When the card came up, in table time. */
+let rulesAt = 0;
+
+function holdForRules(): void {
+  if (session?.mode !== 'local') return;
+  const v = variantOf(session.game);
+  if (rulesSeen(v)) return;
+  rulesHeld = true;
+  rulesAt = toTableTime(Date.now(), session.game.fast);
+  publish({ rules: v });
+}
+
+/** Continue on the rules card: it's marked seen and the table carries on from where it waited. */
+export function releaseRules(): void {
+  if (!rulesHeld && !state.rules) return;
+  const v = state.rules;
+  rulesHeld = false;
+  if (v) markRulesSeen(v);
+  publish({ rules: null });
+  if (session?.mode !== 'local') return;
+  const gap = Math.max(0, toTableTime(Date.now(), session.game.fast) - rulesAt);
+  const g = structuredClone(session.game);
+  if (g.nextHandAt != null) g.nextHandAt += gap;
+  if (g.wakeAt != null) g.wakeAt += gap;
+  if (g.pendingTalk) g.pendingTalk.at += gap;
+  set({ ...session, game: g });
+}
+
+function forgetRules(): void {
+  rulesHeld = false;
+  if (state.rules) publish({ rules: null });
+}
+
+function forgetRecap(): void {
+  recapHeld = false;
+  recapDone = '';
+  clearTimeout(recapTimer);
+  if (state.recap) publish({ recap: null, recapEnds: null, review: false });
+}
+
+/** How long the clock waits before looking again when a tick that was due changed nothing. */
+const IDLE_RETRY_MS = 250;
+/** A tick that throws is tried again this many times, a second apart, before the table is put away. */
+const CLOCK_RETRIES = 3;
+let clockFails = 0;
+
+/**
+ * A bots-only table's clock hit an error in the engine. An error thrown from a timer closes the app in a release
+ * build (and a saved table would do it again at every launch), so it's caught here: tried again a few times, then
+ * the table is put away with a note, and nothing else is lost.
+ */
+function clockFailed(e: unknown): void {
+  clockFails++;
+  console.warn('[table clock]', e);
+  if (clockFails <= CLOCK_RETRIES) {
+    clearTimeout(timer);
+    timer = setTimeout(schedule, 1000);
+    return;
+  }
+  clockFails = 0;
+  set(null);
+  notify('Something went wrong at that table, so it was closed. Sorry! Start a new one from Play.');
 }
 
 function notify(text: string): void {
@@ -233,6 +343,27 @@ function notify(text: string): void {
 /** Applies a move from this phone: right away on a bots-only table, through the server online. */
 export function dispatch(action: Action): string | null {
   if (!session) return 'No table.';
+  // Without Premium the host's bots come from the free ten, even when the button asks for a random one.
+  // Bot Lab is Premium: its bots sit down only for a host who has it.
+  if (action.type === 'addBot' && action.lab && !hasPremium()) {
+    notify('Bot Lab bots need FlipUp Premium.');
+    return 'premium';
+  }
+  if (action.type === 'addBot' && !action.lab && !hasPremium()) {
+    if (action.name !== undefined && !isFreeBot(action.name)) {
+      notify('That bot needs FlipUp Premium.');
+      return 'premium';
+    }
+    if (action.name === undefined) {
+      const seated = new Set((session.game?.players ?? []).map((p) => p.name));
+      const name = FREE_BOT_NAMES.find((n) => !seated.has(n));
+      if (!name) {
+        notify('Those are all the free bots. Premium has the rest.');
+        return 'premium';
+      }
+      action = { ...action, name };
+    }
+  }
   if (session.mode === 'online') {
     const id = newId(8);
     if (!conn?.send({ t: 'act', id, a: action })) {
@@ -241,6 +372,7 @@ export function dispatch(action: Action): string | null {
     }
     sendingId = id;
     publish({ sending: true });
+    previewMove(action);
     // If no answer comes back, don't leave the buttons waiting.
     setTimeout(() => {
       if (sendingId === id) {
@@ -250,20 +382,57 @@ export function dispatch(action: Action): string | null {
     }, 5000);
     return null;
   }
-  if (session.challenge) {
-    // A sheet is open: the table waits for it.
-    if (action.type === 'next' && (paused || checkWaiting >= 0)) return null;
-    // Next hand deals at once, so whatever happens between hands happens first.
-    if (action.type === 'next' && !readyToDeal()) return null;
-    if (action.type === 'act') notePoint(action.move, action.to);
+  // The table's own Next hand while the recap is up goes through the recap.
+  if (action.type === 'next' && recapHeld) {
+    releaseRecap();
+    return null;
   }
-  const r = applyAction(session.game, action, { deviceId: me, now: toTableTime(Date.now(), session.game.fast), rng: rngFor(session.game) });
+  let r: ReturnType<typeof applyAction>;
+  try {
+    r = applyAction(session.game, action, { deviceId: me, now: toTableTime(Date.now(), session.game.fast), rng: cryptoRng });
+  } catch (e) {
+    // A tap that hits an engine error is turned down, never thrown into the screen that sent it.
+    console.warn('[table move]', action.type, e);
+    notify("That didn't work. Try again.");
+    return 'error';
+  }
   if (!r.ok) {
     notify(r.error);
     return r.error;
   }
-  if (r.changed) set({ ...session, game: r.game });
+  if (r.changed) {
+    const first = action.type === 'start' && session.mode === 'local' && session.game.status === 'lobby';
+    set({ ...session, game: r.game });
+    if (first) holdForRules();
+  }
   return null;
+}
+
+/**
+ * Optimistic move: your fold, check, call or raise shows on the table the moment you tap, while the server's answer is
+ * on its way. The phone has no deck, so it only shows a move that stays inside the street (nothing is dealt, no hand
+ * ends); anything else waits for the server. The server's table replaces this one when it arrives, and a refusal puts
+ * the table back as it was.
+ */
+function previewMove(action: Action): void {
+  if (action.type !== 'act' || session?.mode !== 'online' || !session.game) return;
+  const before = session.game;
+  try {
+    const r = applyAction(structuredClone(before), action, {
+      deviceId: me,
+      now: toTableTime(Date.now(), false),
+      rng: () => {
+        throw new Error('no deck on a phone');
+      },
+    });
+    if (!r.ok || !r.changed) return;
+    const a = before.hand;
+    const b = r.game.hand;
+    if (!a || !b || a.number !== b.number || a.street !== b.street || a.board.length !== b.board.length || b.result) return;
+    publish({ game: maskBlocked(r.game) });
+  } catch {
+    // Not something the phone can work out alone: wait for the server.
+  }
 }
 
 function onServerMessage(msg: ServerMessage): void {
@@ -291,6 +460,8 @@ function onServerMessage(msg: ServerMessage): void {
     if (msg.id && msg.id === sendingId) {
       sendingId = null;
       publish({ sending: false });
+      // Take back the move that was shown ahead of the server.
+      if (session.game) publish({ game: maskBlocked(session.game) });
     }
     notify(msg.error);
   }
@@ -322,6 +493,11 @@ function connect(code: string): void {
   });
 }
 
+/** The Try again button: reconnects at once instead of waiting for the next automatic try. */
+export function retryConnection(): void {
+  conn?.retryNow();
+}
+
 function closeConnection(): void {
   conn?.close();
   conn = null;
@@ -339,10 +515,10 @@ export function requestLogs(): void {
 }
 
 /** Opens a bots-only table on this phone and seats you at it. */
-export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[]): void {
+export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[], labs: LabBotSpec[] = []): void {
   closeConnection();
   const fast = isFast();
-  const game = createTable({
+  let game = createTable({
     hostDeviceId: me,
     name: cleanName(name) || 'You',
     emoji,
@@ -353,6 +529,14 @@ export function openLocalTable(settings: Settings, bots: number, name: string, e
     now: toTableTime(Date.now(), fast),
   });
   if (fast) game.fast = true;
+  // Bots you made in Bot Lab sit down after the named ones, the same way an online host seats them.
+  for (const lab of labs) {
+    const r = applyAction(game, { type: 'addBot', lab }, { deviceId: me, now: game.createdAt, rng: cryptoRng });
+    if (r.ok) game = r.game;
+  }
+  // Bots you've played on this phone before know you: one greets you as a regular.
+  const rivals = rivalsFor(game.players.filter((p) => p.bot).map((p) => p.name));
+  if (Object.keys(rivals).length) game.rivals = rivals;
   set({ mode: 'local', code: null, game });
 }
 
@@ -373,10 +557,37 @@ export async function openOnlineTable(settings: Settings, bots: number, name: st
     if (!(await bindPurchase(null))) throw e;
     code = await createOnlineTable(body);
   }
-  if (version !== identityVersion) throw new Error('Your data was reset. Open a new table to continue.');
+  if (version !== identityVersion) throw new UserError('Your data was reset. Open a new table to continue.');
   set({ mode: 'online', code, game: null });
   connect(code);
   return code;
+}
+
+/**
+ * The lobby's Change: the host picks their own game code. A table's code is its name on the server, so this opens
+ * the same table again at the new code (the settings and the bots come along) and ends the old one; anyone who'd
+ * sat down there sees it close. Throws with the server's sentence when the code is taken or can't be used.
+ */
+export async function changeTableCode(code: string): Promise<string> {
+  const old = session?.mode === 'online' ? session.game : null;
+  if (!old || session?.mode !== 'online' || old.status !== 'lobby' || old.hostDeviceId !== me) throw new UserError('Only the host can change the code, before the deal.');
+  if (old.code === code) return code;
+  const host = old.players.find((p) => p.deviceId === me);
+  const fresh = await createOnlineTable({
+    deviceId: me,
+    name: cleanName(host?.name ?? profile.name) || 'Host',
+    emoji: host?.emoji ?? profile.emoji,
+    settings: old.settings,
+    bots: 0,
+    botNames: old.players.filter((p) => p.bot).map((p) => p.name),
+    code,
+  });
+  if (session?.mode !== 'online' || session.code !== old.code) return fresh;
+  conn?.send({ t: 'act', id: newId(8), a: { type: 'end' } });
+  // The old lobby stays on screen under the new code until the new table's first update replaces it.
+  set({ mode: 'online', code: fresh, game: { ...old, code: fresh } });
+  connect(fresh);
+  return fresh;
 }
 
 /** Sits down at an online table by its code (or goes back to the one this phone is at). */
@@ -392,6 +603,9 @@ export function joinOnlineTable(code: string, name: string, emoji: string): void
 
 /** Leaves the table. Online, you're taken off it first (a hand in play folds you on your turn). */
 export function leaveTable(): void {
+  forgetLastHand();
+  forgetRecap();
+  forgetRules();
   const mine = session?.mode === 'online' ? session.game?.players.find((p) => p.deviceId === me) : undefined;
   if (mine && session?.game?.status !== 'ended') conn?.send({ t: 'act', id: newId(8), a: { type: 'remove', playerId: mine.id } });
   const old = conn;
@@ -399,10 +613,6 @@ export function leaveTable(): void {
   old?.close();
   sendingId = null;
   publish({ conn: 'none', sending: false });
-  points = [];
-  pendingWhatIf = null;
-  paused = false;
-  checkWaiting = -1;
   set(null);
 }
 
@@ -420,12 +630,6 @@ export function abandonLobby(code: string): void {
 /** After deletion, all table consumers and API calls must share the new identity. */
 export function resetSessionIdentity(): void {
   identityVersion++;
-  points = [];
-  pendingWhatIf = null;
-  doneWhatIf = null;
-  whatIf = null;
-  paused = false;
-  checkWaiting = -1;
   closeConnection();
   clearTimeout(timer);
   clearTimeout(saveTimer);
@@ -435,7 +639,9 @@ export function resetSessionIdentity(): void {
   lastCounted = '';
   joinSent = false;
   me = deviceId();
-  publish({ mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, challenge: null });
+  forgetRecap();
+  forgetRules();
+  publish({ mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, recapEnds: null, review: false, rules: null });
 }
 
 // A table you were at comes back after the app is closed: a bots-only one as it was, an online one by reconnecting.
@@ -443,278 +649,27 @@ try {
   const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Session | null;
   const p = JSON.parse(localStorage.getItem('flipup.profile') ?? 'null') as { name?: string; emoji?: string } | null;
   profile = { name: p?.name ?? '', emoji: p?.emoji ?? '' };
-  if (saved?.mode === 'local' && saved.game) set(saved);
+  // A table of a game that has since left the app (Imposter, say) can't be played on: it's dropped.
+  const known = !saved?.game || ![saved.game.settings?.variant, saved.game.hand?.variant].some((v) => v && !isVariant(v));
+  if (!known) save(KEY, null);
+  else if (saved?.mode === 'local' && saved.game) {
+    restoring = true;
+    try {
+      set(saved);
+    } finally {
+      restoring = false;
+    }
+  }
+  else if (saved?.mode === 'online' && saved.code && saved.game?.status === 'lobby' && saved.game.hostDeviceId === me) {
+    // The host's lobby was only open behind the Play with friends page, and closing the app ended that page. Putting
+    // it back as a second, half-built lobby behind Rejoin was confusing; it's dropped (the server closes an unused
+    // table by itself).
+    save(KEY, null);
+  }
   else if (saved?.mode === 'online' && saved.code) {
     set({ mode: 'online', code: saved.code, game: saved.game });
     connect(saved.code);
   }
 } catch {
   // A broken saved table is dropped.
-}
-
-// ── Challenges ───────────────────────────────────────────────────────────────
-// A challenge is a bots-only table with a run beside it (src/game/challenges.ts). Its random numbers are seeded from
-// the table's own state, so a spot always plays the same way, which is what lets Rewind replay a hand. Between hands,
-// just before each deal, `readyToDeal()` does what the challenge needs (a Detective check, the end of the run, new
-// blinds and bots).
-
-/** Sheets that stop the clock: Rewind and its result. */
-let paused = false;
-/** Detective: the check waiting to be answered before the next deal, or -1. */
-let checkWaiting = -1;
-/** Rewind: your decisions in the hand that can be rewound, and which hand that is. Kept in memory only. */
-let points: DecisionPoint[] = [];
-type WhatIfLine = { hand: number; was: number; point: DecisionPoint; lines: { move: Move; to?: number }[] };
-let pendingWhatIf: WhatIfLine | null = null;
-/** The rewound hand that's finished, kept for its "how it usually goes". */
-let doneWhatIf: WhatIfLine | null = null;
-let whatIf: ChallengeView['whatIf'] = null;
-
-function rngFor(game: Game): () => number {
-  return session?.mode === 'local' && session.challenge ? challengeRng(game, session.challenge.seed) : cryptoRng;
-}
-
-const recordsOf = (game: Game): HandRecord[] => game.logs.flatMap((l) => (l.record && l.record.tableId === game.id ? [l.record] : []));
-
-function challengeView(): ChallengeView | null {
-  const run = session?.mode === 'local' ? session.challenge : undefined;
-  if (!run || session?.mode !== 'local') return null;
-  return {
-    id: run.id,
-    tags: run.tags ?? {},
-    checks: run.checks?.length ?? 0,
-    checkWaiting,
-    rewindsLeft: run.rewindsLeft ?? 0,
-    canRewind: canRewind(session.game, run),
-    whatIf,
-    result: run.result ?? null,
-    rewound: run.rewound ?? [],
-  };
-}
-
-const publishChallenge = () => publish({ challenge: challengeView() });
-
-/** Opens a challenge on this phone and deals it. */
-export function openChallengeTable(id: ChallengeId, name: string, emoji: string): void {
-  closeConnection();
-  points = [];
-  pendingWhatIf = null;
-  whatIf = null;
-  paused = false;
-  checkWaiting = -1;
-  const fast = isFast();
-  const now = toTableTime(Date.now(), fast || id === 'detective');
-  const seed = Math.floor(cryptoRng() * 2 ** 32);
-  const { game, run } = openChallenge(id, { deviceId: me, name: cleanName(name) || 'You', emoji, now, seed, fast });
-  const r = applyAction(game, { type: 'start' }, { deviceId: me, now, rng: challengeRng(game, seed) });
-  set({ mode: 'local', code: null, game: r.ok ? r.game : game, challenge: run });
-}
-
-/**
- * Just before a deal: a Detective check waits for its answers, a finished run ends, and otherwise the challenge sets up
- * the next hand (blinds, new bots, top-ups). Returns false if the deal mustn't happen now.
- */
-function readyToDeal(): boolean {
-  if (session?.mode !== 'local' || !session.challenge) return true;
-  const run = session.challenge;
-  const now = toTableTime(Date.now(), session.game.fast);
-  const due = checkDue(session.game, run);
-  if (due >= 0) {
-    checkWaiting = due;
-    clearTimeout(timer);
-    publishChallenge();
-    return false;
-  }
-  if (runOver(session.game, run)) {
-    const r = applyAction(session.game, { type: 'end' }, { deviceId: me, now, rng: rngFor(session.game) });
-    if (r.ok) set({ ...session, game: r.game });
-    return false;
-  }
-  session = { ...session, game: beforeDeal(session.game, run, rngFor(session.game)) };
-  return true;
-}
-
-/** Scores a run once its table is over, and keeps your best. */
-function finishRun(s: Session & { mode: 'local' }): void {
-  const run = s.challenge;
-  if (!run || run.result || s.game.status !== 'ended') return;
-  const score = scoreRun(s.game, run, recordsOf(s.game));
-  const { before, newBest } = noteRun(run.id, score, Date.now());
-  run.result = { score, best: Math.max(before?.best ?? 0, score), newBest };
-  run.score = score;
-  points = [];
-}
-
-// ── Style Detective ──
-
-/** Tags a bot with a label (or clears it). The tag shows on its seat. */
-export function tagBot(playerId: string, label: Label | null): void {
-  if (session?.mode !== 'local' || session.challenge?.id !== 'detective') return;
-  const tags = { ...(session.challenge.tags ?? {}) };
-  if (label) tags[playerId] = label;
-  else delete tags[playerId];
-  session.challenge.tags = tags;
-  save(KEY, session);
-  publishChallenge();
-}
-
-/** The bots to name at a check, in seat order. */
-export function suspects(): { id: string; name: string; emoji: string }[] {
-  if (session?.mode !== 'local') return [];
-  return session.game.players.filter((p) => p.bot).sort((a, b) => a.seat - b.seat).map((p) => ({ id: p.id, name: p.name, emoji: p.emoji }));
-}
-
-/** Answers the waiting check. Says only how many of the five are right. */
-export function answerCheck(answers: Record<string, Label>): number {
-  if (session?.mode !== 'local' || session.challenge?.id !== 'detective' || checkWaiting < 0) return 0;
-  const run = session.challenge;
-  run.checks = [...(run.checks ?? []), { ...answers }];
-  run.tags = { ...answers };
-  save(KEY, session);
-  publishChallenge();
-  return rightCount(answers, truthOf(session.game));
-}
-
-/** After the answer's been seen: the table carries on (or, after the last check, the run ends). */
-export function closeCheck(): void {
-  if (session?.mode !== 'local') return;
-  checkWaiting = -1;
-  publishChallenge();
-  if (readyToDeal()) {
-    const r = applyAction(session.game, { type: 'tick' }, { deviceId: 'clock', now: toTableTime(Date.now(), session.game.fast), rng: rngFor(session.game) });
-    set({ ...session, game: r.ok ? r.game : session.game });
-  }
-}
-
-export interface Suspect {
-  id: string;
-  name: string;
-  emoji: string;
-  label: Label;
-  style: StyleId;
-  tell: string;
-  /** "Played 54% of hands, raised 31%", from public moves. */
-  stats: { hands: number; played: number; raised: number };
-  /** What you said at each check. */
-  answers: (Label | undefined)[];
-}
-
-/** The answer key, only once the run is over. */
-export function revealSuspects(): Suspect[] | null {
-  if (session?.mode !== 'local' || session.challenge?.id !== 'detective' || session.game.status !== 'ended') return null;
-  const run = session.challenge;
-  const recs = recordsOf(session.game);
-  return session.game.players
-    .filter((p) => p.bot && p.style)
-    .sort((a, b) => a.seat - b.seat)
-    .map((p) => {
-      const style = p.style as StyleId;
-      return { id: p.id, name: p.name, emoji: p.emoji, style, label: STYLE_LABEL[style], tell: STYLE_TELL[style], stats: publicStats(recs, p.id), answers: (run.checks ?? []).map((c) => c[p.id]) };
-    });
-}
-
-// ── Rewind ──
-
-/** Before a move of yours at a Rewind table: keep the table as it was, so the hand can be played again from here. */
-function notePoint(move: Move, to?: number): void {
-  if (session?.mode !== 'local' || session.challenge?.id !== 'rewind') return;
-  const game = session.game;
-  const hero = heroOf(game);
-  if (!hero || game.hand?.toAct !== hero.id) return;
-  if (points[0] && points[0].hand !== game.hand.number) points = [];
-  const p = decisionPoint(game, hero.id, { move, to });
-  if (p) points.push(p);
-}
-
-/** The hand you can rewind, if there is one: the one just finished, until the next hand's first move. */
-function rewindHand(game: Game): number | null {
-  const hand = game.hand;
-  const n = points[0]?.hand;
-  if (!hand || n === undefined || game.status !== 'playing') return null;
-  if (hand.number === n && hand.result) return n;
-  if (hand.number === n + 1 && !hand.result && (hand.actions?.length ?? 0) === 0) return n;
-  return null;
-}
-
-function canRewind(game: Game, run: ChallengeRun): boolean {
-  return run.id === 'rewind' && (run.rewindsLeft ?? 0) > 0 && rewindHand(game) !== null && !pendingWhatIf;
-}
-
-/** Stops or restarts the table's clock while a Rewind sheet is open. */
-export function pauseTable(on: boolean): void {
-  if (paused === on) return;
-  paused = on;
-  if (on) clearTimeout(timer);
-  else schedule();
-}
-
-export interface RewindSpot {
-  index: number;
-  street: string;
-  /** What you did, as the table said it. */
-  did: string;
-  pot: number;
-  toCall: number;
-  choices: Choice[];
-}
-
-const said = (m: { move: Move; to?: number }): string =>
-  m.move === 'fold' ? 'Fold' : m.move === 'check' ? 'Check' : m.move === 'call' ? 'Call' : m.move === 'allin' ? 'All in' : `${m.move === 'bet' ? 'Bet' : 'Raise to'} ${(m.to ?? 0).toLocaleString('en-US')}`;
-
-/** Your decisions in the hand that can be rewound, each with what else you could have done. */
-export function rewindSpots(): RewindSpot[] {
-  if (session?.mode !== 'local' || !session.challenge || !canRewind(session.game, session.challenge)) return [];
-  const hero = heroOf(session.game);
-  if (!hero) return [];
-  return points.map((p, index) => ({ index, street: p.street, did: said(p.did), pot: p.pot, toCall: p.toCall, choices: rewindChoices(p, hero.id) }));
-}
-
-/** Plays the hand again from one of your decisions with a different move. The new line counts. */
-export function rewindTo(index: number, choice: Choice): boolean {
-  if (session?.mode !== 'local' || !session.challenge || !canRewind(session.game, session.challenge)) return false;
-  const run = session.challenge;
-  const point = points[index];
-  const hero = heroOf(session.game);
-  if (!point || !hero) return false;
-  const rec = recordsOf(session.game).find((r) => r.number === point.hand);
-  const was = rec ? recordNet(rec, hero.id) : 0;
-  const now = toTableTime(Date.now(), session.game.fast);
-  const replay = replayFrom(point, session.game.logs, choice, { deviceId: me, now, rng: challengeRng(point.snapshot, run.seed) });
-  if (typeof replay === 'string') {
-    notify(replay);
-    return false;
-  }
-  run.rewindsLeft = (run.rewindsLeft ?? 1) - 1;
-  pendingWhatIf = { hand: point.hand, was, point, lines: [point.did, { move: choice.move, to: choice.to }] };
-  points = points.slice(0, index);
-  set({ ...session, game: replay });
-  return true;
-}
-
-/** Once the rewound hand is over: how it came out this time against the first. */
-function watchWhatIf(): void {
-  if (!pendingWhatIf || session?.mode !== 'local') return;
-  const hand = session.game.hand;
-  if (!hand || hand.number !== pendingWhatIf.hand || !hand.result) return;
-  const hero = heroOf(session.game);
-  const rec = recordsOf(session.game).find((r) => r.number === pendingWhatIf!.hand);
-  const nowNet = rec && hero ? recordNet(rec, hero.id) : 0;
-  whatIf = { hand: pendingWhatIf.hand, was: pendingWhatIf.was, now: nowNet, did: said(pendingWhatIf.lines[0]), tried: said(pendingWhatIf.lines[1]), bigBlind: session.game.settings.bigBlind };
-  session.challenge?.rewound?.push({ hand: pendingWhatIf.hand, was: pendingWhatIf.was, now: nowNet });
-  doneWhatIf = pendingWhatIf;
-  pendingWhatIf = null;
-}
-
-/** "How it usually goes" for the hand you just rewound: both lines, from the same spot, a chunk at a time. */
-export function usuallyForWhatIf(runs: number) {
-  const w = doneWhatIf;
-  const hero = session?.mode === 'local' ? heroOf(session.game) : undefined;
-  if (!w || !hero) return null;
-  return usuallyGoes(w.point, hero.id, me, w.lines, runs, w.point.snapshot.version + 1);
-}
-
-/** The result sheet has been seen. */
-export function closeWhatIf(): void {
-  whatIf = null;
-  publishChallenge();
 }

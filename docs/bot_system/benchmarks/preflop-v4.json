@@ -1,0 +1,416 @@
+{
+  "protocol": "preflop-coverage-1",
+  "candidate": "baseline-4",
+  "incumbent": "baseline-3",
+  "seed": 91031,
+  "pairsPerOpponent": 500,
+  "hands": 9200,
+  "matchups": [
+    {
+      "opponent": "competent",
+      "hands": 2000,
+      "candidate": {
+        "dealPairs": 500,
+        "bbPer100": 116.95000000000006,
+        "approximate95CI": [
+          -19.177474568570503,
+          253.0774745685706
+        ],
+        "coverageByLeg": [
+          {
+            "decisions": 342,
+            "chartDecisions": 325,
+            "spots": {
+              "2p100:rfi.0": 250,
+              "2p100:limp": 66,
+              "2p100:open.0.1": 9
+            },
+            "fallbackReasons": {
+              "off-tree-raise-size": 8,
+              "unsupported-action-history": 9
+            }
+          },
+          {
+            "decisions": 348,
+            "chartDecisions": 327,
+            "spots": {
+              "2p100:rfi.0": 250,
+              "2p100:limp": 69,
+              "2p100:open.0.1": 8
+            },
+            "fallbackReasons": {
+              "off-tree-raise-size": 7,
+              "unsupported-action-history": 14
+            }
+          }
+        ],
+        "p95MsByLeg": [
+          29.382830999999896,
+          54.08542200000011
+        ]
+      },
+      "incumbent": {
+        "dealPairs": 500,
+        "bbPer100": 26.47000000000001,
+        "approximate95CI": [
+          -140.061467675348,
+          193.001467675348
+        ],
+        "coverageByLeg": [
+          {
+            "decisions": 354,
+            "chartDecisions": 250,
+            "spots": {
+              "legacy-rfi": 250
+            },
+            "fallbackReasons": {
+              "legacy-fallback": 104
+            }
+          },
+          {
+            "decisions": 357,
+            "chartDecisions": 250,
+            "spots": {
+              "legacy-rfi": 250
+            },
+            "fallbackReasons": {
+              "legacy-fallback": 107
+            }
+          }
+        ],
+        "p95MsByLeg": [
+          40.56191300000137,
+          30.783901999999216
+        ]
+      },
+      "delta": {
+        "dealPairs": 500,
+        "bbPer100": 90.47999999999999,
+        "approximate95CI": [
+          -7.311427676482921,
+          188.27142767648292
+        ]
+      }
+    },
+    {
+      "opponent": "loose-aggressive",
+      "hands": 2000,
+      "candidate": {
+        "dealPairs": 500,
+        "bbPer100": 249.02999999999955,
+        "approximate95CI": [
+          35.353048756064766,
+          462.7069512439343
+        ],
+        "coverageByLeg": [
+          {
+            "decisions": 636,
+            "chartDecisions": 419,
+            "spots": {
+              "2p100:rfi.0": 250,
+              "2p100:open.0.1": 140,
+              "2p100:limp": 29
+            },
+            "fallbackReasons": {
+              "unsupported-action-history": 129,
+              "off-tree-raise-size": 88
+            }
+          },
+          {
+            "decisions": 661,
+            "chartDecisions": 423,
+            "spots": {
+              "2p100:open.0.1": 141,
+              "2p100:rfi.0": 250,
+              "2p100:limp": 32
+            },
+            "fallbackReasons": {
+              "off-tree-raise-size": 99,
+              "unsupported-action-history": 139
+            }
+          }
+        ],
+        "p95MsByLeg": [
+          28.46303099999932,
+          24.214045000000624
+        ]
+      },
+      "incumbent": {
+        "dealPairs": 500,
+        "bbPer100": 209.94999999999996,
+        "approximate95CI": [
+          -32.96611660300127,
+          452.86611660300116
+        ],
+        "coverageByLeg": [
+          {
+            "decisions": 740,
+            "chartDecisions": 250,
+            "spots": {
+              "legacy-rfi": 250
+            },
+            "fallbackReasons": {
+              "legacy-fallback": 490
+            }
+          },
+          {
+            "decisions": 726,
+            "chartDecisions": 250,
+            "spots": {
+              "legacy-rfi": 250
+            },
+            "fallbackReasons": {
+              "legacy-fallback": 476
+            }
+          }
+        ],
+        "p95MsByLeg": [
+          23.90657399999327,
+          23.786031999989063
+        ]
+      },
+      "delta": {
+        "dealPairs": 500,
+        "bbPer100": 39.08000000000001,
+        "approximate95CI": [
+          -149.52904109980722,
+          227.68904109980724
+        ]
+      }
+    },
+    {
+      "opponent": "calling-station",
+      "hands": 2000,
+      "candidate": {
+        "dealPairs": 500,
+        "bbPer100": 1669.3300000000002,
+        "approximate95CI": [
+          1467.7744804482522,
+          1870.885519551748
+        ],
+        "coverageByLeg": [
+          {
+            "decisions": 500,
+            "chartDecisions": 500,
+            "spots": {
+              "2p100:rfi.0": 250,
+              "2p100:limp": 250
+            },
+            "fallbackReasons": {}
+          },
+          {
+            "decisions": 500,
+            "chartDecisions": 500,
+            "spots": {
+              "2p100:limp": 250,
+              "2p100:rfi.0": 250
+            },
+            "fallbackReasons": {}
+          }
+        ],
+        "p95MsByLeg": [
+          27.708820999992895,
+          27.74878500000341
+        ]
+      },
+      "incumbent": {
+        "dealPairs": 500,
+        "bbPer100": 1482.1499999999999,
+        "approximate95CI": [
+          1253.4766675834608,
+          1710.823332416539
+        ],
+        "coverageByLeg": [
+          {
+            "decisions": 500,
+            "chartDecisions": 250,
+            "spots": {
+              "legacy-rfi": 250
+            },
+            "fallbackReasons": {
+              "legacy-fallback": 250
+            }
+          },
+          {
+            "decisions": 500,
+            "chartDecisions": 250,
+            "spots": {
+              "legacy-rfi": 250
+            },
+            "fallbackReasons": {
+              "legacy-fallback": 250
+            }
+          }
+        ],
+        "p95MsByLeg": [
+          28.057740999996895,
+          27.92952500001411
+        ]
+      },
+      "delta": {
+        "dealPairs": 500,
+        "bbPer100": 187.17999999999998,
+        "approximate95CI": [
+          42.6704995997417,
+          331.6895004002582
+        ]
+      }
+    },
+    {
+      "opponent": "tight-passive",
+      "hands": 2000,
+      "candidate": {
+        "dealPairs": 500,
+        "bbPer100": 50.74999999999999,
+        "approximate95CI": [
+          14.914599113818433,
+          86.58540088618156
+        ],
+        "coverageByLeg": [
+          {
+            "decisions": 262,
+            "chartDecisions": 262,
+            "spots": {
+              "2p100:rfi.0": 250,
+              "2p100:limp": 12
+            },
+            "fallbackReasons": {}
+          },
+          {
+            "decisions": 259,
+            "chartDecisions": 259,
+            "spots": {
+              "2p100:rfi.0": 250,
+              "2p100:limp": 9
+            },
+            "fallbackReasons": {}
+          }
+        ],
+        "p95MsByLeg": [
+          23.61786800000118,
+          23.008448000007775
+        ]
+      },
+      "incumbent": {
+        "dealPairs": 500,
+        "bbPer100": 10.35,
+        "approximate95CI": [
+          -49.38218192971159,
+          70.0821819297116
+        ],
+        "coverageByLeg": [
+          {
+            "decisions": 262,
+            "chartDecisions": 250,
+            "spots": {
+              "legacy-rfi": 250
+            },
+            "fallbackReasons": {
+              "legacy-fallback": 12
+            }
+          },
+          {
+            "decisions": 259,
+            "chartDecisions": 250,
+            "spots": {
+              "legacy-rfi": 250
+            },
+            "fallbackReasons": {
+              "legacy-fallback": 9
+            }
+          }
+        ],
+        "p95MsByLeg": [
+          24.12355199997546,
+          23.534849000017857
+        ]
+      },
+      "delta": {
+        "dealPairs": 500,
+        "bbPer100": 40.400000000000006,
+        "approximate95CI": [
+          -7.9284753260714425,
+          88.72847532607145
+        ]
+      }
+    }
+  ],
+  "headToHead": {
+    "opponent": "incumbent",
+    "seed": 91032,
+    "hands": 1000,
+    "dealPairs": 500,
+    "bbPer100": 125.92999999999992,
+    "approximate95CI": [
+      -150.93896564612655,
+      402.79896564612636
+    ],
+    "p95DecisionMsByLeg": [
+      21.081900999997742,
+      22.644426999991992
+    ],
+    "actionCountsByLeg": [
+      {
+        "fold": 156,
+        "check": 60,
+        "call": 282,
+        "bet": 135,
+        "raise": 674,
+        "allin": 0
+      },
+      {
+        "fold": 166,
+        "check": 79,
+        "call": 305,
+        "bet": 150,
+        "raise": 660,
+        "allin": 0
+      }
+    ],
+    "warnings": [
+      "Normal interval uses deal-pair means; adaptive memory creates serial dependence, so the interval is descriptive, not a formal strength claim. Scripted opponents are uncalibrated."
+    ]
+  },
+  "multiway": [
+    {
+      "hands": 100,
+      "preflopCoverage": {
+        "decisions": 168,
+        "chartDecisions": 31,
+        "spots": {
+          "6p100:rfi.1": 15,
+          "6p100:rfi.0": 16
+        },
+        "fallbackReasons": {
+          "unsupported-action-history": 137
+        }
+      },
+      "p95Ms": 40.444478999997955,
+      "completed": true
+    },
+    {
+      "hands": 100,
+      "preflopCoverage": {
+        "decisions": 160,
+        "chartDecisions": 41,
+        "spots": {
+          "6p100:rfi.2": 10,
+          "6p100:rfi.0": 16,
+          "6p100:rfi.1": 14,
+          "6p100:rfi.3": 1
+        },
+        "fallbackReasons": {
+          "unsupported-action-history": 108,
+          "off-tree-raise-size": 11
+        }
+      },
+      "p95Ms": 63.68123000001651,
+      "completed": true
+    }
+  ],
+  "limitations": [
+    "Fresh equal 100bb stacks each hand; ordinary sessions quickly reach unequal stacks and fall back. Only exact shipped 20/40/100bb banks are used.",
+    "Seat-swapped common deals and matching personalities/learning; intervals are descriptive because beliefs adapt across hands. No statistical strength or exploitability certification.",
+    "Coverage expansion, not newly trained chart frequencies. Raise/jam proportions were lost during chart export; the combined mass uses one rounded default solver size."
+  ]
+}

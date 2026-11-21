@@ -2,29 +2,33 @@
 // tables) run exactly this code, so they always agree.
 
 import { decide, handBucket, updateReads, type BotMove } from './botPlay';
+import { balancedBotPool, isBotDifficulty } from '../bot_engine/everyday';
+import { everydayThought, noteEverydayHand, updateEverydayMemory, usesEverydayBots } from '../bot_engine/everydayLive';
 import { boardInfo, tierWith, toInt } from './botEval';
+import { hashString, seededRng } from './cards';
 import { cardsShown, mindOf, updateMinds } from './botMind';
 import { STRENGTH } from './botRange';
-import { BOTS, playerStyle, styleOf } from './botStyles';
-import { botSays, dealTalk, streetTalk, type TalkEvent } from './botTalk';
+import { BOTS, styleOf } from './botStyles';
+import { botSays, dealTalk, streetTalk, variantTalk, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
 import { isBubbleId } from './bubbles';
 import { isPackId } from './cardPacks';
-import { dressAsLegend, legendById, LEGENDS } from './legends';
 import {
   botsOnly,
   canDeal,
   cardsText,
-  castVote,
   dealNextStreet,
   showdown,
   endsAtOnce,
+  answerRunTwice,
+  anteChips,
   discardCard,
-  endVote,
+  resumeBetting,
   endDiscards,
   foldOutOfTurn,
   canHit,
   hitCard,
+  playPower,
   lastStanding,
   makeMove,
   MAX_SEATS,
@@ -41,10 +45,10 @@ import {
 import { cryptoRng, newId } from './ids';
 import { botView, isVariant } from './variants';
 import { botHits, variantDecide } from './botVariants';
+import { botPowerPlan, playablePower } from './powers';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
-import { BOSS_DULL, campaignDull, campaignStyles, venueById } from './campaign';
 import type { Action, ActionContext, ActionResult, Game, Player, Settings } from './types';
 
 export const LIMITS = {
@@ -58,8 +62,9 @@ export const DEFAULT_SETTINGS: Settings = {
   startingStack: 1000,
   smallBlind: 5,
   bigBlind: 10,
-  rebuys: true,
-  turnSeconds: 45,
+  // A friends game should end: no rebuys unless the host turns them on. 30 seconds a turn keeps a table moving.
+  rebuys: false,
+  turnSeconds: 30,
 };
 
 /** Blind levels the host can pick from. */
@@ -77,7 +82,21 @@ export const BLIND_LEVELS: [number, number][] = [
 export const BLIND_CAP_CHOICES = [0, 100, 200, 500, 1000, 2000];
 
 export const STACK_CHOICES = [500, 1000, 2000, 5000, 10000];
-export const TIMER_CHOICES = [0, 20, 45, 90];
+/** House rules: the ante as a share of the big blind, in percent (0 = none). */
+export const ANTE_CHOICES = [0, 10, 25, 50, 100];
+/** House rules: a bomb pot every this many hands (0 = never). */
+export const BOMB_CHOICES = [0, 5, 10, 20];
+
+/** The house rules that are on, in a few words each: "Antes 5", "Straddle", "Bomb pot every 10", "Run it twice". */
+export function houseRuleWords(s: Settings): string[] {
+  const out: string[] = [];
+  if (s.ante) out.push(`Antes ${anteChips(s).toLocaleString('en-US')}`);
+  if (s.straddle) out.push('Straddle');
+  if (s.bombEvery) out.push(`Bomb pot every ${s.bombEvery}`);
+  if (s.runTwice && (s.variant ?? 'holdem') === 'holdem') out.push('Run it twice');
+  return out;
+}
+export const TIMER_CHOICES = [0, 20, 30, 45, 90];
 
 export function cleanName(name: string): string {
   return name.replace(/\s+/g, ' ').trim().slice(0, LIMITS.maxNameLength);
@@ -95,8 +114,14 @@ export function validSettings(s: Settings): boolean {
     s.bigBlind >= s.smallBlind &&
     // No upper bound against the stack: rising blinds can climb past it, and the host must still be able to change other settings then.
     typeof s.rebuys === 'boolean' &&
+    (s.botDifficulty === undefined || isBotDifficulty(s.botDifficulty)) &&
     (s.showToBusted === undefined || typeof s.showToBusted === 'boolean') &&
+    (s.replayEachHand === undefined || typeof s.replayEachHand === 'boolean') &&
     (s.variant === undefined || isVariant(s.variant)) &&
+    (s.ante === undefined || ANTE_CHOICES.includes(s.ante)) &&
+    (s.straddle === undefined || typeof s.straddle === 'boolean') &&
+    (s.bombEvery === undefined || BOMB_CHOICES.includes(s.bombEvery)) &&
+    (s.runTwice === undefined || typeof s.runTwice === 'boolean') &&
     (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
     (s.blindHands === undefined || (int(s.blindHands) && s.blindHands >= 0 && s.blindHands <= 100)) &&
     (s.blindMinutes === undefined || (int(s.blindMinutes) && s.blindMinutes >= 0 && s.blindMinutes <= 120)) &&
@@ -144,20 +169,22 @@ export function createTable(opts: {
   emoji: string;
   settings: Settings;
   bots: number;
-  /** Bots to seat by name first (Home's quick games); the rest are random. A legend's short name seats that AI Legend. */
+  /** Bots to seat by name first (Home's quick games); the rest are random. */
   botNames?: string[];
   /** The host's chat bubble colour (a Premium extra). */
   bubble?: string;
   /** The host's card back (a Premium extra). */
   cardPack?: string;
-  /** The random bots come only from these styles (campaign venues). */
+  /** The random bots come only from these styles. */
   botStyles?: string[];
-  /** A campaign table: set before the bots sit down, so they come from its room (and its boss takes a seat). */
-  campaign?: Game['campaign'];
   code: string | null;
   now: number;
+  /** The bots you've met before, from the phone's memory (a phone's own table only). */
+  rivals?: Game['rivals'];
   /** Picks the random bots. Tests pass a seeded one so every run seats the same bots. */
   rng?: () => number;
+  /** The host shows their name in gold (Premium). */
+  gold?: boolean;
 }): Game {
   const game: Game = {
     id: newId(16),
@@ -175,35 +202,21 @@ export function createTable(opts: {
     wakeAt: null,
     logs: [],
     reactions: {},
-    ...(opts.campaign ? { campaign: structuredClone(opts.campaign) } : {}),
+    ...(opts.rivals && !opts.code ? { rivals: structuredClone(opts.rivals) } : {}),
   };
   game.players.push({
     ...newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }),
     ...(isBubbleId(opts.bubble) ? { bubble: opts.bubble } : {}),
     ...(isPackId(opts.cardPack) ? { cardPack: opts.cardPack } : {}),
+    ...(opts.gold ? { gold: true } : {}),
   });
+  const botSeatLimit = MAX_SEATS;
   for (const name of opts.botNames ?? []) {
-    const legend = LEGENDS.find((l) => l.short === name);
-    if (legend) {
-      if (game.players.length < MAX_SEATS && !game.players.some((p) => p.legend === legend.id)) addLegend(game, legend.id);
-      continue;
-    }
+    if (game.players.length >= botSeatLimit) break;
     seatBotNamed(game, name);
   }
-  while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game, opts.botStyles, opts.rng);
-  if (game.campaign) seatBoss(game);
+  while (game.players.length - 1 < opts.bots && game.players.length < botSeatLimit) addBot(game, opts.botStyles, opts.rng);
   return game;
-}
-
-/** Seats an AI Legend: a bot dressed as them, with their style and voice. */
-function addLegend(game: Game, id: string): void {
-  const legend = legendById(id);
-  if (!legend) return;
-  const bot: Player = newPlayer(game, { name: legend.short, emoji: legend.emoji, deviceId: null, bot: true });
-  dressAsLegend(bot, legend);
-  // Names are unique at a table: a person who got there first keeps theirs.
-  bot.name = uniqueName(game, bot.name);
-  game.players.push(bot);
 }
 
 /** Seats the bot from `BOTS` with this name, if it's free and there's a seat. Returns whether it sat down. */
@@ -222,41 +235,25 @@ function addBot(game: Game, styles?: string[], rng: () => number = cryptoRng): v
   const names = new Set(game.players.map((p) => p.name.toLowerCase()));
   const emojis = new Set(game.players.map((p) => p.emoji));
   // A random bot whose name and picture nobody at the table has yet (so it isn't always the same order).
-  // A campaign venue only seats the styles that play there.
-  const room = styles ?? (game.campaign ? campaignStyles(game.campaign) : undefined);
+  const room = styles;
   const fits = room?.length ? BOTS.filter((b) => room.includes(b.style)) : BOTS;
   const free = (fits.length ? fits : BOTS).filter((b) => !names.has(b.name.toLowerCase()) && !emojis.has(b.emoji));
   const pool = free.length ? free : BOTS.filter((b) => !names.has(b.name.toLowerCase()));
-  const pick = pool.length
-    ? pool[Math.floor(rng() * pool.length)]
+  const balanced =
+    usesEverydayBots(game) && !room?.length
+      ? balancedBotPool(
+          pool,
+          game.players.filter((p) => p.bot),
+        )
+      : pool;
+  const pick = balanced.length
+    ? balanced[Math.floor(rng() * balanced.length)]
     : { name: `Bot ${game.players.length}`, emoji: '🦾', style: 'pro', profile: undefined };
   game.players.push({
     ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
     style: pick.style,
     botProfile: pick.profile?.id,
-    // A campaign room's bots play below their full strength.
-    ...(game.campaign && campaignDull(game.campaign) > 0 ? { dull: campaignDull(game.campaign) } : {}),
   });
-}
-
-/** A campaign tournament's boss takes a bot seat (or a free one): the venue's legend, sharper than the room. Once per table. */
-export function seatBoss(game: Game): void {
-  const tag = game.campaign;
-  const venue = tag?.kind === 'sng' ? venueById(tag.venue) : undefined;
-  const legend = venue?.boss ? legendById(venue.boss) : undefined;
-  if (!tag || !venue || !legend || tag.boss) return;
-  let seat = game.players.find((p) => p.bot && !p.legend && p.id !== tag.bounty?.playerId);
-  if (!seat) {
-    if (game.players.length >= MAX_SEATS) return;
-    addBot(game);
-    seat = game.players[game.players.length - 1];
-  }
-  dressAsLegend(seat, legend);
-  seat.name = uniqueName(game, seat.name, seat.id);
-  const dull = venue.dull * BOSS_DULL;
-  if (dull > 0) seat.dull = dull;
-  else delete seat.dull;
-  tag.boss = { playerId: seat.id, legend: legend.id };
 }
 
 /** Bot lines that are about a person at the table, so they use their name ({you}). */
@@ -267,7 +264,16 @@ const GOOD_NEWS = new Set<TalkEvent>(['bigWin', 'win', 'bluffWon', 'tiltJab', 'r
 const BAD_NEWS = new Set<TalkEvent>(['sweatLose', 'badBeat', 'lostToYou', 'bluffCaught', 'gotBluffed', 'tilted', 'showFold']);
 
 /** Pending lines that are said whatever the dice and the cooldown say. */
-const SURE_THINGS = new Set<string>(['hello', 'welcome', 'rematchWon', 'rematchLost', 'greetBack', 'thanks', 'ribbed', 'goodLuck', 'gg']);
+const SURE_THINGS = new Set<string>([
+  'hello',
+  'welcome',
+  'rememberHello',
+  'greetBack',
+  'thanks',
+  'ribbed',
+  'goodLuck',
+  'gg',
+]);
 
 /** What a bot says back to each quick message a person can send (none for the others). */
 const ANSWER: Record<string, NonNullable<Game['pendingTalk']>['event']> = {
@@ -280,6 +286,12 @@ const ANSWER: Record<string, NonNullable<Game['pendingTalk']>['event']> = {
   grimace: 'ribbed',
   gl: 'goodLuck',
   gg: 'gg',
+  nicefold: 'thanks',
+  bigbet: 'ribbed',
+  runit: 'goodLuck',
+  cool: 'ribbed',
+  cry: 'commiserate',
+  pray: 'thanks',
 };
 
 /** How often a bot answers a quick message, and how soon (ms) after it. */
@@ -291,40 +303,23 @@ const ANSWER_AFTER = { min: 900, spread: 700 };
  * losers of an all-in sweat it out loud, big pots get a word, and sometimes another bot answers.
  * When someone speaks, the next deal waits a little longer so it can be read.
  */
-/** Campaign cash tables: bots that went bust get up and new ones sit down with 100 big blinds, so the game never runs dry. */
-function refillCash(game: Game): void {
-  if (game.campaign?.kind !== 'cash') return;
-  const styles = campaignStyles(game.campaign);
-  game.players = game.players.filter((p) => !(p.bot && p.stack === 0));
-  while (game.players.length < Math.min(game.campaign.seats, MAX_SEATS)) {
-    addBot(game, styles);
-    const bot = game.players[game.players.length - 1];
-    bot.stack = bot.bought = game.settings.bigBlind * 100;
-  }
-}
-
-/** Deals the next hand, filling a campaign cash table's empty seats first. */
+/** Deals the next hand. */
 function deal(game: Game, ctx: ActionContext): void {
-  refillCash(game);
   startHand(game, ctx);
 }
 
 /** Party rounds: remember who ran out of chips on this hand. The one with fewer chips at the start goes out first. */
 function noteBusts(game: Game, hand: NonNullable<Game['hand']>): void {
-  if (!game.party && game.campaign?.kind !== 'sng') return;
+  if (!game.party) return;
   const out = game.busted ?? [];
   const fresh = game.players.filter((p) => p.stack === 0 && !out.includes(p.id) && hand.seats.some((s) => s.playerId === p.id));
   fresh.sort((a, b) => (hand.startStacks?.[a.id] ?? 0) - (hand.startStacks?.[b.id] ?? 0));
   game.busted = [...out, ...fresh.map((p) => p.id)];
-  // Who put them out: whoever won a pot they were in.
-  if (game.campaign && fresh.length && hand.result) {
-    const knocked = { ...(game.knocked ?? {}) };
-    for (const p of fresh) knocked[p.id] = [...new Set(hand.result.pots.filter((pot) => pot.eligible.includes(p.id)).flatMap((pot) => pot.winners))].filter((id) => id !== p.id);
-    game.knocked = knocked;
-  }
 }
 
 function afterHand(game: Game, ctx: ActionContext): void {
+  updateEverydayMemory(game);
+  noteEverydayHand(game);
   const hand = game.hand!;
   const result = hand.result!;
   game.readHand = hand.number;
@@ -370,17 +365,10 @@ function afterHand(game: Game, ctx: ActionContext): void {
     (s) => !isBot(s.playerId) && !winners.includes(s.playerId) && s.total > bb && (streaks[s.playerId] ?? 0) >= 2,
   );
 
-  // A bot that won with its signature hand (Brunson's ten-deuce) says so.
-  for (const id of winners) {
-    const p = playerById(game, id);
-    const seat = hand.seats.find((s) => s.playerId === id);
-    if (!p?.bot || !seat || seat.cards.length !== 2 || !playerStyle(p).craft.pets.includes(handClassOf(seat.cards))) continue;
-    if (say(id, 'signature', true)) spoke.push(id);
-  }
-
   // Now and then a bot turns its cards over when it didn't have to: a bluff that worked, a monster
   // nobody paid off, or a good hand it laid down. Its own cards only, so nothing hidden leaks.
-  for (const id of showOffs(game, hand, ctx)) if (say(id, id in result.won ? (strongEnough(hand, id) ? 'showStrong' : 'showBluff') : 'showFold')) spoke.push(id);
+  for (const id of showOffs(game, hand, ctx))
+    if (say(id, id in result.won ? (strongEnough(hand, id) ? 'showStrong' : 'showBluff') : 'showFold')) spoke.push(id);
 
   if (hand.ranOut) {
     for (const id of winners) if (isBot(id) && say(id, 'sweatWin', true)) spoke.push(id);
@@ -390,11 +378,22 @@ function afterHand(game: Game, ctx: ActionContext): void {
       if (!isBot(id)) continue;
       const b = bucketOf(id);
       // Twice or more in a row and they pile on; a big showdown win is a smaller chance.
-      const rubbedIn = tilted ? ctx.rng() < 0.7 : result.showdown && pot >= bb * 15 && showdownLosers.some((l) => !isBot(l)) && ctx.rng() < 0.25;
+      const rubbedIn = tilted
+        ? ctx.rng() < 0.7
+        : result.showdown && pot >= bb * 15 && showdownLosers.some((l) => !isBot(l)) && ctx.rng() < 0.25;
       if (spoke.includes(id)) continue;
       // Beating the player it has a grudge with is sweeter.
       const revenge = result.showdown && pot >= bb * 15 && showdownLosers.some((l) => (mindOf(game, id).grudges?.[l] ?? 0) > 0.3);
-      const event: TalkEvent = !result.showdown && (b === 'air' || b === 'weak') ? 'bluffWon' : revenge ? 'revenge' : rubbedIn ? 'tiltJab' : pot >= bb * 15 ? 'bigWin' : 'win';
+      const event: TalkEvent =
+        !result.showdown && (b === 'air' || b === 'weak')
+          ? 'bluffWon'
+          : revenge
+            ? 'revenge'
+            : rubbedIn
+              ? 'tiltJab'
+              : pot >= bb * 15
+                ? 'bigWin'
+                : 'win';
       if (say(id, event)) spoke.push(id);
     }
     for (const id of showdownLosers) {
@@ -415,9 +414,15 @@ function afterHand(game: Game, ctx: ActionContext): void {
   for (const id of game.sweating ?? []) {
     if (spoke.includes(id) || !isBot(id)) continue;
     const event: TalkEvent = winners.includes(id)
-      ? hand.ranOut ? 'sweatWin' : pot >= bb * 15 ? 'bigWin' : 'win'
+      ? hand.ranOut
+        ? 'sweatWin'
+        : pot >= bb * 15
+          ? 'bigWin'
+          : 'win'
       : showdownLosers.includes(id)
-        ? hand.ranOut || !personWon ? 'sweatLose' : 'lostToYou'
+        ? hand.ranOut || !personWon
+          ? 'sweatLose'
+          : 'lostToYou'
         : 'watched';
     if (say(id, event, true)) spoke.push(id);
   }
@@ -429,11 +434,19 @@ function afterHand(game: Game, ctx: ActionContext): void {
     const who = others[Math.floor(ctx.rng() * others.length)];
     // It answers once the first line has landed, like someone who was listening: cheering a win, feeling a loss.
     const event = firstEvent && GOOD_NEWS.has(firstEvent) ? 'cheer' : firstEvent && BAD_NEWS.has(firstEvent) ? 'commiserate' : 'reply';
-    game.pendingTalk = { at: ctx.now + Math.max(TIMING.replyMin, firstMs - TIMING.replyEarly), playerId: who.id, event, forId: spoke[spoke.length - 1], reactionN: game.reactions?.[spoke[spoke.length - 1]]?.n, handNumber: hand.number };
+    game.pendingTalk = {
+      at: ctx.now + Math.max(TIMING.replyMin, firstMs - TIMING.replyEarly),
+      playerId: who.id,
+      event,
+      forId: spoke[spoke.length - 1],
+      reactionN: game.reactions?.[spoke[spoke.length - 1]]?.n,
+      handNumber: hand.number,
+    };
     talkMs += TIMING.replyMin + 900;
   }
   // A little longer before the next deal, so the table talk can be read (but not when the game is about to end).
-  if (game.nextHandAt !== null && !(endsAtOnce(game) && lastStanding(game))) game.nextHandAt += botsOnly(game) ? 1000 : Math.min(TIMING.talkPauseMax, Math.max(TIMING.talkPause, talkMs - TIMING.talkSlack));
+  if (game.nextHandAt !== null && !(endsAtOnce(game) && lastStanding(game)) && !usesEverydayBots(game))
+    game.nextHandAt += botsOnly(game) ? 1000 : Math.min(TIMING.talkPauseMax, Math.max(TIMING.talkPause, talkMs - TIMING.talkSlack));
   schedule(game);
 }
 
@@ -455,7 +468,8 @@ function openAgain(game: Game, ctx: ActionContext): void {
     p.offline = undefined;
   }
   // Bots that busted out of the last game left the table: bring the count back.
-  while (first && game.players.filter((p) => p.bot).length < first.bots && game.players.length < MAX_SEATS) addBot(game, undefined, ctx.rng);
+  while (first && game.players.filter((p) => p.bot).length < first.bots && game.players.length < MAX_SEATS)
+    addBot(game, undefined, ctx.rng);
   game.id = newId(16);
   game.createdAt = ctx.now;
   game.status = 'lobby';
@@ -467,7 +481,22 @@ function openAgain(game: Game, ctx: ActionContext): void {
   game.reactions = {};
   game.hands = 0;
   game.blindsRaiseAt = null;
-  for (const k of ['again', 'first', 'pendingTalk', 'botPlan', 'sweating', 'talkAt', 'talkDone', 'reads', 'streaks', 'minds', 'readHand', 'dialogue'] as const) delete game[k];
+  for (const k of [
+    'again',
+    'first',
+    'pendingTalk',
+    'botPlan',
+    'sweating',
+    'talkAt',
+    'talkDone',
+    'reads',
+    'streaks',
+    'minds',
+    'readHand',
+    'dialogue',
+    'botTable',
+  ] as const)
+    delete game[k];
   schedule(game);
 }
 
@@ -560,7 +589,8 @@ function wakeIfWaiting(game: Game, ctx: ActionContext): void {
 
 /** An online table that's between hands with nobody to play against gets a minute before it closes. */
 function watchEmpty(game: Game, ctx: ActionContext): void {
-  const waiting = !!game.code && game.status === 'playing' && (!game.hand || !!game.hand.result) && game.nextHandAt === null && !canDeal(game);
+  const waiting =
+    !!game.code && game.status === 'playing' && (!game.hand || !!game.hand.result) && game.nextHandAt === null && !canDeal(game);
   const next = waiting ? (game.emptyAt ?? ctx.now + TIMING.emptyClose) : null;
   if ((game.emptyAt ?? null) === next) return;
   game.emptyAt = next;
@@ -577,6 +607,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     if (!changed) return { ok: true, game: input, changed: false };
     if (game.hand?.result && game.readHand !== game.hand.number) afterHand(game, ctx);
     watchEmpty(game, ctx);
+    // Bot talk about the game gets its own dice, derived from the table, so a comment can never move a deal or any other roll.
+    variantTalk(game, seededRng(hashString(`${game.id}:${game.version}:game-talk`)), ctx.now);
     game.version += 1;
     return { ok: true, game, changed: true };
   };
@@ -597,7 +629,6 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         return done();
       }
       if (game.players.length >= MAX_SEATS) return fail('The table is full.');
-      if (game.campaign?.kind === 'sng' && game.status !== 'lobby') return fail('This tournament has already started.');
       game.players.push({ ...newPlayer(game, { name: uniqueName(game, name), emoji, deviceId: ctx.deviceId, bot: false }) });
       wakeIfWaiting(game, ctx);
       return done();
@@ -616,21 +647,26 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       else delete me.bubble;
       if (isPackId(action.cardPack)) me.cardPack = action.cardPack;
       else delete me.cardPack;
+      if (action.gold === true) me.gold = true;
+      else delete me.gold;
       return done();
     }
 
     case 'addBot': {
       if (!host) return fail('Only the host can add bots.');
       if (game.players.length >= MAX_SEATS) return fail('The table is full.');
-      if (action.legend !== undefined) {
-        if (!legendById(action.legend)) return fail('No such legend.');
-        if (game.players.some((p) => p.legend === action.legend)) return fail('That legend is already at the table.');
-        addLegend(game, action.legend);
+      if (action.lab) {
+        // A bot the host made in Bot Lab: its own name (made unique at the table), face and dials.
+        game.players.push({
+          ...newPlayer(game, { name: uniqueName(game, action.lab.name), emoji: action.lab.emoji, deviceId: null, bot: true }),
+          style: 'pro',
+          lab: { ...action.lab.dials },
+          labBot: true,
+        });
       } else if (action.name !== undefined) {
-        // A bot picked by name on the setup page. A campaign table seats only its room's bots.
-        if (game.campaign) return fail('A campaign table picks its own bots.');
+        // A bot picked by name on the setup page.
         if (!seatBotNamed(game, action.name)) return fail('That bot is already at the table.');
-      } else addBot(game, game.campaign ? campaignStyles(game.campaign) : undefined, ctx.rng);
+      } else addBot(game, undefined, ctx.rng);
       wakeIfWaiting(game, ctx);
       return done();
     }
@@ -639,7 +675,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       const target = playerById(game, action.playerId);
       if (!target) return done(false);
       if (!host && target.deviceId !== ctx.deviceId) return fail('Only the host can remove players.');
-      if ((game.party || game.campaign?.kind === 'sng') && game.status === 'playing' && !game.busted?.includes(target.id)) game.busted = [...(game.busted ?? []), target.id];
+      if (game.party && game.status === 'playing' && !game.busted?.includes(target.id))
+        game.busted = [...(game.busted ?? []), target.id];
       const seat = seatFor(game.hand, target.id);
       const inHand = game.status === 'playing' && game.hand && !game.hand.result && seat && !seat.folded;
       if (inHand) {
@@ -659,12 +696,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
 
     case 'settings': {
       if (!host) return fail('Only the host can change the table.');
-      // A campaign table's stakes are set when it opens. (On this phone, a rebuy sets the stack it buys.)
-      if (game.campaign && game.code) return fail('A campaign table’s stakes are fixed.');
       const next = { ...game.settings, ...action.settings };
       if (!validSettings(next)) return fail("Those settings don't work together.");
       const stackChanged = next.startingStack !== game.settings.startingStack;
       const minutesChanged = (next.blindMinutes ?? 0) !== (game.settings.blindMinutes ?? 0);
+      // Freeze this hand's identity before a setting can change the next hand's choice.
+      if (game.hand && !game.hand.result) {
+              updateEverydayMemory(game);
+      }
       game.settings = next;
       // Changing how often the blinds rise restarts their clock; turning it off stops it.
       if (!next.blindMinutes) game.blindsRaiseAt = null;
@@ -683,12 +722,6 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     case 'start': {
       if (!host) return fail('Only the host can start.');
       if (game.status !== 'lobby') return done(false);
-      // A campaign tournament fills its empty seats with the venue's bots, and is as big as it is when it deals.
-      if (game.campaign?.kind === 'sng') {
-        while (game.players.length < Math.min(game.campaign.seats, MAX_SEATS)) addBot(game, campaignStyles(game.campaign), ctx.rng);
-        seatBoss(game);
-        game.campaign.seats = game.players.length;
-      }
       if (game.players.length < 2) return fail('You need at least two players. Add a bot or invite a friend.');
       game.status = 'playing';
       game.first = { settings: { ...game.settings }, bots: game.players.filter((p) => p.bot).length };
@@ -704,7 +737,16 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (bots.length) {
         const headsUp = game.players.length === 2 && people.length === 1;
         const who = headsUp ? bots[0] : bots[Math.floor(ctx.rng() * bots.length)];
-        game.pendingTalk = { at: ctx.now + greetWait(game), playerId: who.id, event: !headsUp ? 'welcome' : game.rematch === 'won' ? 'rematchWon' : game.rematch === 'lost' ? 'rematchLost' : 'hello', forId: headsUp ? people[0].id : undefined };
+        // A bot you've played at another table on this phone greets you as someone it knows.
+        const known = people.length === 1 ? knownRival(game, bots) : null;
+        game.pendingTalk = known && ctx.rng() < 0.8
+            ? { at: ctx.now + greetWait(game), playerId: known.id, event: 'rememberHello', forId: people[0].id }
+          : {
+              at: ctx.now + greetWait(game),
+              playerId: who.id,
+              event: !headsUp ? 'welcome' : 'hello',
+              forId: headsUp ? people[0].id : undefined,
+            };
       }
       schedule(game);
       return done();
@@ -715,6 +757,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
       if (hand.seq !== action.seq) return fail('That turn has passed.');
+      if (hand.moment?.gate && ctx.now < hand.moment.until) return fail('One moment…');
       const potBefore = potTotal(hand);
       const error = makeMove(game, action.move, action.to, ctx);
       if (error) return fail(error);
@@ -734,10 +777,30 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
       if (hand.seq !== action.seq) return fail('That turn has passed.');
+      if (hand.moment?.gate && ctx.now < hand.moment.until) return fail('One moment…');
       const error = hitCard(game, ctx);
       if (error) return fail(error);
       me.timeouts = 0;
       return done();
+    }
+
+    case 'power': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
+      if (hand.seq !== action.seq) return fail('That turn has passed.');
+      const error = playPower(game, { target: action.target, card: action.card, rank: action.rank }, ctx);
+      if (error) return fail(error);
+      me.timeouts = 0;
+      return done();
+    }
+
+    case 'runTwice': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = answerRunTwice(game, me.id, action.yes, ctx);
+      return error ? fail(error) : done();
     }
 
     case 'discard': {
@@ -745,14 +808,6 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
       const error = discardCard(game, me.id, action.card, ctx);
-      return error ? fail(error) : done();
-    }
-
-    case 'vote': {
-      const hand = game.hand;
-      if (!me) return fail("You're not at this table.");
-      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
-      const error = castVote(game, me.id, action.playerId, ctx);
       return error ? fail(error) : done();
     }
 
@@ -771,7 +826,6 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     case 'revealBots': {
       const hand = game.hand;
       if (!host) return fail('Only the host can reveal the bots.');
-      if (game.campaign) return fail("Campaign games don't show the bots' cards.");
       if (!hand || !hand.result || hand.number !== action.hand) return fail('Wait until the hand is over.');
       const entry = game.logs?.find((l) => l.number === hand.number);
       let changed = false;
@@ -798,7 +852,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (answer && !game.card && !game.pendingTalk && game.status === 'playing') {
         const ready = game.players.filter((p) => p.bot && !p.sittingOut && ctx.now - (game.talkAt?.[p.id] ?? -Infinity) > 3000);
         if (ready.length && ctx.rng() < ANSWER_CHANCE) {
-          game.pendingTalk = { at: ctx.now + ANSWER_AFTER.min + Math.floor(ctx.rng() * ANSWER_AFTER.spread), playerId: ready[Math.floor(ctx.rng() * ready.length)].id, event: answer, forId: me.id, reactionN: game.reactions[me.id].n, handNumber: game.hand?.number };
+          game.pendingTalk = {
+            at: ctx.now + ANSWER_AFTER.min + Math.floor(ctx.rng() * ANSWER_AFTER.spread),
+            playerId: ready[Math.floor(ctx.rng() * ready.length)].id,
+            event: answer,
+            forId: me.id,
+            reactionN: game.reactions[me.id].n,
+            handNumber: game.hand?.number,
+          };
           schedule(game);
         }
       }
@@ -875,6 +936,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.status !== 'ended') return done(false);
       if (host && !action.off) {
         openAgain(game, ctx);
+        // The host picked another mode for the next game (the finish page's mode chip).
+        if (action.variant && action.variant !== game.settings.variant && validSettings({ ...game.settings, variant: action.variant })) game.settings = { ...game.settings, variant: action.variant };
         return done();
       }
       const wants = new Set(game.again ?? []);
@@ -942,7 +1005,12 @@ function tick(game: Game, ctx: ActionContext): boolean {
     if (event && SURE_THINGS.has(event)) {
       const ms = botSays(game, playerId, event, ctx.rng, ctx.now, true, forId);
       // The opening hello: nobody is dealt in until it has been said and read.
-      if (ms && !game.hand && game.nextHandAt !== null && (event === 'hello' || event === 'welcome' || event === 'rematchWon' || event === 'rematchLost'))
+      if (
+        ms &&
+        !game.hand &&
+        game.nextHandAt !== null &&
+        (event === 'hello' || event === 'welcome' || event === 'rememberHello')
+      )
         game.nextHandAt = Math.max(game.nextHandAt, ctx.now + ms + TIMING.afterHello);
       // Someone else at the table says hi back, before the cards come.
       if (event === 'welcome' && ms) {
@@ -955,7 +1023,8 @@ function tick(game: Game, ctx: ActionContext): boolean {
       return true;
     }
     // A jab at a slow player only lands if they're still on the clock.
-    if (event !== 'tank' || (hand && !hand.result && hand.toAct === forId && hand.seq === seq)) botSays(game, playerId, event ?? 'reply', ctx.rng, ctx.now, false, event === 'tank' ? forId : undefined);
+    if (event !== 'tank' || (hand && !hand.result && hand.toAct === forId && hand.seq === seq))
+      botSays(game, playerId, event ?? 'reply', ctx.rng, ctx.now, false, event === 'tank' ? forId : undefined);
     schedule(game);
     return true;
   }
@@ -967,9 +1036,9 @@ function tick(game: Game, ctx: ActionContext): boolean {
       endDiscards(game, ctx);
       return true;
     }
-    // Imposter: time's up for voting.
-    if (hand.voting) {
-      endVote(game, ctx);
+    // A moment (a die, a red river...) is over: betting starts.
+    if (hand.bettingAt != null) {
+      resumeBetting(game, ctx);
       return true;
     }
     // A bot's word before the showdown is over: the hands turn over.
@@ -1018,19 +1087,26 @@ function tick(game: Game, ctx: ActionContext): boolean {
         schedule(game);
         return true;
       }
-      // Blackjack Hold'em: on the flop it takes its hits first. Going over 21 folds it, and that's its turn.
+      // Power Cards: it may play its power first. The table stops for a moment to show it, then the bot moves.
+      if (playablePower(game, hand, seat)) {
+        const plan = botPowerPlan(game, hand, seat, ctx.rng);
+        if (plan && !playPower(game, plan, ctx)) return true;
+      }
+      // Hit Me: on the flop it takes its hits first. Going over 21 folds it, and that's its turn.
       while (canHit(game, hand, seat) && botHits(game, seat, ctx.rng)) {
         hitCard(game, ctx);
         if (seat.folded) return true;
       }
       const before = options(game, hand, seat);
       // A big bet: after the flop, half the pot or more; before it, a raise of three big blinds or more.
-      const bigBet =
-        hand.street === 'preflop' ? hand.currentBet >= game.settings.bigBlind * 3 : before.toCall > potTotal(hand) * 0.45;
+      const bigBet = hand.street === 'preflop' ? hand.currentBet >= game.settings.bigBlind * 3 : before.toCall > potTotal(hand) * 0.45;
       // In a Hold'em variant it sees the hand as plain Hold'em (see botView).
       const view = botView(game, hand, seat);
       // At a variant table it plays the variant's own way (botVariants.ts); plain Hold'em gets the full bot brain.
-      const thought = variantDecide(game, hand, seat, ctx.rng) ?? decide(view.game, view.hand, view.seat, ctx.rng);
+      const thought =
+        everydayThought(game, seat.playerId) ??
+        variantDecide(game.botTable ? { ...game, botTable: undefined } : game, hand, seat, ctx.rng) ??
+        decide(view.game, view.hand, view.seat, ctx.rng);
       const choice = thought.move;
       const fast = botsOnly(game);
       // It has already taken a moment to look; the rest of its thinking time depends on how hard
@@ -1052,14 +1128,14 @@ function tick(game: Game, ctx: ActionContext): boolean {
         schedule(game);
         return true;
       }
-      if (makeMove(game, choice.move, choice.to, ctx))
-        makeMove(game, passiveMove(hand, seat), undefined, ctx);
+      if (makeMove(game, choice.move, choice.to, ctx)) makeMove(game, passiveMove(hand, seat), undefined, ctx);
       return true;
     }
-    // Out of time: check if that's free, otherwise fold. Two in a row and they sit out.
+    // Out of time: check if that's free, otherwise fold. Two in a row and they sit out (three when their phone has
+    // lost the table, so a look at Messages doesn't cost the seat).
     makeMove(game, passiveMove(hand, seat), undefined, ctx);
     player.timeouts += 1;
-    if (player.timeouts >= 2) player.sittingOut = true;
+    if (player.timeouts >= (player.offline ? TIMING.sitOutAfterOffline : TIMING.sitOutAfter)) player.sittingOut = true;
     return true;
   }
 
@@ -1072,4 +1148,16 @@ function tick(game: Game, ctx: ActionContext): boolean {
   if (sleepy && chatty.length) botSays(game, chatty[Math.floor(ctx.rng() * chatty.length)].id, 'idle', ctx.rng, ctx.now);
   else dealTalk(game, ctx.rng, ctx.now);
   return true;
+}
+
+/** The seated bot you know best from other tables on this phone, if any (most tables shared, then most showdowns). */
+export function knownRival(game: Game, bots: Player[]): Player | null {
+  const r = game.rivals;
+  if (!r) return null;
+  const known = bots.filter((b) => r[b.name.toLowerCase()]);
+  const weight = (b: Player) => {
+    const x = r[b.name.toLowerCase()]!;
+    return x.tables * 10 + x.beat + x.lost;
+  };
+  return known.reduce<Player | null>((a, b) => (!a || weight(b) > weight(a) ? b : a), null);
 }

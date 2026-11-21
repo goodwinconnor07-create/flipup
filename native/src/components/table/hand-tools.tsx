@@ -1,0 +1,195 @@
+import { router } from 'expo-router';
+import { addScreenshotListener } from 'expo-screen-capture';
+import { useEffect, useState } from 'react';
+import { ActionSheetIOS, Alert, Platform, Pressable, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { haptic } from '@/components/haptics';
+import { SwapIcon } from '@/components/swap';
+import { Icon, type IconName } from '@/components/icon';
+import { read, save as store } from '@/state/storage';
+import { KEEP, lastHand, saveLastHand, unsaveLastHand, useLastHand, useLastSaved } from '@/state/replays';
+import { brand, radius, spacing, useColors } from '@/theme';
+
+/** Puts the last finished hand in Saved hands (free). When the list is full it says so and offers to open it. */
+export function trySaveHand(): void {
+  const result = saveLastHand();
+  if (result === 'saved') haptic.success();
+  else if (result === 'full') {
+    haptic.failure();
+    Alert.alert('Saved hands are full', `You can keep ${KEEP} saved hands. Delete one to make room for this one.`, [
+      { text: 'Open Saved hands', onPress: () => router.push('/replays') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+}
+
+/** Takes the last hand back out of Saved hands. */
+export function unsaveHand(): void {
+  unsaveLastHand();
+  haptic.tap();
+}
+
+export function useSaveHand(): { can: boolean; saved: boolean; save: () => void; unsave: () => void } {
+  const hand = useLastHand();
+  const saved = useLastSaved();
+  return { can: !!hand, saved, save: () => hand && trySaveHand(), unsave: unsaveHand };
+}
+
+function BarButton({ icon, label, onPress, onLongPress, tint, dim }: { icon: IconName; label: string; onPress: () => void; onLongPress?: () => void; tint?: string; dim?: boolean }) {
+  const colors = useColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: dim }}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      hitSlop={4}
+      style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.cell, alignItems: 'center', justifyContent: 'center', opacity: dim ? 0.4 : pressed ? 0.6 : 1 })}
+    >
+      <SwapIcon name={icon} size={17} color={tint ?? colors.label} />
+    </Pressable>
+  );
+}
+
+/** The bookmark in the table bar: saves the hand that just finished. Gold once it's in; tap it again to take it back
+ * out, hold it to open Saved hands. */
+export function SaveHandButton() {
+  const { can, saved, save, unsave } = useSaveHand();
+  const hand = useLastHand();
+  return (
+    <BarButton
+      icon={saved ? 'bookmark.fill' : 'bookmark'}
+      label={!can ? 'Save hand: no finished hand yet' : saved ? `Hand ${hand?.number} is saved. Tap to remove it.` : `Save hand ${hand?.number}`}
+      tint={saved ? brand.gold : undefined}
+      dim={!can}
+      onLongPress={() => {
+        haptic.select();
+        router.push('/replays');
+      }}
+      onPress={() => {
+        if (!can) return;
+        if (saved) unsave();
+        else save();
+      }}
+    />
+  );
+}
+
+/** The table's small share button: share the last hand as a card, save it, or share your stats. */
+export function ShareButton() {
+  const { can, saved, save, unsave } = useSaveHand();
+  return <BarButton icon="square.and.arrow.up" label="Share" onPress={() => shareMenu(can, saved, save, unsave)} />;
+}
+
+function shareMenu(can: boolean, saved: boolean, save: () => void, unsave: () => void): void {
+  haptic.tap();
+  const items: { title: string; go: () => void }[] = [
+    ...(can ? [{ title: 'Share the last hand', go: () => router.push({ pathname: '/share-card', params: { kind: 'hand', id: 'last' } }) }] : []),
+    ...(can ? [saved ? { title: 'Remove the last hand from Saved hands', go: unsave } : { title: 'Save the last hand', go: save }] : []),
+    { title: 'Saved hands', go: () => router.push('/replays') },
+    { title: 'Share my stats', go: () => router.push({ pathname: '/share-card', params: { kind: 'stats' } }) },
+    { title: 'All share cards', go: () => router.push('/share') },
+  ];
+  if (Platform.OS === 'ios') {
+    ActionSheetIOS.showActionSheetWithOptions({ options: [...items.map((i) => i.title), 'Cancel'], cancelButtonIndex: items.length }, (i) => items[i]?.go());
+  } else Alert.alert('Share', undefined, [...items.map((i) => ({ text: i.title, onPress: i.go })), { text: 'Cancel', style: 'cancel' as const }]);
+}
+
+const TIP_KEY = 'flipup.handtoolstip';
+
+/**
+ * The first time a hand finishes at a table, a small card under the bar says what the two unlabelled icons do:
+ * the bookmark saves the hand, the arrow shares it. Shown once on this phone, gone after 7 seconds or a tap.
+ */
+export function HandToolsTip() {
+  const hand = useLastHand();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  // Read once when the table opens: a tip already seen on this phone never comes back.
+  const [due] = useState(() => !read<boolean>(TIP_KEY, false));
+  const [closed, setClosed] = useState(false);
+  const shown = due && !!hand && !closed;
+  useEffect(() => {
+    if (!shown) return;
+    store(TIP_KEY, true);
+    const t = setTimeout(() => setClosed(true), 7000);
+    return () => clearTimeout(t);
+  }, [shown]);
+  const setShown = (on: boolean) => setClosed(!on);
+  if (!shown) return null;
+  return (
+    <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(160)} style={{ position: 'absolute', top: insets.top + 60, left: spacing.md, right: spacing.md, zIndex: 19 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Tip: the bookmark saves the hand you just played, the share button turns it into a card. Tap to close."
+        onPress={() => setShown(false)}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }}
+      >
+        <Icon name="bookmark" size={18} color={brand.gold} />
+        <Text style={{ flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '600', color: colors.label }}>
+          Tap the bookmark to save that hand, or share it as a card.
+        </Text>
+        <Icon name="square.and.arrow.up" size={18} color={colors.label} />
+      </Pressable>
+      {/* The X sits on the card's top corner, half over the edge. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Close tip"
+        hitSlop={10}
+        onPress={() => setShown(false)}
+        style={{ position: 'absolute', top: -10, right: -6, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cell, borderWidth: 1, borderColor: colors.separator, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+      >
+        <Icon name="xmark" size={11} color={colors.label} />
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+/**
+ * Took a screenshot at the table? A small card drops in offering a proper share card of the hand (or your stats
+ * before a hand has finished). Gone after 6 seconds, or when tapped away.
+ */
+export function ScreenshotPrompt() {
+  const [shown, setShown] = useState(0);
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    let sub: { remove(): void } | undefined;
+    try {
+      sub = addScreenshotListener(() => setShown(Date.now()));
+    } catch {
+      // No screenshot events here (the simulator before iOS 17, say): nothing to offer.
+    }
+    return () => sub?.remove();
+  }, []);
+  useEffect(() => {
+    if (!shown) return;
+    const t = setTimeout(() => setShown(0), 6000);
+    return () => clearTimeout(t);
+  }, [shown]);
+  if (!shown) return null;
+  const hand = lastHand();
+  const go = () => {
+    setShown(0);
+    haptic.tap();
+    router.push({ pathname: '/share-card', params: hand ? { kind: 'hand', id: 'last' } : { kind: 'stats' } });
+  };
+  return (
+    <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(160)} pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + 60, left: spacing.md, right: spacing.md, zIndex: 20 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingLeft: spacing.md, borderRadius: radius.lg, backgroundColor: colors.cell, boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }}>
+        <Icon name="camera.viewfinder" size={20} color={brand.violet} />
+        <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.label }}>{hand ? 'Make it a share card?' : 'Share your stats instead?'}</Text>
+        <Pressable accessibilityRole="button" onPress={go} style={({ pressed }) => ({ paddingHorizontal: 14, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet, opacity: pressed ? 0.7 : 1 })}>
+          <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 15 }}>Share</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Dismiss" hitSlop={8} onPress={() => setShown(0)}>
+          <Icon name="xmark" size={14} color={colors.secondaryLabel} />
+        </Pressable>
+      </View>
+    </Animated.View>
+  );
+}

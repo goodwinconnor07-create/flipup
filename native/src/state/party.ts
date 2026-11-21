@@ -4,7 +4,6 @@ import { cleanName, type PartySettings, type PartyView } from '@/engine';
 
 import { createPartyOnServer, fetchParty, partyAct } from './api';
 import { deviceId } from './device';
-import { myPalCode } from './pals';
 import { read, save, useStored } from './storage';
 
 const KEY = 'flipup.party';
@@ -23,8 +22,7 @@ const remember = (code: string): void => save(KEY, { code, at: Date.now() });
 
 const who = () => {
   const p = read<{ name?: string; emoji?: string } | null>('flipup.profile', null) ?? {};
-  const friendCode = myPalCode();
-  return { deviceId: deviceId(), name: cleanName(p.name ?? ''), emoji: p.emoji ?? '', ...(friendCode ? { friendCode } : {}) };
+  return { deviceId: deviceId(), name: cleanName(p.name ?? ''), emoji: p.emoji ?? '' };
 };
 
 export async function createParty(settings: PartySettings): Promise<string> {
@@ -38,6 +36,9 @@ export async function joinParty(code: string): Promise<PartyView> {
   remember(code);
   return view;
 }
+
+/** The host changes the playlist and rules while the party is still a lobby. */
+export const configureParty = (code: string, settings: PartySettings): Promise<PartyView> => partyAct(code, 'settings', { deviceId: deviceId(), settings });
 
 export const readParty = (code: string): Promise<PartyView | null> => fetchParty(code, deviceId());
 export const startParty = (code: string): Promise<PartyView> => partyAct(code, 'start', { deviceId: deviceId() });

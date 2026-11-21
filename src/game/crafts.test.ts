@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { simulateTable, TECHNIQUES } from './botSim';
 import { continueChance, exploitRead, PRIOR, readOf } from './botRange';
-import { NO_CRAFT, STYLES } from './botStyles';
-import { LEGENDS, legendStyle } from './legends';
-import { fitStyle } from './twinFit';
-import { emptyTwin } from './twin';
+import { STYLES } from './botStyles';
 
 describe('exploiting what a bot has seen', () => {
   const seen = readOf({ hands: 60, vpip: 20, pfr: 10, betsFaced: 40, foldsToBet: 14, aggr: 20, calls: 20, flopFaced: 14, flopFolds: 2, turnFaced: 14, turnFolds: 10, riverFaced: 12, riverFolds: 2, cbetFaced: 12, cbetFolds: 9, threeBetFaced: 6, threeBetFolds: 5 });
@@ -40,14 +37,11 @@ describe('exploiting what a bot has seen', () => {
 });
 
 describe('techniques', () => {
-  it('belong to the styles and legends, and a twin has none of them', () => {
+  it('belong to the styles', () => {
     for (const style of Object.values(STYLES)) expect(style.craft, style.id).toBeDefined();
     // Every style has a few techniques of its own, and no two are the same.
     const crafts = Object.values(STYLES).map((s) => JSON.stringify(s.craft));
     expect(new Set(crafts).size).toBe(Object.keys(STYLES).length);
-    const twin = fitStyle(emptyTwin());
-    expect(twin.craft).toEqual({ ...NO_CRAFT, pets: [] });
-    for (const l of LEGENDS) expect(legendStyle(l).craft.exploit).toBeGreaterThan(0);
   });
 
   it('show up in play: a short table counts the chances to c-bet, barrel, float and so on', () => {

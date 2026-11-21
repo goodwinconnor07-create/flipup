@@ -39,8 +39,6 @@ export interface PartyMemberView {
   id: string;
   name: string;
   emoji: string;
-  /** Their friend code, if they have one, so others can add them. */
-  friendCode?: string;
   /** Points earned in each finished round, in order. */
   points: number[];
 }
@@ -159,6 +157,8 @@ export function partyStandings(view: Pick<PartyView, 'members' | 'live' | 'statu
 export function shufflePlaylist(all: Variant[], count: number, rng: () => number = Math.random): Variant[] {
   const n = Math.max(PARTY_MIN_GAMES, Math.min(PARTY_MAX_GAMES, count));
   const out: Variant[] = [];
+  // Nothing to pick from: an empty bag would loop for ever.
+  if (all.length === 0) return out;
   let bag: Variant[] = [];
   while (out.length < n) {
     if (bag.length === 0) bag = [...all].sort(() => rng() - 0.5);
@@ -185,7 +185,6 @@ export interface PartyPerson {
   deviceId: string;
   name: string;
   emoji: string;
-  twinCode?: string;
 }
 
 /**
@@ -221,7 +220,7 @@ export function buildPartyGame(opts: {
     if (r.ok) game = r.game;
     return r.ok;
   };
-  for (const p of rest) if (!step({ type: 'join', name: p.name, emoji: p.emoji, ...(p.twinCode ? { twinCode: p.twinCode } : {}) }, p.deviceId)) return null;
+  for (const p of rest) if (!step({ type: 'join', name: p.name, emoji: p.emoji }, p.deviceId)) return null;
   // One person alone still plays against at least one bot.
   const want = Math.max(settings.fillTo, people.length === 1 ? 2 : 0);
   while (game.players.length < Math.min(want, MAX_SEATS)) if (!step({ type: 'addBot' }, host.deviceId)) break;

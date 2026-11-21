@@ -25,9 +25,6 @@ import { trySaveHand } from '@/components/table/hand-tools';
 import { netOf, putIn, toggleStar, useLastHand, useReplays, useStars, winnersOf, type Replay } from '@/state/replays';
 import { brand, ForceScheme, gradient, radius, ROUNDED, spacing } from '@/theme';
 import { Announce } from '@/components/announce';
-import { CoachLine, CoachLocked, ReviewCard, ReviewLocked, ReviewMark } from '@/components/replay/review';
-import { reviewable, useHandReview, type ReviewedMove } from '@/state/hand-review';
-import { usePremium } from '@/state/premium';
 
 /** How long each move stays up while playing, in ms. */
 const STEP_MS = 1100;
@@ -121,10 +118,6 @@ function Viewer() {
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(!reduce);
   const last = r ? r.actions.length + 1 : 0;
-  // The hand review (Premium): your odds or the facts at each of your moves, worked out once the screen is open.
-  const premium = usePremium();
-  const canReview = !!r && reviewable(r);
-  const review = useHandReview(r, premium);
 
   // Counts toward "Hands replayed" on the Stats page, once each time a hand opens here (saved, or the last one at the table).
   const found = !!r;
@@ -156,9 +149,6 @@ function Viewer() {
   }
 
   const f = frameOf(r, step);
-  const byStep = new Map((review ?? []).map((m) => [m.step, m]));
-  const coach = !f.done && f.current?.playerId === r.me && canReview ? byStep.get(step) : undefined;
-  const onMyMove = !f.done && f.current?.playerId === r.me && canReview;
   const starred = stars.includes(r.id);
   const winners = winnersOf(r);
   const nameOf = (pid: string) => (pid === r.me ? 'You' : (r.players.find((p) => p.id === pid)?.name ?? 'Someone'));
@@ -210,10 +200,8 @@ function Viewer() {
             {what}
           </ThemedText>
         </View>
-        {premium ? coach && <CoachLine move={coach} /> : onMyMove && <CoachLocked />}
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: spacing.xs, paddingBottom: spacing.md }}>
-          {canReview && (premium ? review !== null && <ReviewCard moves={review} step={step} onJump={go} /> : <ReviewLocked />)}
           {r.players.map((p) => {
             const turn = !f.done && f.current?.playerId === p.id;
             const folded = f.folded.has(p.id);
@@ -299,7 +287,7 @@ function Viewer() {
             </View>
           )}
 
-          <HandLog r={r} step={step} last={last} onJump={go} nameOf={nameOf} winners={winners} review={byStep} />
+          <HandLog r={r} step={step} last={last} onJump={go} nameOf={nameOf} winners={winners} />
         </ScrollView>
 
         <View style={{ gap: spacing.sm, paddingBottom: insets.bottom + spacing.sm }}>
@@ -381,7 +369,7 @@ function ReplayFelt({ r, board, pot, name }: { r: Replay; board: Card[]; pot: nu
 }
 
 /** Every move in order, street by street with the cards that came and the pot going in; a tap jumps there. */
-function HandLog({ r, step, last, onJump, nameOf, winners, review }: { r: Replay; step: number; last: number; onJump: (to: number) => void; nameOf: (id: string) => string; winners: string[]; review: Map<number, ReviewedMove> }) {
+function HandLog({ r, step, last, onJump, nameOf, winners }: { r: Replay; step: number; last: number; onJump: (to: number) => void; nameOf: (id: string) => string; winners: string[] }) {
   const pots = r.pots?.length ? r.pots : [{ amount: r.pot, winners }];
   return (
     <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
@@ -407,7 +395,7 @@ function HandLog({ r, step, last, onJump, nameOf, winners, review }: { r: Replay
               )}
             </View>
             {s.moves.map((m) => (
-              <LogLine key={m.step} text={`${nameOf(m.action.playerId)} · ${moveText(m.action)}`} at={m.step} step={step} onJump={onJump} fold={m.action.move === 'fold'} mark={review.get(m.step)?.kind} />
+              <LogLine key={m.step} text={`${nameOf(m.action.playerId)} · ${moveText(m.action)}`} at={m.step} step={step} onJump={onJump} fold={m.action.move === 'fold'} />
             ))}
           </View>
         ))}
@@ -431,7 +419,7 @@ function HandLog({ r, step, last, onJump, nameOf, winners, review }: { r: Replay
   );
 }
 
-function LogLine({ text, at, step, onJump, quiet, fold, gold, mark }: { text: string; at: number; step: number; onJump: (to: number) => void; quiet?: boolean; fold?: boolean; gold?: boolean; mark?: ReviewedMove['kind'] }) {
+function LogLine({ text, at, step, onJump, quiet, fold, gold }: { text: string; at: number; step: number; onJump: (to: number) => void; quiet?: boolean; fold?: boolean; gold?: boolean }) {
   const now = at === step;
   const future = at > step;
   return (
@@ -453,7 +441,6 @@ function LogLine({ text, at, step, onJump, quiet, fold, gold, mark }: { text: st
       >
         {text}
       </ThemedText>
-      {mark && <ReviewMark kind={mark} />}
     </PressableScale>
   );
 }

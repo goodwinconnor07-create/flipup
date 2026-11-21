@@ -1,4 +1,5 @@
 import { BlurView } from 'expo-blur';
+import type { ReactNode } from 'react';
 import { View, type ScrollViewProps } from 'react-native';
 import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +17,7 @@ export const NAV_H = 44;
  * blur tinted with the page's darkest colour fades in under the status bar, so the cards never run under the clock
  * (solid under Reduce Transparency). Used by Play with bots, Play with friends and the table lobby.
  */
-export function LobbyScroll({ children, title, ...rest }: ScrollViewProps & { /** Pins a "‹ Back / title" row at the top, under the blur, so it stays while the page scrolls. */ title?: string }) {
+export function LobbyScroll({ children, title, header, ...rest }: ScrollViewProps & { /** Any other row to pin at the top (NAV_H tall) in place of the Back title row. */ header?: ReactNode; /** Pins a "‹ Back / title" row at the top, under the blur, so it stays while the page scrolls. */ title?: string }) {
   const insets = useSafeAreaInsets();
   const tint = useLobbyTint();
   const night = tint.night ?? GRAIN_NIGHT[2];
@@ -33,7 +34,7 @@ export function LobbyScroll({ children, title, ...rest }: ScrollViewProps & { /*
       </Animated.ScrollView>
       <Animated.View
         pointerEvents="none"
-        style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + (title ? NAV_H : 0), overflow: 'hidden', borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.12)' }, veil]}
+        style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + (title || header ? NAV_H : 0), overflow: 'hidden', borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.12)' }, veil]}
       >
         {solid ? (
           <Animated.View style={{ position: 'absolute', inset: 0, backgroundColor: night }} />
@@ -48,6 +49,8 @@ export function LobbyScroll({ children, title, ...rest }: ScrollViewProps & { /*
         <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, paddingHorizontal: 16 }}>
           <NavRow title={title} />
         </View>
+      ) : header ? (
+        <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, height: NAV_H, paddingHorizontal: 16, justifyContent: 'center' }}>{header}</View>
       ) : null}
     </>
   );

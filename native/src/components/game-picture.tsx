@@ -15,7 +15,7 @@ export const FONT = process.env.EXPO_OS === 'web' ? 'ui-rounded, "SF Pro Rounded
 // A game's picture, the same shapes the web draws (src/design/gameArt.ts): a flat field, one outlined subject.
 // `prims()` has already turned the shapes into paths, text and groups, so this file only draws those.
 
-function drawPrim(p: Prim, key: number | string): ReactNode {
+export function drawPrim(p: Prim, key: number | string): ReactNode {
   if (p.tag === 'g') {
     return (
       <G key={key} transform={p.t} opacity={p.opacity}>

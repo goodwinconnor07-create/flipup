@@ -1,11 +1,12 @@
 import { router, Stack } from 'expo-router';
-import { Alert, Pressable, ScrollView } from 'react-native';
+import { Alert, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DealWipe } from '@/components/deal-wipe';
 import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
 import { PartyPanel } from '@/components/party/panel';
+import { LobbyScroll, NAV_H } from '@/components/lobby/lobby-scroll';
 import { NavRow } from '@/components/setup/setup-header';
 import { ThemedText } from '@/components/themed-text';
 import { forgetParty, leaveParty, usePartyRef } from '@/state/party';
@@ -44,7 +45,8 @@ export default function PartyRoom() {
     <ForceScheme scheme="dark">
       <Stack.Screen options={{ title: 'Party', headerShown: false }} />
       <GrainBackground>
-        <ScrollView contentInsetAdjustmentBehavior="never" contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: insets.top + spacing.xs, paddingBottom: spacing.xxxl + insets.bottom, gap: spacing.lg }}>
+        <LobbyScroll
+          header={
           <NavRow
             title="Party"
             right={
@@ -57,6 +59,9 @@ export default function PartyRoom() {
               ) : undefined
             }
           />
+          }
+          contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: insets.top + NAV_H + spacing.xs, paddingBottom: spacing.xxxl + insets.bottom, gap: spacing.lg }}
+        >
           {code ? (
             <PartyPanel key={code} code={code} onGone={gone} place="screen" />
           ) : (
@@ -64,7 +69,7 @@ export default function PartyRoom() {
               You&apos;re not in a party.
             </ThemedText>
           )}
-        </ScrollView>
+        </LobbyScroll>
         <DealWipe />
       </GrainBackground>
     </ForceScheme>

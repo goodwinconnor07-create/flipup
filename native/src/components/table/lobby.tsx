@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
-import { LobbyScroll } from '../lobby/lobby-scroll';
+import { LobbyScroll, NAV_H } from '../lobby/lobby-scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { variantInfo, type Game } from '@/engine';
@@ -78,22 +78,24 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
   return (
     <LobbyBackdrop variant={variant}>
       <LobbyScroll
-        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: insets.top + spacing.xs, paddingBottom: (host ? OPEN_BUTTON_ROOM : spacing.xxxl) + insets.bottom, gap: spacing.lg }}
+        header={
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <RoundButton
+              icon="line.3.horizontal"
+              label="Menu"
+              onPress={() => {
+                haptic.tap();
+                router.push('/table-menu');
+              }}
+            />
+            <ThemedText variant="headline" accessibilityRole="header">
+              Lobby
+            </ThemedText>
+            <View style={{ width: 44 }} />
+          </View>
+        }
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: insets.top + NAV_H + spacing.xs, paddingBottom: (host ? OPEN_BUTTON_ROOM : spacing.xxxl) + insets.bottom, gap: spacing.lg }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <RoundButton
-            icon="line.3.horizontal"
-            label="Menu"
-            onPress={() => {
-              haptic.tap();
-              router.push('/table-menu');
-            }}
-          />
-          <ThemedText variant="headline" accessibilityRole="header">
-            Lobby
-          </ThemedText>
-          <View style={{ width: 44 }} />
-        </View>
         {line && (
           <ThemedText variant="callout" tone="secondaryLabel" style={{ textAlign: 'center', marginTop: -spacing.sm }}>
             {line}

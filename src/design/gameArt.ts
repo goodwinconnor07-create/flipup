@@ -49,7 +49,7 @@ export const GLOW = '#ffc933';
 /** The outline every shape in a picture shares, and how thick it is on the 100-wide square. */
 export const INK = '#14141c';
 export const OUTLINE = 3;
-const WHITE = '#ffffff';
+export const WHITE = '#ffffff';
 const BACK = '#2b5fe3';
 
 /** A playing card centred on (x, y), tilted `r` degrees, scaled `s`. `deal` is its place in the dealing order. */
@@ -282,9 +282,9 @@ export function prims(shapes: Shape[]): Prim[] {
 
 const card = (c: Omit<CardShape, 'kind'>): CardShape => ({ kind: 'card', ...c });
 /** An outlined shape. */
-const ink = (d: string, fill: string, more: Partial<PathShape> = {}): PathShape => ({ kind: 'path', d, fill, ...more });
+export const ink = (d: string, fill: string, more: Partial<PathShape> = {}): PathShape => ({ kind: 'path', d, fill, ...more });
 /** A shape with no outline: a detail drawn on top of an outlined one. */
-const flat = (d: string, fill: string, more: Partial<PathShape> = {}): PathShape => ({ kind: 'path', d, fill, flat: true, ...more });
+export const flat = (d: string, fill: string, more: Partial<PathShape> = {}): PathShape => ({ kind: 'path', d, fill, flat: true, ...more });
 /** A line of colour `c` and width `w` with the outline round it. */
 const line = (d: string, c: string, w: number): PathShape[] => [
   { kind: 'path', d, stroke: INK, sw: w + OUTLINE * 1.6, opacity: SHADOW, t: 'translate(0 3.4)' },
@@ -308,12 +308,12 @@ const waves = (y: number, fill: string, shift = 0): PathShape => {
   return ink(`${d}V130H${-80 + shift}Z`, fill, { noShadow: true });
 };
 
-const GREEN = '#2fb457';
-const GREEN_DARK = '#1f8a41';
+export const GREEN = '#2fb457';
+export const GREEN_DARK = '#1f8a41';
 const RED = SUIT_COLOUR['♥'];
 /** Power Cards' own card: the game's midnight felt, framed in its electric rail (tableThemes.power in tokens.ts). */
 const POWER_CARD = '#1b2556';
-const POWER_FRAME = '#3ee0ff';
+export const POWER_FRAME = '#3ee0ff';
 
 /**
  * The criss-cross on a pineapple: diagonal lines both ways across an oval, each cut off a little inside its edge.
@@ -480,8 +480,11 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
   ],
 };
 
+/** A game's subject on its 100 × 100 square, back to front, without the soft spot (the lobby's banner lays it out itself). */
+export const gameSubject = (v: Variant): Shape[] => (SUBJECTS[v] ?? SUBJECTS.holdem)();
+
 /** The suit scattered behind each game's wide picture. */
-const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', power: '♦' };
+export const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', power: '♦' };
 
 /** A game's small square picture on a 100 × 100 box, back to front: a soft spot, then the subject. */
 export const gameThumb = (v: Variant): Shape[] => {

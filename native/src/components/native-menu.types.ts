@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 /** One row of a `NativeMenu`. Titles and values are plain strings; `symbol` is an SF Symbols name. */
 export type MenuItem =
   /** Opens something: the title, a value and a chevron. */
-  | { kind: 'link'; id: string; title: string; detail?: string; subtitle?: string; symbol?: string; onPress: () => void; trailingCrown?: boolean; chevron?: boolean; detailTint?: boolean }
+  | { kind: 'link'; id: string; title: string; detail?: string; subtitle?: string; symbol?: string; onPress: () => void; trailingCrown?: boolean; chevron?: boolean }
   /** An action in the tint colour (red when `destructive`), no chevron. */
   | { kind: 'button'; id: string; title: string; symbol?: string; onPress?: () => void; destructive?: boolean; subtitle?: string; busy?: boolean }
   | { kind: 'toggle'; id: string; title: string; subtitle?: string; symbol?: string; value: boolean; onChange: (on: boolean) => void }

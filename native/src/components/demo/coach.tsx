@@ -5,7 +5,7 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { Easing, useAnimatedProps, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Mask, Rect as SvgRect } from 'react-native-svg';
 
@@ -34,6 +34,8 @@ const PAD = 8;
 const CORNER = 16;
 /** Up to this many parts lit at once (a step uses one to three). */
 const HOLES = 4;
+/** How long a caption waits for the last one to leave (most of its 200ms exit). */
+const CAPTION_AFTER = 140;
 const NONE: Rect = { x: -100, y: -100, width: 0, height: 0 };
 
 /** Texas Hold'em's three lines for the finish card (the mini games have theirs in game-basics.ts). */
@@ -86,55 +88,40 @@ export function blockersAround(holes: Rect[], width: number, height: number): Re
   return out;
 }
 
-const AnimatedRect = Animated.createAnimatedComponent(SvgRect);
 /** A lit part: where it is and how round its corners are (the felt's cut-out follows the oval). */
 interface Hole extends Rect {
   r: number;
 }
 
-/** One cut-out in the dark, gliding to its next place; a new one opens where it will be, a gone one closes where it was. */
-function Cutout({ hole }: { hole: Hole | null }) {
-  const reduce = useReduceMotion();
-  const x = useSharedValue(hole?.x ?? 0);
-  const y = useSharedValue(hole?.y ?? 0);
-  const w = useSharedValue(hole?.width ?? 0);
-  const h = useSharedValue(hole?.height ?? 0);
-  const r = useSharedValue(hole?.r ?? CORNER);
-  const key = hole ? [hole.x, hole.y, hole.width, hole.height, hole.r].map(Math.round).join(',') : '';
-  useEffect(() => {
-    const to = (sv: typeof x, v: number) => sv.set(reduce ? v : withTiming(v, { duration: 320, easing: EASE_OUT }));
-    if (!hole) {
-      // Closes where it is.
-      to(x, x.get() + w.get() / 2);
-      to(y, y.get() + h.get() / 2);
-      to(w, 0);
-      to(h, 0);
-      return;
-    }
-    if (w.get() < 1) {
-      // Opens from its own middle.
-      x.set(hole.x + hole.width / 2);
-      y.set(hole.y + hole.height / 2);
-      r.set(hole.r);
-    }
-    to(x, hole.x);
-    to(y, hole.y);
-    to(w, hole.width);
-    to(h, hole.height);
-    to(r, hole.r);
-  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
-  const props = useAnimatedProps(() => {
-    const rr = Math.min(r.get(), w.get() / 2, h.get() / 2);
-    return { x: x.get(), y: y.get(), width: Math.max(0, w.get()), height: Math.max(0, h.get()), rx: rr, ry: rr };
-  });
-  return <AnimatedRect animatedProps={props} fill="#000000" />;
-}
-
 let maskIds = 0;
 
-/** The dark with the lit parts cut out of it (a mask, so cut-outs may overlap). */
-function Dim({ holes, shown, width, height }: { holes: Hole[]; shown: boolean; width: number; height: number }) {
+/** One step's dark with its lit parts cut out (a mask, so cut-outs may overlap). Drawn once, never animated. */
+function DimLayer({ holes, width, height }: { holes: Hole[]; width: number; height: number }) {
   const [id] = useState(() => `demo-dim-${++maskIds}`);
+  return (
+    <Svg width={width} height={height}>
+      <Defs>
+        <Mask id={id} maskUnits="userSpaceOnUse" x={0} y={0} width={width} height={height}>
+          <SvgRect x={0} y={0} width={width} height={height} fill="#ffffff" />
+          {holes.map((h, i) => {
+            const r = Math.min(h.r, h.width / 2, h.height / 2);
+            return <SvgRect key={i} x={h.x} y={h.y} width={h.width} height={h.height} rx={r} ry={r} fill="#000000" />;
+          })}
+        </Mask>
+      </Defs>
+      <SvgRect x={0} y={0} width={width} height={height} fill={DIM} mask={`url(#${id})`} />
+    </Svg>
+  );
+}
+
+/**
+ * The dark round the lit parts. Opacity only (docs/MOTION.md: transform and opacity, no work per frame): each step's
+ * dark is drawn once, and the next step's fades in over it (180ms) as the last one fades out a little slower (220ms),
+ * so the dark never thins between them. Until 23 Nov 2026 the cut-outs glided by animating the mask, which redrew
+ * the whole screen's SVG every frame and ran at half speed on the phone.
+ */
+function Dim({ holes, layer, shown, width, height }: { holes: Hole[]; layer: string; shown: boolean; width: number; height: number }) {
+  const reduce = useReduceMotion();
   const opacity = useSharedValue(0);
   useEffect(() => {
     opacity.set(withTiming(shown ? 1 : 0, { duration: shown ? motion.base : motion.exit, easing: EASE_OUT }));
@@ -142,18 +129,14 @@ function Dim({ holes, shown, width, height }: { holes: Hole[]; shown: boolean; w
   const fade = useAnimatedStyle(() => ({ opacity: opacity.get() }));
   return (
     <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, top: 0, width, height }, fade]}>
-      <Svg width={width} height={height}>
-        <Defs>
-          <Mask id={id} maskUnits="userSpaceOnUse" x={0} y={0} width={width} height={height}>
-            <SvgRect x={0} y={0} width={width} height={height} fill="#ffffff" />
-            {/* Always the same cut-outs, closed when unused: none is ever taken off the page. */}
-            {Array.from({ length: HOLES }, (_, i) => (
-              <Cutout key={i} hole={holes[i] ?? null} />
-            ))}
-          </Mask>
-        </Defs>
-        <SvgRect x={0} y={0} width={width} height={height} fill={DIM} mask={`url(#${id})`} />
-      </Svg>
+      <Animated.View
+        key={layer}
+        entering={reduce ? undefined : FadeIn.duration(180).easing(EASE_OUT)}
+        exiting={reduce ? undefined : FadeOut.duration(220).easing(EASE_OUT)}
+        style={{ position: 'absolute', left: 0, top: 0, width, height }}
+      >
+        <DimLayer holes={holes} width={width} height={height} />
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -287,10 +270,11 @@ export function DemoCoach({ game, variant, started, from }: { game: Game; varian
 
   const shown = !!step || view.finished;
   // Between steps the dim fades out with its cut-outs where they were: closing them as it faded showed the table's
-  // next buttons (a white Check) shrinking in a hole after you tapped Call.
+  // next buttons (a white Check) shrinking in a hole after you tapped Call. Each step's dark is its own layer, so the
+  // next step's crossfades in over it.
   const holesKey = holes.map((h) => [h.x, h.y, h.width, h.height, h.r].map(Math.round).join(',')).join('|');
-  const [held, setHeld] = useState<{ key: string; holes: Hole[] }>({ key: '', holes: [] });
-  if (step && held.key !== holesKey) setHeld({ key: holesKey, holes });
+  const [held, setHeld] = useState<{ key: string; holes: Hole[]; layer: string }>({ key: '', holes: [], layer: '' });
+  if (step && (held.key !== holesKey || held.layer !== step.id)) setHeld({ key: holesKey, holes, layer: step.id });
   // Where the caption goes: under the lit part if there's more room there, else over it; in the middle with none.
   const top = insets.top + 64;
   const bottom = height - Math.max(insets.bottom, spacing.sm) - 8;
@@ -305,7 +289,7 @@ export function DemoCoach({ game, variant, started, from }: { game: Game; varian
       pointerEvents="box-none"
       style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, zIndex: 100 }}
     >
-      <Dim holes={view.finished ? [] : step ? holes : held.holes} shown={shown} width={width} height={height} />
+      <Dim holes={view.finished ? [] : step ? holes : held.holes} layer={view.finished ? 'finish' : (step?.id ?? held.layer)} shown={shown} width={width} height={height} />
 
       {/* Taps: only the thing a step asks for gets through; anywhere else nudges it. Between steps, nothing does. */}
       {(step?.tap && tapHole ? blockersAround([tapHole, ...alsoHoles], width, height) : [{ x: 0, y: 0, width, height }]).map((r, i) => (
@@ -322,7 +306,9 @@ export function DemoCoach({ game, variant, started, from }: { game: Game; varian
       {step && (
         <Animated.View
           key={step.id}
-          entering={enter(reduce)}
+          // The last caption is mostly gone before this one comes (they sit in different places, and for a moment two
+          // cards showed at once in the recording of 23 Nov 2026).
+          entering={enter(reduce).delay(CAPTION_AFTER)}
           exiting={exit(reduce)}
           style={{ position: 'absolute', left: spacing.md, right: spacing.md, alignItems: 'center', ...place }}
           pointerEvents="box-none"

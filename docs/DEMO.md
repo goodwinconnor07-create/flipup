@@ -24,6 +24,9 @@ It's free for every game, Premium ones too, because it's how a free player sees 
   and the beat before each card is `demoStreet` (0.6s), all in `src/game/holdem.ts`. The first step after the
   welcome waits `AFTER_DEAL` (0.6s, `flow.ts`) so your cards have landed before the dim does. Cut-outs stay inside
   the screen (round corners on the wide seat row), and after a tap the dim fades with its cut-outs where they were.
+  The dark is drawn once per step and the next step's crossfades in over it (180ms in, 220ms out, opacity only):
+  the cut-outs used to glide by animating the SVG mask, which redrew the whole screen every frame and ran at half
+  speed on the phone. A new caption waits `CAPTION_AFTER` (140ms) so the last one is mostly gone.
 - **The session** (`openDemo()`, `startDemo()`, `closeDemo()` in `native/src/state/session.ts`) sets whatever table
   you were at aside and puts it back when the demo closes. A demo hand is never counted in your stats, kept as a
   hand or saved.

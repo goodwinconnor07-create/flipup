@@ -58,6 +58,11 @@
 > buttons stay). The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
 > of leaving a gap under the link. The profile keeps Settings, Premium and Demos.
 
+> **23 Nov 2026 (owner): a You tab and a four-button Home.** The tab bar is Play, Train and You. You is the old
+> profile as a tab: your face and name, the Your poker card (All stats), Saved hands and Share cards, then Premium,
+> Demos and Settings. Home loses your face in the corner and the three round shortcuts, so it holds Demo, Play with
+> friends, Play bots and Join a game, and the game card takes the room (up to 290pt). Train loses the face too.
+>
 > **23 Nov 2026, later (owner): the full-page colour is back, without the blue.** The night-blue base below was
 > tried and dropped the same day: `GameBackdrop` is the game's own colour over the whole page again (lighter behind
 > the picture, deepest at the foot), with no blue base and no blue light, but it keeps the calm: two faint white

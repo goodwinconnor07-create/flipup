@@ -20,13 +20,15 @@ import { useStored } from '@/state/storage';
 import { brand, gradient, ROUNDED, spacing, useColors, useScheme } from '@/theme';
 import { Announce } from '@/components/announce';
 import { showDemo } from '@/components/demo/show';
+import { PassportCard } from '@/components/home/passport';
 
 const PIC = 150;
 
 /**
- * Your profile, as on the web: your emoji (tap it to pick another) and your name, which everyone at the table sees;
- * then Settings, FlipUp Premium and Demos (the game Home shows). Your stats are Home's Stats shortcut. The name is
- * saved with Save; the emoji as you pick it.
+ * The You tab (23 Nov 2026, the owner's ask; it was the profile behind the face in each tab's corner): your emoji (tap
+ * it to pick another) and your name, which everyone at the table sees; your stats card (All stats opens Stats); Saved
+ * hands and Share cards (Home's round shortcuts until then); then FlipUp Premium, Demos (the game Home shows) and
+ * Settings. The name is saved with Save; the emoji as you pick it.
  */
 export default function ProfileScreen() {
   const colors = useColors();
@@ -57,13 +59,13 @@ export default function ProfileScreen() {
 
   return (
     <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: page }}>
-      <Stack.Screen options={{ title: '', headerTransparent: true }} />
+      <Stack.Screen options={{ title: 'You', headerShown: false }} />
       {/* The Games-app header: a deep blue glow behind your face that fades into the page. */}
       <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${page as string} 100%)`), opacity: dark ? 1 : 0.9 }} />
       <NativeMenu
         transparent
         top={
-          <View style={{ paddingTop: insets.top + 56, paddingHorizontal: spacing.md, paddingBottom: spacing.md }}>
+          <View style={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.md, paddingBottom: spacing.md }}>
         <View style={{ alignItems: 'center', gap: spacing.sm, paddingTop: spacing.md }}>
           <Pressable
             accessibilityRole="button"
@@ -130,15 +132,26 @@ export default function ProfileScreen() {
             </ThemedText>
           )}
         </View>
+        {/* Your poker on one card: hands, win rate, biggest pot; All stats opens Stats, its corner button Share cards. */}
+        <View style={{ marginTop: spacing.lg }}>
+          <PassportCard />
+        </View>
           </View>
         }
         groups={[
           {
+            id: 'poker',
+            items: [
+              { kind: 'link', id: 'saved', title: 'Saved hands', subtitle: 'Hands you bookmarked at the table', onPress: () => router.push('/replays') },
+              { kind: 'link', id: 'share', title: 'Share cards', subtitle: 'Your stats, top hands and games as pictures', onPress: () => router.push('/share') },
+            ],
+          },
+          {
             id: 'you',
             items: [
-              { kind: 'link', id: 'settings', title: 'Settings', subtitle: 'Sound, looks and your data', onPress: () => router.push('/settings') },
               { kind: 'link', id: 'premium', title: 'FlipUp Premium', detail: premium ? 'Unlocked' : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`, trailingCrown: true, onPress: () => router.push('/premium') },
               { kind: 'link', id: 'demo', title: 'Demos', subtitle: 'Play a hand of any game, with a guide', onPress: () => showDemo(game) },
+              { kind: 'link', id: 'settings', title: 'Settings', subtitle: 'Sound, looks and your data', onPress: () => router.push('/settings') },
             ],
           },
         ]}

@@ -85,7 +85,7 @@ function TalkBubble({ text, room }: { text: string; room?: number }) {
   if (emojiOnly(text)) return <Sticker text={text} />;
   return (
     <View style={[{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, maxWidth: room }, box]}>
-      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, lineHeight: 16, fontWeight: '400', color: ink, textAlign: 'center' }}>
+      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, lineHeight: 16, fontWeight: '600', color: ink, textAlign: 'center' }}>
         {text}
       </Text>
     </View>
@@ -176,8 +176,8 @@ function Ticker({ text, room, pauses, who }: { text: string; room?: number; paus
   );
 }
 
-// Regular weight, like a message in iMessage (23 Nov 2026, the owner's call); a move bubble (Bet 40) stays bold.
-const FONT = { fontSize: 13, lineHeight: 16, fontWeight: '400' as const };
+// Semibold (23 Nov 2026, the owner: regular read too thin over the felt); a move bubble (Bet 40) stays bold.
+const FONT = { fontSize: 13, lineHeight: 16, fontWeight: '600' as const };
 
 /** One word on the conveyor: slides in from 6pt right; once it's gone, it fades as its width closes to nothing. */
 function Word({ text, ink, gone, lead }: { text: string; ink: string; gone: boolean; lead: boolean }) {

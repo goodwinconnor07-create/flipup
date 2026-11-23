@@ -51,8 +51,9 @@
 
 > **Home (owner, 2026-11-19, from a mock-up).** Two tabs: Play and Train (a Hands tab came and went the same day: once
 > Home had its shortcuts the owner had it removed). Home is the game
-> swiper a little bigger, the game's name, hook and a Demo button (it was a quiet "How it plays ›" link until 21 Nov 2026), then Play with friends on the big
-> white button (it was Host <game> until the same day: the name was said twice), with Play bots and Join a game under
+> swiper a little bigger, the game's name, hook and a "Try a demo hand" text link (a "How it plays ›" link until 21 Nov 2026, a Demo button until 23 Nov, when
+> the owner agreed it read as a fourth button), then Play with friends on the big white button (near-black ink, not
+> navy, and never the game's colour: one steady thing to press while the games flick past; 23 Nov 2026) (it was Host <game> until the same day: the name was said twice), with Play bots and Join a game under
 > it. No "Tap me" hint pill and no page dots. Later the same day the owner brought back a row of round shortcuts over
 > the big button: Stats, Saved hands and Share cards (the game card a touch smaller to make room; the big name and
 > buttons stay). The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead

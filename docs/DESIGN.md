@@ -70,6 +70,10 @@
 > (`StatusBarFollower`, `barStyleFor()` in `state/status-bar.ts`): white on the always-dark pages, the phone's own
 > look elsewhere, unchanged under a sheet.
 >
+> **23 Nov 2026 (owner): one moving thing per page.** On the lobbies the page's slow glow is the only motion. The
+> game card (`GameBanner`) is the same scene standing still (its bobbing parts and drifting particles are gone), and
+> the faces in the players group (`FloatTable`) sit still. Pops, settles and fades on a change stay.
+>
 > **19 Nov 2026 (owner, from a mock-up): lobbies in the game's colour.** Play with bots, Play with friends and the
 > table lobby use Home's `GameBackdrop` (`LobbyBackdrop` in `components/lobby/lobby-backdrop.tsx`): a dark shade of
 > the chosen game's colour with its lights, fading to the next game's when Change picks another. The lobby's blue

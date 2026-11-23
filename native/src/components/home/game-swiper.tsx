@@ -36,7 +36,7 @@ const OMEGA = Math.sqrt(SETTLE.stiffness / SETTLE.mass);
  * speed carries into the settle spring (`SETTLE`, critically damped, rule 13), capped so it lands on its card with
  * no overshoot. One swipe moves one game, however hard the flick. Each card that passes the middle gives a selection
  * tick and becomes the chosen game. The line floats a few points (not under Reduce Motion). Tap the middle card for
- * `onOpen` (Home: a demo hand of the game, 23 Nov 2026; else its page), a neighbour to bring it in. VoiceOver treats it as one adjustable control.
+ * its page, a neighbour to bring it in. VoiceOver treats it as one adjustable control.
  */
 export function GameSwiper({
   variant,
@@ -44,8 +44,6 @@ export function GameSwiper({
   size,
   width,
   progress,
-  onOpen,
-  openHint,
 }: {
   variant: Variant;
   onChange: (v: Variant) => void;
@@ -53,12 +51,7 @@ export function GameSwiper({
   width: number;
   /** Written with the line's position in games (0 is the first), kept inside the line, so the page's colour can follow the finger. */
   progress?: SharedValue<number>;
-  /** What a tap on the middle card does; the game's page when left out. */
-  onOpen?: (v: Variant) => void;
-  /** What VoiceOver says a double-tap on the line does, with `onOpen`. */
-  openHint?: string;
 }) {
-  const open = (v: Variant) => (onOpen ? onOpen(v) : router.push(`/game/${v}`));
   const premium = usePremium();
   const step = size;
   const last = VARIANTS.length - 1;
@@ -139,13 +132,12 @@ export function GameSwiper({
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel="Game"
-      accessibilityHint={openHint}
       accessibilityValue={{ text: VARIANTS[start]?.name }}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }, { name: 'activate' }]}
       onAccessibilityAction={(e) => {
         if (e.nativeEvent.actionName === 'increment') to(start + 1);
         else if (e.nativeEvent.actionName === 'decrement') to(start - 1);
-        else open(variant);
+        else router.push(`/game/${variant}`);
       }}
     >
       {VARIANTS.map((v, i) => (
@@ -164,7 +156,7 @@ export function GameSwiper({
             if (Date.now() - drag.current.ended < 300) return;
             if (i === start) {
               haptic.tap();
-              open(v.id);
+              router.push(`/game/${v.id}`);
             } else to(i);
           }}
         />

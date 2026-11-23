@@ -72,27 +72,29 @@
 > buttons stay). The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
 > of leaving a gap under the link. The profile keeps Settings, Premium and Demos.
 
-> **23 Nov 2026, evening (owner, from screenshots): Home and You tightened.** Home's "Try a demo hand" link went (it
-> looked bad): a tap on the game's picture plays its demo hand. The three buttons have their icons back (two people,
-> the robot, the QR viewfinder; words alone looked flat) and sit just above the tab bar, the spare height all above the
-> game. Where your face used to be, top right, is a round glass button with a gold crown that opens Premium. On the You
-> tab the face is smaller (108pt) and the Your poker card is compact (three numbers in one row; games and table wins
-> sit in its All stats bar), so the card and Your look fit on the first screen. Every row on the You tab and in
-> Settings has an SF Symbol in one fixed column, like the table menu. The table menu's Your turn bar sits under the
-> sheet's title, not behind it.
+> **23 Nov 2026, night (owner): the earlier Home is back.** After trying a full-page game colour, words-only buttons
+> and a demo link, the owner picked a screenshot of the morning's Home: night blue with the game's colour as a glow
+> (`GameBackdrop`), the game card, its name and hook, a Demo capsule, the round shortcuts (Stats, Saved hands, Share
+> cards), then Play with friends, and Play bots and Join a game with their icons. The You tab stays, so top right is
+> a round glass button with a gold crown that opens Premium, not your face. Lobbies follow the same night-blue page.
+>
+> **Same day (owner, from screenshots): You and Settings tightened.** On the You tab the face is smaller (108pt) and
+> the Your poker card is compact (three numbers in one row; games and table wins sit in its All stats bar), so the
+> card and Your look fit on the first screen. Every row on the You tab and in Settings has an SF Symbol in one fixed
+> column, like the table menu. The table menu's Your turn bar sits under the sheet's title, not behind it.
 >
 > **23 Nov 2026 (owner): a You tab and a four-button Home.** The tab bar is Play, Train and You. You is the old
 > profile as a tab: your face and name, the Your poker card (All stats), Saved hands and Share cards, then Premium,
 > Demos and Settings. Home loses your face in the corner and the three round shortcuts, so it holds Demo, Play with
 > friends, Play bots and Join a game, and the game card takes the room (up to 290pt). Train loses the face too.
 >
-> **23 Nov 2026, later (owner): the full-page colour is back, without the blue.** The night-blue base below was
+> **23 Nov 2026, later (owner): the full-page colour is back, without the blue.** *(Dropped that night: see the first note above.)* The night-blue base below was
 > tried and dropped the same day: `GameBackdrop` is the game's own colour over the whole page again (lighter behind
 > the picture, deepest at the foot), with no blue base and no blue light, but it keeps the calm: two faint white
 > lights on 22s and 31s clocks, a few percent of breathing, and the colour following the swiper. Home's buttons (Play
 > with friends, Play bots, Join a game) are words only, no icons.
 >
-> **23 Nov 2026 (owner): a game's page is night blue with the game's colour as a glow.** *(Replaced by the note above.)* Mixing each game's colour
+> **23 Nov 2026 (owner): a game's page is night blue with the game's colour as a glow.** *(Back since that night.)* Mixing each game's colour
 > towards black turned the warm games brown (Die on the River's orange became a chocolate page) and the lights moved
 > too much. Now `GameBackdrop` is the same night blue for every game (`brand.backdropTop` to `brand.backdropBottom`),
 > with the game's colour as a glow centred on its picture (`focus`) that fades out before the buttons, and a faint

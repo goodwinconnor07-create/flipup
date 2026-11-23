@@ -186,7 +186,7 @@ export default function Home() {
             {/* A Premium game without Premium: the game sheet's lock (blur, lock, its words) over Host <game>; a tap opens the offer for this game. */}
             <View style={{ borderRadius: 26, borderCurve: 'continuous', overflow: 'hidden' }}>
               <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}>
-                <PlayButton label="Play with friends" line="Host a table · share the code" onPress={start(`/play-friends?variant=${variant}`)} />
+                <PlayButton label="Play with friends" icon="person.2.fill" line="Host a table · share the code" onPress={start(`/play-friends?variant=${variant}`)} />
               </View>
               {locked && <LockVeil compact game={info.name} onPress={() => unlockToHost([variant], premium)} />}
             </View>

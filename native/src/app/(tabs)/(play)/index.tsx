@@ -10,11 +10,10 @@ import { haptic } from '@/components/haptics';
 import { GameBackdrop } from '@/components/home/game-backdrop';
 import { GameSwiper } from '@/components/home/game-swiper';
 import { LiveButton } from '@/components/home/live-button';
-import { PlayButton } from '@/components/home/play-button';
+import { BUTTON_RADIUS, PlayButton } from '@/components/home/play-button';
 import { LockVeil } from '@/components/premium/lock-veil';
 import { SmallButton } from '@/components/home/small-button';
 import { Icon } from '@/components/icon';
-import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
 import { useTabPush } from '@/components/use-tab-push';
 import { detail } from '@/motion/presets';
@@ -31,15 +30,12 @@ import { usePokerRecord } from '@/state/record';
 import { maybeAskForReview } from '@/state/review';
 import { me as myDevice, useTable } from '@/state/session';
 import { save, useStored } from '@/state/storage';
-import { ForceScheme, radius, ROUNDED, spacing } from '@/theme';
+import { ForceScheme, ROUNDED, spacing } from '@/theme';
 
 /** The tab bar's height over the bottom safe area. */
 const TAB_BAR = 49;
-/** The space between the Demo button and Play with friends. */
-const GAP = 20;
-/** The Demo button's see-through fill and edge. */
-const GLASS = 'rgba(255, 255, 255, 0.12)';
-const EDGE = 'rgba(255, 255, 255, 0.14)';
+/** The space between the Demo link and Play with friends. */
+const GAP = 28;
 /** The game shown in the middle, kept between launches. */
 const PICK = 'flipup.homegame';
 
@@ -127,8 +123,8 @@ export default function Home() {
             </Text>
           </Animated.View>
 
-          {/* Most of the spare height goes above the game, a little under the buttons. */}
-          <View style={{ flex: 1 }} />
+          {/* Most of the spare height goes above the game, a little under the buttons; never less than a clear gap under the title. */}
+          <View style={{ flex: 1, minHeight: spacing.lg }} />
 
           {/* The middle: the games in a line across the whole screen, the chosen one's name, hook and its Demo. */}
           <Animated.View entering={arrive(1)} style={{ alignItems: 'center', gap: spacing.xs }}>
@@ -150,24 +146,27 @@ export default function Home() {
                 </Swap>
               )}
             </View>
-            <PressableScale
+            {/* Demo belongs to the game, so it's a text link under the hook, not a fourth button (23 Nov 2026). */}
+            <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Demo: play a hand of ${info.name}`}
-              onPress={() => showDemo(variant)}
-              haptics={false}
-              style={{ minHeight: 36, paddingHorizontal: spacing.md, borderRadius: radius.full, borderWidth: 1, borderColor: EDGE, backgroundColor: GLASS, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              hitSlop={12}
+              onPress={() => {
+                haptic.tap();
+                showDemo(variant);
+              }}
+              style={({ pressed }) => ({ paddingVertical: 4, paddingHorizontal: spacing.sm, opacity: pressed ? 0.6 : 1 })}
             >
-              <Icon name="play.fill" size={12} color="#ffffff" />
-              <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
-                Demo
+              <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '700', color: '#ffffff', textDecorationLine: 'underline', textDecorationColor: 'rgba(255, 255, 255, 0.5)' }}>
+                Try a demo hand
               </Text>
-            </PressableScale>
+            </Pressable>
           </Animated.View>
 
           {/* The main buttons. */}
           <Animated.View entering={arrive(2)} style={[pad, { gap: spacing.sm, marginTop: GAP }]}>
             {/* A Premium game without Premium: the game sheet's lock (blur, lock, its words) over Host <game>; a tap opens the offer for this game. */}
-            <View style={{ borderRadius: 26, borderCurve: 'continuous', overflow: 'hidden' }}>
+            <View style={{ borderRadius: BUTTON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
               <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}>
                 <PlayButton label="Play with friends" line="Host a table · share the code" onPress={start(`/play-friends?variant=${variant}`)} />
               </View>

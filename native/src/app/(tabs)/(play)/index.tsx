@@ -46,8 +46,8 @@ const PICK = 'flipup.homegame';
  * Settings are the You tab since 23 Nov 2026); the games as a line of cards across the whole screen, locked on one at
  * a time (`GameSwiper`); a tap on the middle card plays a demo hand of it (`showDemo()`; the "Try a demo hand" link
  * went, 23 Nov 2026, the owner's call); the chosen one's name and hook; then Play with friends (`PlayButton`), with
- * Play bots and Join a game under it, each with its icon. No hint pill, no dots. The leftover height sits above the
- * game, so the buttons sit just above the tab bar. Nothing scrolls.
+ * Play bots and Join a game under it, each with its icon. No hint pill, no dots. The leftover height is shared above
+ * and under the game, so the game sits up in the page and the buttons just above the tab bar. Nothing scrolls.
  */
 export default function Home() {
   const insets = useSafeAreaInsets();
@@ -133,7 +133,8 @@ export default function Home() {
             />
           </Animated.View>
 
-          {/* The spare height goes above the game, so the buttons sit just above the tab bar; never less than a clear gap under the title. */}
+          {/* The spare height is shared above and under the game, so the game sits up in the page while the buttons stay just
+              above the tab bar (23 Nov 2026: all of it above pushed the game too low); never less than a clear gap under the title. */}
           <View style={{ flex: 1, minHeight: spacing.lg }} />
 
           {/* The middle: the games in a line across the whole screen (a tap on the chosen one plays its demo hand), its name and hook. */}
@@ -166,8 +167,10 @@ export default function Home() {
             </View>
           </Animated.View>
 
+          <View style={{ flex: 1, minHeight: GAP }} />
+
           {/* The main buttons. */}
-          <Animated.View entering={arrive(2)} style={[pad, { gap: spacing.sm, marginTop: GAP }]}>
+          <Animated.View entering={arrive(2)} style={[pad, { gap: spacing.sm }]}>
             {/* A Premium game without Premium: the game sheet's lock (blur, lock, its words) over Host <game>; a tap opens the offer for this game. */}
             <View style={{ borderRadius: BUTTON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
               <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}>

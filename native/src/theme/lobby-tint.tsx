@@ -37,7 +37,7 @@ const deepen = (h: string, k: number) => hex(channels(h).map((v) => v * (1 - k))
 /** A game's tint: a pale version of its light tone for links (4.5:1 or better on its page), its band darkened for ink on white. */
 export function gameTint(variant: string): Tint {
   const look = gameLook(variant as Parameters<typeof gameLook>[0]);
-  return { link: lift(look.tone, 0.45), ink: deepen(look.band, 0.15), inkSoft: deepen(look.band, 0.3), night: deepen(look.band, 0.82), idle: deepen(look.band, 0.55), surface: deepen(look.card[0], 0.55) };
+  return { link: lift(look.tone, 0.45), ink: deepen(look.band, 0.15), inkSoft: deepen(look.band, 0.3), night: deepen(look.band, 0.84), idle: deepen(look.band, 0.55), surface: deepen(look.card[0], 0.55) };
 }
 
 const Ctx = createContext<Tint | null>(null);

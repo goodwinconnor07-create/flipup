@@ -40,6 +40,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       ITSAppUsesNonExemptEncryption: false,
       // Lets animations run at 120fps on ProMotion iPhones (Expo's template sets it too; this keeps it explicit).
       CADisableMinimumFrameDurationOnPhone: true,
+      // The status bar's colour is set for the whole app from one place (`StatusBarFollower` in the root layout), not
+      // per screen: per-screen styles went through the native tab bar, which passed on the wrong screen's choice.
+      UIViewControllerBasedStatusBarAppearance: false,
       // The QR scanner on the join sheet.
       NSCameraUsageDescription: 'FlipUp uses the camera to scan a table or party QR code so you can join it.',
       // Share cards and results go out as pictures through the share sheet, which offers Save Image. Without this

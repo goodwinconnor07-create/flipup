@@ -730,9 +730,9 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.players.length < 2) return fail('You need at least two players. Add a bot or invite a friend.');
       game.status = 'playing';
       game.first = { settings: { ...game.settings }, bots: game.players.filter((p) => p.bot).length };
-      // A demo deals after the usual short wait, with no hello: the coach does the talking.
+      // A demo deals soon after Deal me in, with no hello: the coach does the talking.
       if (game.demo) {
-        game.nextHandAt = ctx.now + TIMING.startDelayLocal;
+        game.nextHandAt = ctx.now + TIMING.demoStart;
         schedule(game);
         return done();
       }

@@ -1,93 +1,26 @@
-// The lobby's game card as a living scene (21 Nov 2026, the owner's ask, from a reference card where the picture is
-// the whole card and snow drifts over it): each game's own sticker subject drawn big on the left, a set behind it
-// (a table's rail, a night with a moon, a bridge over three rivers...), parts of the subject that move on their own
-// (cards bob, a chip's ring turns, a ghost floats, the clock's hand goes round), and the game's own particles drifting
-// over everything (suits rising, snow, confetti, rain, leaves). Pure data in the gameArt.ts system: flat fields, the
-// shared ink outline and the hard shadow, no gradients or blurs inside the picture. The app draws it in
+// The lobby's game card as a scene (21 Nov 2026, the owner's ask, from a reference card where the picture is the
+// whole card): each game's own sticker subject drawn big on the left with a set behind it (a table's rail, a night
+// with a moon, a bridge over three rivers...). It stands still (23 Nov 2026, the owner: with the page's light moving
+// too, a card full of bobbing cards and falling particles was a step too far). Pure data in the gameArt.ts system: flat
+// fields, the shared ink outline and the hard shadow, no gradients or blurs inside the picture. The app draws it in
 // native/src/components/lobby/game-banner.tsx.
 //
 // Units: the subject's own 100 × 100 square sits at the left of the card with its bottom on the card's bottom, so
 // y = 100 is the card's bottom edge and the card shows whatever height and width it has above and to the right.
 // Set pieces reach well past the right (to 600) and up (to -60), so every card size is covered.
-import { CIRCLE_HOURS, VARIANTS, type Variant } from '../game/variants';
+import { CIRCLE_HOURS, type Variant } from '../game/variants';
 import { flat, gameLook, gameSubject, GLOW, GREEN, GREEN_DARK, INK, ink, oval, OUTLINE, POWER_FRAME, rr, SCATTER, SUIT_PATH, WHITE, type PathShape, type Shape } from './gameArt';
-
-/** How a layer moves, on a clock in seconds. Amounts are in the picture's units. */
-export type Move =
-  /** Up and down. */
-  | { kind: 'bob'; amp: number; period: number; phase?: number }
-  /** Rocking about its pivot, `deg` each way. */
-  | { kind: 'sway'; deg: number; period: number; phase?: number }
-  /** Bob and sway together: something floating. */
-  | { kind: 'float'; amp: number; deg: number; period: number; phase?: number }
-  /** Round and round its pivot, one turn a `period`. */
-  | { kind: 'spin'; period: number }
-  /** Sliding left by one `length` a `period` and starting again where it looks the same (waves). Its box is a
-   * window that stays put while the picture slides through it. */
-  | { kind: 'flow'; length: number; period: number }
-  /** Side to side (clouds). */
-  | { kind: 'drift'; amp: number; period: number; phase?: number }
-  /** Brightening and dimming, a touch smaller while dim (sparkles, a "?"). */
-  | { kind: 'twinkle'; period: number; phase?: number }
-  /** Growing out of itself and fading, again and again (a ring of power). */
-  | { kind: 'pulse'; period: number; phase?: number };
 
 /** One layer of the scene, back to front. `box` is the part of the picture it's drawn in (x, y, w, h). */
 export interface BannerLayer {
   shapes: Shape[];
-  move?: Move;
-  /** The point it turns about (spin, sway, float, twinkle, pulse); the box's middle when left out. */
-  pivot?: [number, number];
   /** Left out: the whole card. */
   box?: [number, number, number, number];
-}
-
-export type ParticleKind = 'suit' | 'dot' | 'sparkle' | 'confetti' | 'glyph' | 'leaf' | 'streak';
-
-/** What drifts over a game's card. */
-export interface ParticleSpec {
-  kind: ParticleKind;
-  /** Rising, falling, carried right (along a river) or twinkling where it is. */
-  dir: 'up' | 'down' | 'right' | 'still';
-  count: number;
-  colours: string[];
-  /** Size in units, smallest and biggest. */
-  size: [number, number];
-  opacity: [number, number];
-  /** Seconds to cross the card (or to twinkle once). */
-  period: [number, number];
-  /** How far it wanders side to side on its way (units). */
-  sway: number;
-  /** Degrees it rocks either way; confetti also flips. */
-  spin?: number;
-  /** Where on the card (y, in units) particles going right or twinkling sit. */
-  band?: [number, number];
-  /** For `glyph`. */
-  text?: string;
-}
-
-/** One particle, placed. `x` is a share of the card's width; `y` is in units (for `right` and `still`). */
-export interface Particle {
-  kind: ParticleKind;
-  dir: ParticleSpec['dir'];
-  x: number;
-  y: number;
-  size: number;
-  colour: string;
-  opacity: number;
-  period: number;
-  phase: number;
-  sway: number;
-  spin: number;
-  /** The suit a `suit` particle shows. */
-  suit: string;
-  text?: string;
 }
 
 export interface Banner {
   /** Back to front: the set, then the subject's parts. */
   layers: BannerLayer[];
-  particles: ParticleSpec;
 }
 
 // ── Pieces of a set ─────────────────────────────────────────────────────────
@@ -191,28 +124,24 @@ function bridge(fill: string, cable: string): Shape[] {
   ];
 }
 
-/** The subject's parts as layers: `[from, to, move?, pivot?, box?]` over gameSubject()'s shapes. */
-type Part = [number, number, Move?, [number, number]?, [number, number, number, number]?];
+/** The subject's parts as layers: `[from, to, box?]` over gameSubject()'s shapes. */
+type Part = [number, number, [number, number, number, number]?];
 /** The subject's square with room for its outlines and shadows. */
 const SQUARE: [number, number, number, number] = [-8, -8, 116, 116];
 
 function parts(v: Variant, list: Part[]): BannerLayer[] {
   const subject = gameSubject(v);
-  return list.map(([from, to, move, pivot, box]) => ({ shapes: subject.slice(from, to), move, pivot, box: box ?? SQUARE }));
+  return list.map(([from, to, box]) => ({ shapes: subject.slice(from, to), box: box ?? SQUARE }));
 }
 /** A box `r` either way round a point. */
 const around = (x: number, y: number, r: number): [number, number, number, number] => [x - r, y - r, r * 2, r * 2];
 
 // ── The games ───────────────────────────────────────────────────────────────
 
-const bob = (amp: number, period: number, phase = 0): Move => ({ kind: 'bob', amp, period, phase });
-const twinkle = (period: number, phase = 0): Move => ({ kind: 'twinkle', period, phase });
 
-const SUITS_UP = (colours: string[] = [WHITE]): ParticleSpec => ({ kind: 'suit', dir: 'up', count: 12, colours, size: [4.5, 8], opacity: [0.18, 0.38], period: [11, 17], sway: 6, spin: 18 });
 
 const BANNERS: Record<Variant, () => Banner> = {
-  // A seat at the table: the rail across the bottom and the betting line on the felt. The two cards breathe and the
-  // chip's ring turns.
+  // A seat at the table: the rail across the bottom and the betting line on the felt.
   holdem: () => {
     const { tone, band } = gameLook('holdem');
     return {
@@ -227,16 +156,15 @@ const BANNERS: Record<Variant, () => Banner> = {
           ],
         },
         ...parts('holdem', [
-          [0, 2, bob(1.4, 5.2)],
+          [0, 2],
           [2, 3],
-          [3, 4, { kind: 'spin', period: 9 }, [76, 76], around(76, 76, 15)],
-          [4, 5, undefined, undefined, around(76, 76, 15)],
+          [3, 4, around(76, 76, 15)],
+          [4, 5, around(76, 76, 15)],
         ]),
       ],
-      particles: SUITS_UP(),
     };
   },
-  // A sunny beach: rays from behind the cards, the sun, a dune. The pineapple card rocks; sparkles twinkle.
+  // A sunny beach: rays from behind the cards, the sun, a dune.
   pineapple: () => {
     const { tone } = gameLook('pineapple');
     const rays = Array.from({ length: 9 }, (_, i) => {
@@ -256,14 +184,13 @@ const BANNERS: Record<Variant, () => Banner> = {
           ],
         },
         ...parts('pineapple', [
-          [0, 2, bob(1.2, 5)],
-          [2, 3, { kind: 'sway', deg: 3.5, period: 3.6 }, [71, 84]],
+          [0, 2],
+          [2, 3],
         ]),
       ],
-      particles: { kind: 'sparkle', dir: 'still', count: 11, colours: [WHITE, '#fff3b0'], size: [3, 6], opacity: [0.5, 0.9], period: [1.8, 3.2], sway: 0, band: [-6, 86] },
     };
   },
-  // Loud: a halftone of dots fading to the right, confetti falling, the big wild 2 rocking, its sparkles twinkling.
+  // Loud: a halftone of dots fading to the right, the big wild 2 and its sparkles.
   deuces: () => {
     const { tone } = gameLook('deuces');
     const dots: string[] = [];
@@ -277,17 +204,16 @@ const BANNERS: Record<Variant, () => Banner> = {
       layers: [
         { shapes: [flat(dots.join(''), tone), flat(oval(50, 50, 44), tone), ...scatter('deuces', tone, SCATTER_AT.slice(2))] },
         ...parts('deuces', [
-          [0, 1, { kind: 'sway', deg: 2.5, period: 5.5 }, [50, 92]],
-          [1, 2, twinkle(2.4, 0), undefined, around(17, 26, 13)],
-          [2, 3, twinkle(2.4, 0.25), undefined, around(85, 22, 10)],
-          [3, 4, twinkle(2.4, 0.5), undefined, around(83, 74, 14)],
-          [4, 5, twinkle(2.4, 0.75), undefined, around(15, 72, 10)],
+          [0, 1],
+          [1, 2, around(17, 26, 13)],
+          [2, 3, around(85, 22, 10)],
+          [3, 4, around(83, 74, 14)],
+          [4, 5, around(15, 72, 10)],
         ]),
       ],
-      particles: { kind: 'confetti', dir: 'down', count: 16, colours: [WHITE, GLOW, '#2563eb', '#16c784', '#ffd0e4'], size: [3.2, 5], opacity: [0.75, 1], period: [6, 10], sway: 7, spin: 1 },
     };
   },
-  // A cold night: the moon, stars, hills and two headstones by the ghost. The ghost floats and the snow falls over everything.
+  // A cold night: the moon, stars, hills and two headstones by the ghost.
   ghost: () => {
     const { tone, band } = gameLook('ghost');
     return {
@@ -304,30 +230,28 @@ const BANNERS: Record<Variant, () => Banner> = {
             { kind: 'path', d: 'M84 83h4M97 86.5h3', stroke: INK, sw: 1.4, opacity: 0.5 },
           ],
         },
-        ...parts('ghost', [[0, 4, { kind: 'float', amp: 3, deg: 2, period: 4.4 }, [50, 60]]]),
+        ...parts('ghost', [[0, 4]]),
       ],
-      particles: { kind: 'dot', dir: 'down', count: 26, colours: [WHITE], size: [1.1, 2.6], opacity: [0.35, 0.85], period: [5, 9], sway: 5 },
     };
   },
-  // Night over the rivers: stars, a suspension bridge, two rows of water flowing, three cards bobbing on it, rain.
+  // Night over the rivers: stars, a suspension bridge, two rows of water, three cards on it.
   pittsburgh: () => {
     const { tone, band } = gameLook('pittsburgh');
     return {
       layers: [
         { shapes: [...stars(STARS), flat(oval(50, 44, 40), tone), ...bridge(band, '#c6d4e3')] },
-        { shapes: [wideWaves(71, '#9fd4ff', 4)], move: { kind: 'flow', length: 20, period: 4.2 } },
-        { shapes: [waveLine(71, 4)], move: { kind: 'flow', length: 20, period: 4.2 }, box: waveLines(71) },
-        { shapes: [wideWaves(80, '#5fa8e8'), glints([[12, 90], [46, 94], [76, 89], [128, 92], [176, 95], [224, 90]])], move: { kind: 'flow', length: 20, period: 3 } },
-        { shapes: [waveLine(80)], move: { kind: 'flow', length: 20, period: 3 }, box: waveLines(80) },
+        { shapes: [wideWaves(71, '#9fd4ff', 4)] },
+        { shapes: [waveLine(71, 4)], box: waveLines(71) },
+        { shapes: [wideWaves(80, '#5fa8e8'), glints([[12, 90], [46, 94], [76, 89], [128, 92], [176, 95], [224, 90]])] },
+        { shapes: [waveLine(80)], box: waveLines(80) },
         ...parts('pittsburgh', [
-        [3, 4, bob(1.6, 3.8, 0), undefined, around(22, 44, 26)],
-        [4, 5, bob(1.6, 3.8, 0.66), undefined, around(78, 44, 26)],
-        [5, 6, bob(1.6, 3.8, 0.33), undefined, around(50, 38, 28)],
+        [3, 4, around(22, 44, 26)],
+        [4, 5, around(78, 44, 26)],
+        [5, 6, around(50, 38, 28)],
       ])],
-      particles: { kind: 'streak', dir: 'down', count: 14, colours: ['#d6e6f5'], size: [5, 8], opacity: [0.18, 0.34], period: [1.4, 2.2], sway: 0, spin: 72 },
     };
   },
-  // A craps table: the pass line's curves, dice ghosted into the felt. The river card breathes and the die rocks.
+  // A craps table: the pass line's curves, dice ghosted into the felt.
   dice: () => {
     const { tone } = gameLook('dice');
     const ghostDie = (x: number, y: number, r: number) => flat(rr(-10, -10, 20, 20, 4.5), tone, { t: `translate(${x} ${y}) rotate(${r})` });
@@ -346,26 +270,24 @@ const BANNERS: Record<Variant, () => Banner> = {
           ],
         },
         ...parts('dice', [
-          [0, 1, bob(1.3, 5)],
-          [1, 2, { kind: 'sway', deg: 7, period: 2.8 }, [67, 66], around(67, 66, 30)],
+          [0, 1],
+          [1, 2, around(67, 66, 30)],
         ]),
       ],
-      particles: { kind: 'dot', dir: 'up', count: 14, colours: [WHITE, '#ffe1b8'], size: [1.2, 2.6], opacity: [0.3, 0.7], period: [7, 11], sway: 4 },
     };
   },
-  // Dusk on a red river: the low sun, far hills, the card riding the flow between two rows of waves, glints carried right.
+  // Dusk on a red river: the low sun, far hills, the card riding between two rows of waves.
   redriver: () => {
     const { tone, band } = gameLook('redriver');
     return {
       layers: [
         { shapes: [flat(oval(50, 44, 40), tone), flat(oval(132, 62, 26), '#ff9c8c', { opacity: 0.55 }), flat('M-20 66C40 56 110 60 170 64S300 54 400 60S520 56 640 60V140H-20Z', band, { opacity: 0.6 })] },
-        { shapes: [wideWaves(64, '#b81c2e', 6)], move: { kind: 'flow', length: 20, period: 3.4 } },
-        { shapes: [waveLine(64, 6)], move: { kind: 'flow', length: 20, period: 3.4 }, box: waveLines(64) },
-        ...parts('redriver', [[1, 2, { kind: 'float', amp: 1.8, deg: 3, period: 3.6 }, [50, 64]]]),
-        { shapes: [wideWaves(72, '#8f1322'), glints([[14, 84], [58, 88], [80, 80], [122, 86], [170, 90], [214, 84]], 0.5)], move: { kind: 'flow', length: 20, period: 2.4 } },
-        { shapes: [waveLine(72)], move: { kind: 'flow', length: 20, period: 2.4 }, box: waveLines(72) },
+        { shapes: [wideWaves(64, '#b81c2e', 6)] },
+        { shapes: [waveLine(64, 6)], box: waveLines(64) },
+        ...parts('redriver', [[1, 2]]),
+        { shapes: [wideWaves(72, '#8f1322'), glints([[14, 84], [58, 88], [80, 80], [122, 86], [170, 90], [214, 84]], 0.5)] },
+        { shapes: [waveLine(72)], box: waveLines(72) },
       ],
-      particles: { kind: 'streak', dir: 'right', count: 9, colours: [WHITE], size: [3, 6], opacity: [0.3, 0.6], period: [6, 10], sway: 1.2, band: [78, 98] },
     };
   },
   // A chapel window: an arch of light behind the cross, beams from above, dust in the light. The cards ripple.
@@ -393,10 +315,9 @@ const BANNERS: Record<Variant, () => Banner> = {
               [50, 78],
               [50, 50],
             ] as const
-          ).map(([x, y], i): Part => [i, i + 1, bob(1.3, 3.6, [0, 0.25, 0.25, 0.5, 0.12][i]), undefined, around(x, y, 19)]),
+          ).map(([x, y], i): Part => [i, i + 1, around(x, y, 19)]),
         ),
       ],
-      particles: { kind: 'dot', dir: 'up', count: 16, colours: ['#fff1c9', WHITE], size: [0.9, 2], opacity: [0.3, 0.75], period: [10, 16], sway: 6 },
     };
   },
   // A big clock face: sixty ticks round the cards, the hands going round, the cards rippling hour by hour.
@@ -424,22 +345,21 @@ const BANNERS: Record<Variant, () => Banner> = {
             { kind: 'path', d: `${oval(330, 30, 22)}`, stroke: tone, sw: 2 },
           ],
         },
-        ...parts('circle', [[0, 1, undefined, undefined, around(50, 50, 22)]]),
-        { shapes: [{ kind: 'path', d: 'M50 50L56 53.5', stroke: INK, sw: 3 }], move: { kind: 'spin', period: 120 }, pivot: [50, 50], box: around(50, 50, 14) },
-        { shapes: [{ kind: 'path', d: 'M50 50V39', stroke: INK, sw: 2.6 }], move: { kind: 'spin', period: 10 }, pivot: [50, 50], box: around(50, 50, 14) },
-        ...parts('circle', [[2, 3, undefined, undefined, around(50, 50, 6)]]),
+        ...parts('circle', [[0, 1, around(50, 50, 22)]]),
+        { shapes: [{ kind: 'path', d: 'M50 50L56 53.5', stroke: INK, sw: 3 }], box: around(50, 50, 14) },
+        { shapes: [{ kind: 'path', d: 'M50 50V39', stroke: INK, sw: 2.6 }], box: around(50, 50, 14) },
+        ...parts('circle', [[2, 3, around(50, 50, 6)]]),
         ...parts(
           'circle',
           CIRCLE_HOURS.map((h, i): Part => {
             const a = (h / 12) * 2 * Math.PI;
-            return [3 + i, 4 + i, bob(1.2, 3.6, h / 12), undefined, around(n(50 + Math.sin(a) * 34), n(50 - Math.cos(a) * 34), 16)];
+            return [3 + i, 4 + i, around(n(50 + Math.sin(a) * 34), n(50 - Math.cos(a) * 34), 16)];
           }),
         ),
       ],
-      particles: { kind: 'dot', dir: 'up', count: 10, colours: [WHITE], size: [1, 2], opacity: [0.25, 0.55], period: [10, 15], sway: 5 },
     };
   },
-  // Rows of dashed card outlines (the twenty that went), a few filled in. The "?"s blink, the cards breathe.
+  // Rows of dashed card outlines (the twenty that went), a few filled in.
   memory: () => {
     const { tone } = gameLook('memory');
     let gaps = '';
@@ -455,29 +375,27 @@ const BANNERS: Record<Variant, () => Banner> = {
     return {
       layers: [{ shapes: [flat(oval(50, 50, 44), tone), flat(seen, tone), { kind: 'path', d: gaps, stroke: WHITE, sw: 1.2, dash: '3 3', opacity: 0.18 }] }, ...parts('memory', [
         [0, 2],
-        [2, 3, twinkle(2.6, 0), undefined, around(67, 30, 13)],
-        [3, 4, twinkle(2.6, 0.5), undefined, around(33, 72, 13)],
-        [4, 5, bob(1.3, 4.4, 0), undefined, around(33, 30, 22)],
-        [5, 6, bob(1.3, 4.4, 0.5), undefined, around(67, 72, 22)],
+        [2, 3, around(67, 30, 13)],
+        [3, 4, around(33, 72, 13)],
+        [4, 5, around(33, 30, 22)],
+        [5, 6, around(67, 72, 22)],
       ])],
-      particles: { kind: 'glyph', dir: 'up', count: 8, colours: [WHITE], size: [5, 8], opacity: [0.14, 0.3], period: [11, 16], sway: 5, spin: 14, text: '?' },
     };
   },
-  // Up in the sky: small clouds drifting by, a green hill where the stalk grows, the stalk swaying, leaves falling.
+  // Up in the sky: small clouds, a green hill where the stalk grows.
   beanstalk: () => {
     const { tone } = gameLook('beanstalk');
     return {
       layers: [
         { shapes: [flat(oval(50, 50, 44), tone), ...scatter('beanstalk', tone, SCATTER_AT.slice(3))] },
-        { shapes: cloud(86, 11, 0.5), move: { kind: 'drift', amp: 3, period: 13 }, box: around(86, 9, 18) },
-        { shapes: cloud(300, 12, 0.7), move: { kind: 'drift', amp: 5, period: 19, phase: 0.7 }, box: around(300, 10, 26) },
+        { shapes: cloud(86, 11, 0.5), box: around(86, 9, 18) },
+        { shapes: cloud(300, 12, 0.7), box: around(300, 10, 26) },
         { shapes: [ink('M-30 104C0 90 70 88 110 104Z', GREEN_DARK, { noShadow: true }), { kind: 'path', d: 'M10 98l2 -4M26 95l1 -4M80 96l1 -4', stroke: GREEN, sw: 1.6 }], box: [-30, 80, 150, 30] },
-        ...parts('beanstalk', [[0, 12, { kind: 'sway', deg: 2.2, period: 5.6 }, [50, 104], [-8, -8, 116, 120]]]),
+        ...parts('beanstalk', [[0, 12, [-8, -8, 116, 120]]]),
       ],
-      particles: { kind: 'leaf', dir: 'down', count: 7, colours: [GREEN, GREEN_DARK, '#7fd36b'], size: [5, 8], opacity: [0.75, 1], period: [8, 12], sway: 9, spin: 40 },
     };
   },
-  // A casino at night: a spotlight on the hand, the table's edge and its gold line, suits falling. Cards and the 21 chip breathe.
+  // A casino at night: a spotlight on the hand, the table's edge and its gold line.
   bjholdem: () => {
     const { tone } = gameLook('bjholdem');
     return {
@@ -493,71 +411,30 @@ const BANNERS: Record<Variant, () => Banner> = {
           ],
         },
         ...parts('bjholdem', [
-          [0, 2, bob(1.3, 5)],
-          [2, 5, bob(1.8, 3.4, 0.5), undefined, around(75, 75, 22)],
+          [0, 2],
+          [2, 5, around(75, 75, 22)],
         ]),
       ],
-      particles: { kind: 'suit', dir: 'down', count: 11, colours: [WHITE], size: [4, 7], opacity: [0.1, 0.24], period: [10, 15], sway: 6, spin: 20 },
     };
   },
-  // Charged: rings of power growing from the power card, bolts in the dark, sparks twinkling.
+  // Charged: rings of power round the power card, bolts in the dark.
   power: () => {
     const { tone, band } = gameLook('power');
     return {
       layers: [
         { shapes: [flat(oval(50, 50, 44), tone), bolt(132, 26, 0.7, 14, band), bolt(214, 70, 0.6, -18, band), bolt(300, 24, 0.8, 8, band), bolt(380, 66, 0.6, -6, band)] },
-        { shapes: [{ kind: 'path', d: oval(62, 50, 46), stroke: POWER_FRAME, sw: 2.2, opacity: 0.6 }], move: { kind: 'pulse', period: 2.8 }, box: around(62, 50, 50) },
-        { shapes: [{ kind: 'path', d: oval(62, 50, 46), stroke: WHITE, sw: 1.6, opacity: 0.5 }], move: { kind: 'pulse', period: 2.8, phase: 0.5 }, box: around(62, 50, 50) },
+        { shapes: [{ kind: 'path', d: oval(62, 50, 46), stroke: POWER_FRAME, sw: 2.2, opacity: 0.6 }], box: around(62, 50, 50) },
+        { shapes: [{ kind: 'path', d: oval(62, 50, 46), stroke: WHITE, sw: 1.6, opacity: 0.5 }], box: around(62, 50, 50) },
         ...parts('power', [
-          [0, 1, bob(1.3, 5)],
-          [1, 2, { kind: 'float', amp: 2, deg: 2.5, period: 3.8 }, [62, 50]],
-          [2, 3, twinkle(2, 0), undefined, around(86, 22, 10)],
-          [3, 4, twinkle(2, 0.5), undefined, around(84, 80, 13)],
+          [0, 1],
+          [1, 2],
+          [2, 3, around(86, 22, 10)],
+          [3, 4, around(84, 80, 13)],
         ]),
       ],
-      particles: { kind: 'sparkle', dir: 'up', count: 12, colours: [POWER_FRAME, GLOW, WHITE], size: [2.6, 5], opacity: [0.5, 0.95], period: [6, 10], sway: 5 },
     };
   },
 };
 
 export const gameBanner = (v: Variant): Banner => (BANNERS[v] ?? BANNERS.holdem)();
 
-/** The same numbers every time for a game (a card must look the same each time it's drawn). */
-function seeded(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const SUITS = ['♠', '♥', '♦', '♣'];
-
-/** A game's particles placed: spread evenly across the card with a little jitter, each on its own clock. */
-export function bannerParticles(v: Variant): Particle[] {
-  const spec = gameBanner(v).particles;
-  const rand = seeded(VARIANTS.findIndex((x) => x.id === v) * 7919 + 17);
-  const lerp = ([a, b]: [number, number]) => a + (b - a) * rand();
-  const [top, bottom] = spec.band ?? [-10, 96];
-  return Array.from({ length: spec.count }, (_, i) => ({
-    kind: spec.kind,
-    dir: spec.dir,
-    // Even columns with jitter, so they never bunch up on one side.
-    x: Math.min(0.98, Math.max(0.02, (i + 0.15 + rand() * 0.7) / spec.count)),
-    y: top + (bottom - top) * rand(),
-    size: n(lerp(spec.size)),
-    colour: spec.colours[Math.floor(rand() * spec.colours.length)],
-    opacity: n(lerp(spec.opacity)),
-    period: n(lerp(spec.period)),
-    // Phases spread round the clock (golden ratio), so they don't arrive together.
-    phase: n((i * 0.618034 + rand() * 0.1) % 1),
-    sway: n(spec.sway * (0.6 + rand() * 0.4)),
-    // Rain keeps one slant; everything else turns either way.
-    spin: n((spec.spin ?? 0) * (spec.kind === 'streak' || rand() < 0.5 ? 1 : -1)),
-    suit: SUITS[Math.floor(rand() * 4)],
-    text: spec.text,
-  }));
-}

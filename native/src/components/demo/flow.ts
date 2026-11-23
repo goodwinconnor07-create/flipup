@@ -12,6 +12,12 @@ export interface Flow {
 
 export const FLOW_START: Flow = { index: 0, since: null };
 
+/**
+ * The first step after the welcome comes up as the hand is dealt: it waits this long (ms) so the cards have flown in
+ * and turned over before the dim lands on them (the recording of 23 Nov 2026 caught your cards mid-flip).
+ */
+export const AFTER_DEAL = 600;
+
 export interface FlowView {
   flow: Flow;
   /** The step on screen, or null between steps. */
@@ -38,7 +44,7 @@ export function coachView(steps: CoachStep[], flow: Flow, c: CoachCtx): FlowView
       f = { index: f.index + 1, since: null };
       continue;
     }
-    const at = f.since! + (step.wait ?? 0);
+    const at = f.since! + Math.max(step.wait ?? 0, f.index === 1 ? AFTER_DEAL : 0);
     if (c.now < at) return { flow: f, step: null, finished: false, dueAt: at };
     return { flow: f, step, finished: false, dueAt: null };
   }

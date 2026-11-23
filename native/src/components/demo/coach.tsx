@@ -52,6 +52,14 @@ function tapWord(spot: SpotId): string {
 }
 
 const grow = (r: Rect, by: number): Rect => ({ x: r.x - by, y: r.y - by, width: r.width + by * 2, height: r.height + by * 2 });
+/** Room a cut-out keeps from the screen's edges, so a wide part (the seat row) still shows its round corners. */
+const EDGE = 10;
+/** A cut-out kept inside the screen. */
+function inside(r: Rect, width: number, height: number): Rect {
+  const x = Math.max(r.x, EDGE);
+  const y = Math.max(r.y, EDGE);
+  return { x, y, width: Math.max(0, Math.min(r.x + r.width, width - EDGE) - x), height: Math.max(0, Math.min(r.y + r.height, height - EDGE) - y) };
+}
 function union(rs: Rect[]): Rect | null {
   if (!rs.length) return null;
   const x = Math.min(...rs.map((r) => r.x));
@@ -243,7 +251,7 @@ export function DemoCoach({ game, variant, started, from }: { game: Game; varian
     .map((id) => {
       const r = at(id);
       // The felt is an oval: its cut-out is a stadium, so the page round it stays dark.
-      return r ? { ...grow(r, PAD), r: id === 'felt' ? Math.min(r.width, r.height) / 2 + PAD : CORNER } : null;
+      return r ? { ...inside(grow(r, PAD), width, height), r: id === 'felt' ? Math.min(r.width, r.height) / 2 + PAD : CORNER } : null;
     })
     .filter((h): h is Hole => !!h)
     .slice(0, HOLES);
@@ -278,6 +286,11 @@ export function DemoCoach({ game, variant, started, from }: { game: Game; varian
   };
 
   const shown = !!step || view.finished;
+  // Between steps the dim fades out with its cut-outs where they were: closing them as it faded showed the table's
+  // next buttons (a white Check) shrinking in a hole after you tapped Call.
+  const holesKey = holes.map((h) => [h.x, h.y, h.width, h.height, h.r].map(Math.round).join(',')).join('|');
+  const [held, setHeld] = useState<{ key: string; holes: Hole[] }>({ key: '', holes: [] });
+  if (step && held.key !== holesKey) setHeld({ key: holesKey, holes });
   // Where the caption goes: under the lit part if there's more room there, else over it; in the middle with none.
   const top = insets.top + 64;
   const bottom = height - Math.max(insets.bottom, spacing.sm) - 8;
@@ -292,7 +305,7 @@ export function DemoCoach({ game, variant, started, from }: { game: Game; varian
       pointerEvents="box-none"
       style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, zIndex: 100 }}
     >
-      <Dim holes={view.finished ? [] : holes} shown={shown} width={width} height={height} />
+      <Dim holes={view.finished ? [] : step ? holes : held.holes} shown={shown} width={width} height={height} />
 
       {/* Taps: only the thing a step asks for gets through; anywhere else nudges it. Between steps, nothing does. */}
       {(step?.tap && tapHole ? blockersAround([tapHole, ...alsoHoles], width, height) : [{ x: 0, y: 0, width, height }]).map((r, i) => (

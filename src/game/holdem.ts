@@ -59,6 +59,11 @@ export const TIMING = {
   fastBotMin: 250,
   fastBotMax: 550,
   fastStreet: 350,
+  /** A Demo (demo.ts) keeps moving: the deal soon after Deal me in, quick scripted bots and a short beat before each card. */
+  demoStart: 500,
+  demoBotMin: 280,
+  demoBotMax: 420,
+  demoStreet: 600,
   fastRunout: 600,
   /** The pause before the next deal is this share of the usual when every person has folded. */
   fastAfter: 0.45,
@@ -541,7 +546,7 @@ function setTurn(game: Game, idx: number, ctx: ActionContext): void {
     return;
   }
   if (player.bot) {
-    const [lo, hi] = botsOnly(game) ? [TIMING.fastBotMin, TIMING.fastBotMax] : usesEverydayBots(game) ? [350, 550] : [TIMING.botMin, TIMING.botMax];
+    const [lo, hi] = game.demo ? [TIMING.demoBotMin, TIMING.demoBotMax] : botsOnly(game) ? [TIMING.fastBotMin, TIMING.fastBotMax] : usesEverydayBots(game) ? [350, 550] : [TIMING.botMin, TIMING.botMax];
     hand.actAt = ctx.now + lo + Math.floor(ctx.rng() * (hi - lo));
   } else if (game.settings.turnSeconds > 0) {
     const clock = game.settings.turnSeconds * 1000;
@@ -696,7 +701,7 @@ function pauseBeforeNextStreet(game: Game, ctx: ActionContext, extra = 0): void 
   hand.deadline = null;
   const next = hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river';
   const pause = variantOf(game) === 'holdem' ? TIMING.streetPause : TIMING.variantStreetPause;
-  hand.nextStreetAt = ctx.now + (botsOnly(game) ? TIMING.fastStreet : pause) + drama(game, ctx, next) + extra;
+  hand.nextStreetAt = ctx.now + (game.demo ? TIMING.demoStreet : botsOnly(game) ? TIMING.fastStreet : pause) + drama(game, ctx, next) + extra;
   hand.actAt = hand.nextStreetAt;
   schedule(game);
 }

@@ -19,6 +19,11 @@ It's free for every game, Premium ones too, because it's how a free player sees 
 - **The coach** (`components/demo/coach.tsx`) draws the dim, the cut-outs, the gold ring, the caption and the finish
   card, and lets taps through only to the step's target. `flow.ts` decides which step is up, the same way in the app
   and in the tests.
+- **The pace** (23 Nov 2026, the owner: the demo felt slow and clunky). A demo keeps moving: the deal comes
+  `TIMING.demoStart` (0.5s) after Deal me in, the scripted bots move in `demoBotMin` to `demoBotMax` (0.28 to 0.42s)
+  and the beat before each card is `demoStreet` (0.6s), all in `src/game/holdem.ts`. The first step after the
+  welcome waits `AFTER_DEAL` (0.6s, `flow.ts`) so your cards have landed before the dim does. Cut-outs stay inside
+  the screen (round corners on the wide seat row), and after a tap the dim fades with its cut-outs where they were.
 - **The session** (`openDemo()`, `startDemo()`, `closeDemo()` in `native/src/state/session.ts`) sets whatever table
   you were at aside and puts it back when the demo closes. A demo hand is never counted in your stats, kept as a
   hand or saved.

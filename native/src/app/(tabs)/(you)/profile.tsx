@@ -1,13 +1,13 @@
 import { Color, router, Stack } from 'expo-router';
 import { useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { popIn } from '@/motion/presets';
 
 import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
-import { NativeMenu } from '@/components/native-menu';
+import { MenuRow, MenuSection } from '@/components/menu-list';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
@@ -60,11 +60,12 @@ export default function ProfileScreen() {
   return (
     <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: page }}>
       <Stack.Screen options={{ title: 'You', headerShown: false }} />
-      {/* The Games-app header: a deep blue glow behind your face that fades into the page. */}
-      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${page as string} 100%)`), opacity: dark ? 1 : 0.9 }} />
-      <NativeMenu
-        transparent
-        top={
+      {/* One scroll view for the whole page: the header used to sit above a SwiftUI list that scrolled on its own, so on
+          a phone the face, name and stats card filled the screen and nothing could move. The rows are the same
+          inset grouped list, drawn in React Native so they scroll with the header. */}
+      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" contentInsetAdjustmentBehavior="never" contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}>
+        {/* The Games-app header: a deep blue glow behind your face that fades into the page (scrolls with it). */}
+        <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${page as string} 100%)`), opacity: dark ? 1 : 0.9 }} />
           <View style={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.md, paddingBottom: spacing.md }}>
         <View style={{ alignItems: 'center', gap: spacing.sm, paddingTop: spacing.md }}>
           <Pressable
@@ -137,25 +138,23 @@ export default function ProfileScreen() {
           <PassportCard />
         </View>
           </View>
-        }
-        groups={[
-          {
-            id: 'poker',
-            items: [
-              { kind: 'link', id: 'saved', title: 'Saved hands', subtitle: 'Hands you bookmarked at the table', onPress: () => router.push('/replays') },
-              { kind: 'link', id: 'share', title: 'Share cards', subtitle: 'Your stats, top hands and games as pictures', onPress: () => router.push('/share') },
-            ],
-          },
-          {
-            id: 'you',
-            items: [
-              { kind: 'link', id: 'premium', title: 'FlipUp Premium', detail: premium ? 'Unlocked' : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`, trailingCrown: true, onPress: () => router.push('/premium') },
-              { kind: 'link', id: 'demo', title: 'Demos', subtitle: 'Play a hand of any game, with a guide', onPress: () => showDemo(game) },
-              { kind: 'link', id: 'settings', title: 'Settings', subtitle: 'Sound, looks and your data', onPress: () => router.push('/settings') },
-            ],
-          },
-        ]}
-      />
+        <View style={{ paddingHorizontal: spacing.md, gap: spacing.xl }}>
+          <MenuSection>
+            <MenuRow title="Saved hands" subtitle="Hands you bookmarked at the table" onPress={() => router.push('/replays')} />
+            <MenuRow title="Share cards" subtitle="Your stats, top hands and games as pictures" onPress={() => router.push('/share')} />
+          </MenuSection>
+          <MenuSection>
+            <MenuRow
+              title="FlipUp Premium"
+              detail={premium ? 'Unlocked' : `${VARIANTS.length - FREE_VARIANTS} more games`}
+              trailing={<Icon name="crown.fill" size={15} color={brand.gold} />}
+              onPress={() => router.push('/premium')}
+            />
+            <MenuRow title="Demos" subtitle="Play a hand of any game, with a guide" onPress={() => showDemo(game)} />
+            <MenuRow title="Settings" subtitle="Sound, looks and your data" onPress={() => router.push('/settings')} />
+          </MenuSection>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

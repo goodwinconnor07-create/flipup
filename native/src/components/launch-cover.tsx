@@ -140,7 +140,7 @@ export function PrintCover({
 /** The cover's page: the game's colours for a game's deal-in, else the moving blue field (or the launch's own look). */
 function Field({ variant, look, children }: { variant?: Variant; look: typeof LIGHT | typeof DARK | null; children: ReactNode }) {
   const centre = { alignItems: 'center', justifyContent: 'center' } as const;
-  if (variant) return <GameBackdrop variant={variant} style={centre}>{children}</GameBackdrop>;
+  if (variant) return <GameBackdrop variant={variant} focus="50%" style={centre}>{children}</GameBackdrop>;
   return (
     <GrainBackground style={centre} {...(look ? { colors: look.base, glow: look.glow, glow2: look.glow2 } : {})}>
       {children}
@@ -249,7 +249,7 @@ export function LoadingCover({ visible, variant, text = 'Creating your lobby' }:
       accessibilityLiveRegion="polite"
       style={[{ position: 'absolute', inset: 0, zIndex: 900 }, coverStyle]}
     >
-      <GameBackdrop variant={variant} style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <GameBackdrop variant={variant} focus="50%" style={{ alignItems: 'center', justifyContent: 'center' }}>
         <Animated.View style={[{ width: TILE, height: TILE, borderRadius: TILE * 0.24, borderCurve: 'continuous', boxShadow: '0 22px 44px -16px rgba(0, 0, 0, 0.7)' }, tileStyle]}>
           <View style={{ flex: 1, borderRadius: TILE * 0.24, borderCurve: 'continuous', overflow: 'hidden' }}>
             <GameThumb variant={variant} size={TILE} />

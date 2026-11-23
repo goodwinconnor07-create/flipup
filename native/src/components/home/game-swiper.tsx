@@ -38,7 +38,20 @@ const OMEGA = Math.sqrt(SETTLE.stiffness / SETTLE.mass);
  * tick and becomes the chosen game. The line floats a few points (not under Reduce Motion). Tap the middle card for
  * its page, a neighbour to bring it in. VoiceOver treats it as one adjustable control.
  */
-export function GameSwiper({ variant, onChange, size, width }: { variant: Variant; onChange: (v: Variant) => void; size: number; width: number }) {
+export function GameSwiper({
+  variant,
+  onChange,
+  size,
+  width,
+  progress,
+}: {
+  variant: Variant;
+  onChange: (v: Variant) => void;
+  size: number;
+  width: number;
+  /** Written with the line's position in games (0 is the first), kept inside the line, so the page's colour can follow the finger. */
+  progress?: SharedValue<number>;
+}) {
   const premium = usePremium();
   const step = size;
   const last = VARIANTS.length - 1;
@@ -52,6 +65,12 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
     haptic.select();
     onChange(next.id);
   };
+  useAnimatedReaction(
+    () => Math.max(0, Math.min(last, x.get() / step)),
+    (p) => {
+      if (progress) progress.set(p);
+    },
+  );
   useAnimatedReaction(
     () => Math.round(Math.max(0, Math.min(last * step, x.get())) / step),
     (i, was) => {

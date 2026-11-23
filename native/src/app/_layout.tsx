@@ -1,5 +1,6 @@
 import '@/polyfills';
-import { Color, DarkTheme, DefaultTheme, router, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
+import { Color, DarkTheme, DefaultTheme, router, Stack, ThemeProvider, usePathname, type ErrorBoundaryProps } from 'expo-router';
+import { setStatusBarStyle } from 'expo-status-bar';
 
 import { useReminderTaps } from '@/state/reminder';
 import { useEffect } from 'react';
@@ -16,6 +17,7 @@ import { startStore } from '@/state/purchase';
 import { loadAppearance, useAppearance, type AppearancePref } from '@/state/prefs';
 import { haptic } from '@/components/haptics';
 import { useColors, usePlainColors } from '@/theme';
+import { barStyleFor } from '@/state/status-bar';
 
 /** Appearance in Settings: follow the phone, or always light or dark. */
 const applyAppearance = (a: AppearancePref) => {
@@ -48,6 +50,20 @@ const SHEETS = new Set([
 /** Opened from Home's PLAY, whose card has already grown to fill the screen: the page fades in over it instead of sliding. */
 function fadeAfterFill(route: { params?: object }) {
   return (route.params as { fill?: string } | undefined)?.fill ? { animation: 'fade' as const, animationDuration: 200 } : {};
+}
+
+/**
+ * The status bar's colour, set from here for the whole app (`barStyleFor()`), never per screen: the native tab bar
+ * passed on the wrong screen's choice, so the time went white on light pages and black on dark ones. Needs
+ * `UIViewControllerBasedStatusBarAppearance` off in Info.plist (`app.config.ts`).
+ */
+function StatusBarFollower({ dark }: { dark: boolean }) {
+  const pathname = usePathname();
+  const style = barStyleFor(pathname, dark);
+  useEffect(() => {
+    if (style) setStatusBarStyle(style, true);
+  }, [style]);
+  return null;
 }
 
 export default function RootLayout() {
@@ -94,7 +110,6 @@ export default function RootLayout() {
     headerLargeTitleStyle: { color: '#ffffff' },
     headerBackButtonDisplayMode: 'default' as const,
     headerBackTitle: 'Back',
-    statusBarStyle: 'light' as const,
   };
   return (
     <ThemeProvider value={theme}>
@@ -110,14 +125,14 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         {/* The table covers the tab bar and can't be swiped away mid-hand: you leave it from its menu. */}
         {/* Play with friends: its own dark grain page, over the tabs so the tab bar never covers Open table. */}
-        <Stack.Screen name="play-friends" options={({ route }) => ({ headerShown: false, title: 'Play with friends', statusBarStyle: 'light', ...fadeAfterFill(route) })} />
+        <Stack.Screen name="play-friends" options={({ route }) => ({ headerShown: false, title: 'Play with friends', ...fadeAfterFill(route) })} />
         {/* A party's playlist, pushed from Play with friends; Save takes it back there. */}
-        <Stack.Screen name="party-playlist" options={{ headerShown: false, title: 'Party playlist', statusBarStyle: 'light' }} />
-        <Stack.Screen name="play-bots" options={({ route }) => ({ headerShown: false, title: 'Play with bots', statusBarStyle: 'light', ...fadeAfterFill(route) })} />
+        <Stack.Screen name="party-playlist" options={{ headerShown: false, title: 'Party playlist' }} />
+        <Stack.Screen name="play-bots" options={({ route }) => ({ headerShown: false, title: 'Play with bots', ...fadeAfterFill(route) })} />
         {/* Bot Lab, from Settings: your own bots, and the editor for one. Dark pages of their own, like Play with bots. */}
-        <Stack.Screen name="bot-lab" options={{ headerShown: false, title: 'Bot Lab', statusBarStyle: 'light' }} />
+        <Stack.Screen name="bot-lab" options={{ headerShown: false, title: 'Bot Lab' }} />
         {/* No swipe back here: a finger that just misses a slider and drifts sideways used to pull the whole page away (iOS 26 swipes back from anywhere). The page has its own Back, Save and Delete. */}
-        <Stack.Screen name="bot-lab-edit" options={{ headerShown: false, gestureEnabled: false, title: 'Bot', statusBarStyle: 'light' }} />
+        <Stack.Screen name="bot-lab-edit" options={{ headerShown: false, gestureEnabled: false, title: 'Bot' }} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
         {/* The Demo: the table with the coach over it, over everything (even a game's sheet); its X closes it. */}
         <Stack.Screen name="demo/[id]" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false, animation: 'fade', animationDuration: 250 }} />
@@ -128,20 +143,20 @@ export default function RootLayout() {
         <Stack.Screen name="lobby-game" options={{ ...sheet, sheetAllowedDetents: [0.6, 1], headerShown: false, title: 'Change the game' }} />
         {/* Range training's table: its own night room over the tabs, like Play with bots, so nothing covers the answers. */}
         {/* Premium is a full page (the owner, 17 Nov 2026: not a pull-up sheet); its round X closes it. */}
-        <Stack.Screen name="premium" options={{ presentation: 'fullScreenModal', headerShown: false, title: 'FlipUp Premium', statusBarStyle: 'light', gestureEnabled: false }} />
+        <Stack.Screen name="premium" options={{ presentation: 'fullScreenModal', headerShown: false, title: 'FlipUp Premium', gestureEnabled: false }} />
         {/* A perk sheet is only as tall as what it says (the games list is long, so it gets the two detents). */}
         <Stack.Screen name="premium-perk" options={({ route }) => ({ ...sheet, sheetAllowedDetents: (route.params as { id?: string } | undefined)?.id === 'games' ? [0.75, 1] : 'fitToContents', headerShown: false, title: 'Premium' })} />
         {/* Share cards, the hand bank and Replay. */}
         <Stack.Screen name="share" options={{ ...darkPage, title: 'Share' }} />
         <Stack.Screen name="share-card" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Share card' }} />
         <Stack.Screen name="replays" options={{ ...darkPage, title: 'Saved hands' }} />
-        <Stack.Screen name="replay/[id]" options={{ headerShown: false, title: 'Replay', statusBarStyle: 'light' }} />
+        <Stack.Screen name="replay/[id]" options={{ headerShown: false, title: 'Replay' }} />
         <Stack.Screen name="table-menu" options={{ ...menuSheet, title: 'Menu' }} />
         <Stack.Screen name="table-standings" options={{ ...sheet, title: 'Standings' }} />
         <Stack.Screen name="table-theme" options={{ ...menuSheet, title: 'Table theme' }} />
         <Stack.Screen name="table-settings" options={{ ...menuSheet, sheetAllowedDetents: [0.75, 1], title: 'Table settings' }} />
         {/* Range training: a set of five hands, full screen over the tabs (Back and the set's progress on top). */}
-        <Stack.Screen name="range-session" options={{ headerShown: false, title: 'Range training', statusBarStyle: 'light' }} />
+        <Stack.Screen name="range-session" options={{ headerShown: false, title: 'Range training' }} />
         {/* Range training: the full breakdown of the hand you just answered (the result card's Breakdown). */}
         <Stack.Screen name="range-breakdown" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Breakdown' }} />
         {/* Range training explained in four steps (the Train tab's How it works). */}
@@ -151,7 +166,7 @@ export default function RootLayout() {
         <Stack.Screen name="card-packs" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Card packs' }} />
         <Stack.Screen name="blocked" options={{ ...menuSheet, sheetAllowedDetents: [0.75, 1], title: 'Blocked players' }} />
         {/* The welcome: a face and a name, once, before a first table (state/ask-name.ts). Full screen, no swipe away. */}
-        <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', gestureEnabled: false, headerShown: false, title: 'Welcome', statusBarStyle: 'light' }} />
+        <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', gestureEnabled: false, headerShown: false, title: 'Welcome' }} />
         <Stack.Screen name="emoji" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Your emoji' }} />
         {/* Join with a code: Play's round button. The keyboard comes up as it opens; a table or party code, or a QR code. */}
         <Stack.Screen name="join" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Join' }} />
@@ -160,6 +175,7 @@ export default function RootLayout() {
         <Stack.Screen name="party/[code]" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen name="party-sheet" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Party' }} />
       </Stack>
+      <StatusBarFollower dark={dark} />
       <RequestTimeoutPopup />
       <UndoToast />
       <Toast />

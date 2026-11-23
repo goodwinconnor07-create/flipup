@@ -58,6 +58,18 @@
 > buttons stay). The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
 > of leaving a gap under the link. The profile keeps Settings, Premium and Demos.
 
+> **23 Nov 2026 (owner): a game's page is night blue with the game's colour as a glow.** Mixing each game's colour
+> towards black turned the warm games brown (Die on the River's orange became a chocolate page) and the lights moved
+> too much. Now `GameBackdrop` is the same night blue for every game (`brand.backdropTop` to `brand.backdropBottom`),
+> with the game's colour as a glow centred on its picture (`focus`) that fades out before the buttons, and a faint
+> wash from the top, so the shortcuts, buttons and tab bar look the same whichever game is chosen. Two soft lights
+> (brand blue, a little white) drift on 22s and 31s clocks over a short distance, and the glow breathes a few percent
+> on a 27s one: noticed only when looked for. On Home the colour follows the swiper (`progress`), blending between
+> two games as the finger drags, rather than fading in after the card lands. Home and the lobbies stay dark in light
+> mode too (the game art is drawn for dark), and the status bar is set for the whole app from one place
+> (`StatusBarFollower`, `barStyleFor()` in `state/status-bar.ts`): white on the always-dark pages, the phone's own
+> look elsewhere, unchanged under a sheet.
+>
 > **19 Nov 2026 (owner, from a mock-up): lobbies in the game's colour.** Play with bots, Play with friends and the
 > table lobby use Home's `GameBackdrop` (`LobbyBackdrop` in `components/lobby/lobby-backdrop.tsx`): a dark shade of
 > the chosen game's colour with its lights, fading to the next game's when Change picks another. The lobby's blue

@@ -24,8 +24,8 @@ export default function TrainTab() {
   return (
     <ForceScheme scheme="dark">
       <TrainBackground mood={daily.finished ? 'done' : 'idle'}>
-        {/* Always dark, so the clock and battery are white whatever the phone's own look. */}
-        <Stack.Screen options={{ title: 'Train', headerShown: false, statusBarStyle: 'light' }} />
+        {/* Always dark: the status bar is white here (`barStyleFor()`), whatever the phone's own look. */}
+        <Stack.Screen options={{ title: 'Train', headerShown: false }} />
         <TabScreen title="Train" accessory={<ProfileMenu />} scrollRef={scroll}>
           <TrainHome history={history} grades={grades} />
         </TabScreen>

@@ -1,7 +1,7 @@
 import { router, Stack, useIsFocused } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { gameLook } from '@design/gameArt';
@@ -21,7 +21,7 @@ import { Swap } from '@/components/swap';
 import { useTabPush } from '@/components/use-tab-push';
 import { detail } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { variantNeedsPremium, isVariant, variantInfo, type Variant } from '@/engine';
+import { variantNeedsPremium, isVariant, variantInfo, VARIANTS, type Variant } from '@/engine';
 import { askForName } from '@/state/ask-name';
 import { usePartyView } from '@/components/party/panel';
 import { forgetParty, usePartyRef } from '@/state/party';
@@ -86,6 +86,8 @@ export default function Home() {
   const variant: Variant = isVariant(stored) ? stored : isVariant(last) ? last : 'holdem';
   const info = variantInfo(variant);
   const look = gameLook(variant);
+  // The swiper's position in games, so the page's colour blends between two games as the finger drags.
+  const progress = useSharedValue(Math.max(0, VARIANTS.findIndex((v) => v.id === variant)));
   // The parts arrive one after another, 30ms apart, when the app opens (phone only: the web build's layout animations misplace rows).
   const arrive = (i: number) => (Platform.OS === 'ios' ? detail(i, reduce) : undefined);
   // At 320pt wide (an SE with Display Zoom) there's no room for the hook line and a full-size card: the card shrinks
@@ -117,9 +119,9 @@ export default function Home() {
   const pad = { paddingHorizontal: spacing.md };
   return (
     <ForceScheme scheme="dark">
-      {/* Always dark, so the clock and battery are white whatever the phone's own look. */}
-      <Stack.Screen options={{ title: 'Play', headerShown: false, statusBarStyle: 'light' }} />
-      <GameBackdrop variant={variant} style={{ flex: 1 }}>
+      {/* Always dark: the status bar is white here (`barStyleFor()`), whatever the phone's own look. */}
+      <Stack.Screen options={{ title: 'Play', headerShown: false }} />
+      <GameBackdrop variant={variant} progress={progress} style={{ flex: 1 }}>
         <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.sm }}>
           {/* Top bar: the page's name on the left, you on the right. */}
           <Animated.View entering={arrive(0)} style={[pad, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
@@ -142,7 +144,7 @@ export default function Home() {
 
           {/* The middle: the games in a line across the whole screen, the chosen one's name, hook and its Demo. */}
           <Animated.View entering={arrive(1)} style={{ alignItems: 'center', gap: spacing.xs }}>
-            <GameSwiper variant={variant} onChange={(v) => save(PICK, v)} size={card} width={Math.min(width, 560 + spacing.md * 2)} />
+            <GameSwiper variant={variant} onChange={(v) => save(PICK, v)} size={card} width={Math.min(width, 560 + spacing.md * 2)} progress={progress} />
             <View style={[pad, { alignItems: 'center', gap: 2 }]}>
               {/* The name and hook change with the game. Both boxes run the full width, so a longer old name isn't cut
                   to the new one's width as it leaves, and the name rolls by half its line so the two never print over

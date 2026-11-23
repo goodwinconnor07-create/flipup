@@ -7,6 +7,19 @@
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
+> **23 Nov 2026 (owner): lessons from EasyPoker, in our own look** (mock-ups on the owner's canvas, then built). The
+> table menu opens with a gold **Your turn** bar while it's your move (the seconds left and a draining line; a tap goes
+> back to the table) and is cut to what matters mid-hand: the action tiles, This hand (Hand rankings with your hand as
+> its detail, Hand log, Standings), Table (invite, settings, theme, add a bot) and Sound and feel; every row has a
+> glyph. **Hand rankings** open on "You have now" (your hand's name and five cards on a blue card, what beats it) and
+> light your row with a gold YOU tag. The lobby's **code card** makes the code its hero: GAME CODE, the code centred at
+> 64pt, how friends join, then a white Share invite capsule with Copy and QR as round icons. **House rules** give every
+> number a short line on what it does, as the switches already had. **Welcome** has a three-step strip (Host a table,
+> Send the code, Friends sit down on their phones) and a name counter. The **You tab** has Your look (card backs, gold
+> name, table felt as tiles showing what you wear). **Card packs** open on the pack you wear, fanned big, and a crowned
+> pack is tried on there with Unlock with Premium before the offer. **Premium**'s buttons say the deal ("Subscribe
+> for $50.00 a year", or the intro offer) and yearly says what it works out to a month.
+
 > **21 Nov 2026 (owner): the Demo replaces How to Play.** Every game's Demo button (Home under the game's name, the
 > game sheet's picture, the lobby's game card, the games shelf, the profile's Demos, the Premium games list) opens one
 > hand of that game on the real table, against Luna and Max, with a coach over it (`docs/DEMO.md`). One step at a

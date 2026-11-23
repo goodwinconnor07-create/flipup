@@ -20,7 +20,7 @@ import { ThemedText } from '@/components/themed-text';
 import { isVariant, VARIANTS, variantInfo, FREE_VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePremium } from '@/state/premium';
-import { buyPremium, manageSubscription, ON_SALE, restorePremium, startStore, storeError, useStore, yearlySaving, type Plan, type StoreState } from '@/state/purchase';
+import { buyPremium, manageSubscription, ON_SALE, restorePremium, startStore, storeError, useStore, yearlySaving, perMonth, type Plan, type StoreState } from '@/state/purchase';
 import { brand, ForceScheme, radius, ROUNDED, spacing, useScreenReader } from '@/theme';
 
 import { APP_INFO } from '../../appInfo';
@@ -362,6 +362,9 @@ function Plans({ store, has, onBought }: { store: StoreState; has: boolean; onBo
   const offerOf = (p: StoreState['plans'][Plan]) => (!p?.intro ? null : `${p.introLength ?? (p.introDays ? `${p.introDays} days` : 'your first period')} ${p.introFree ? 'free' : `for ${p.intro}`}`);
   const trialOf = (p: StoreState['plans'][Plan]) => (offerOf(p) ? `${offerOf(p)}, then ` : '');
   const tryOf = (p: StoreState['plans'][Plan], plain: string) => (!p?.intro ? plain : p.introLength || p.introDays ? `Try ${offerOf(p)}` : p.introFree ? 'Start free trial' : `Start for ${p.intro}`);
+  // The button says the deal (23 Nov 2026, after EasyPoker's "Subscribe for $49.99 / year"): the offer, or the price.
+  const subscribe = (p: StoreState['plans'][Plan], per: string) => (p ? `Subscribe for ${p.price} a ${per}` : 'Continue');
+  const month = perMonth(yearly);
   const cards: PlanInfo[] = [
     {
       plan: 'yearly',
@@ -369,8 +372,8 @@ function Plans({ store, has, onBought }: { store: StoreState; has: boolean; onBo
       name: 'Yearly',
       line: 'Every game, every bot and every range hand, all year.',
       per: 'year',
-      under: yearly?.intro ? `${trialOf(yearly)}${yearly.price} a year` : 'Billed yearly',
-      button: tryOf(yearly, 'Continue'),
+      under: [yearly?.intro ? `${trialOf(yearly)}${yearly.price} a year` : 'Billed yearly', month && `Works out to ${month} a month`].filter(Boolean).join('. '),
+      button: tryOf(yearly, subscribe(yearly, 'year')),
       points: [
         { icon: 'crown', text: 'The most for your money' },
         { icon: 'infinity', text: 'Everything in Premium' },
@@ -383,7 +386,7 @@ function Plans({ store, has, onBought }: { store: StoreState; has: boolean; onBo
       line: 'Everything in Premium, a month at a time.',
       per: 'month',
       under: monthly?.intro ? `${trialOf(monthly)}${monthly.price} a month` : 'Cancel anytime',
-      button: tryOf(monthly, 'Get Monthly'),
+      button: tryOf(monthly, subscribe(monthly, 'month')),
       points: [
         { icon: 'calendar', text: 'Stop whenever you like' },
         { icon: 'infinity', text: 'Everything in Premium' },

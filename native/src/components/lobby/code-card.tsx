@@ -13,14 +13,15 @@ import { haptic } from '../haptics';
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
 import { GrowingQR } from '../growing-qr';
 import { Icon } from '../icon';
+import { PressableScale } from '../pressable-scale';
 import { Swap, SwapIcon } from '../swap';
 import { ThemedText } from '../themed-text';
 import { Announce } from '../announce';
 
 /**
- * The first card on Play with friends: the game code friends type in Join, big. The top row (19 Nov 2026: four
- * text buttons of the same weight were too many) has Copy and QR as small round icons and Share as the one text
- * button, the thing a host came to do. QR opens the code to scan under it (the same QR grows, motion rule 20). The
+ * The first card on Play with friends: the game code friends type in Join, as the card's hero (23 Nov 2026, from
+ * EasyPoker's PIN screen): "GAME CODE", the code centred at 64pt, the line on how friends join, then Share invite as
+ * a white capsule (the thing a host came to do) with Copy and QR as round icons beside it. QR opens the code to scan under it (the same QR grows, motion rule 20). The
  * host changes the code by tapping it (a small pencil beside it says so): the card turns into a field for their own
  * code (six letters or numbers, in any mix) with Cancel and Done; Done asks the server for it and stays open with the
  * server's sentence when it's taken. `onChange` answers null when the code is the table's now, a sentence when it
@@ -98,7 +99,7 @@ export function CodeCard({
     setEditing(false);
   };
 
-  const helper = error || (editing ? `${TABLE_CODE_LENGTH} letters or numbers, in any mix. Friends type this to join.` : code ? (hint ?? '') : '');
+  const helper = error || (editing ? `${TABLE_CODE_LENGTH} letters or numbers, in any mix. Friends type this to join.` : code ? (hint ?? 'Friends tap Join a game in FlipUp and type it in.') : '');
   const wait = !code;
 
   return (
@@ -115,41 +116,19 @@ export function CodeCard({
         borderColor: panel.edge,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 32, gap: spacing.md }}>
-        <ThemedText variant="subhead" tone="secondaryLabel" style={{ flex: 1 }}>
-          {editing ? 'New game code' : 'Game code'}
+      {editing ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 32, gap: spacing.md }}>
+          <ThemedText variant="subhead" tone="secondaryLabel" style={{ flex: 1 }}>
+            New game code
+          </ThemedText>
+          <TextButton title="Cancel" quiet onPress={cancel} />
+          <TextButton title={busy ? 'Saving' : 'Done'} bold onPress={() => void done()} />
+        </View>
+      ) : (
+        <ThemedText variant="footnote" tone="secondaryLabel" style={{ textAlign: 'center', fontWeight: '800', letterSpacing: 1, marginTop: spacing.xs }}>
+          GAME CODE
         </ThemedText>
-        {editing ? (
-          <>
-            <TextButton title="Cancel" quiet onPress={cancel} />
-            <TextButton title={busy ? 'Saving' : 'Done'} bold onPress={() => void done()} />
-          </>
-        ) : (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, opacity: wait ? 0.4 : 1 }}>
-            <RoundIcon name={copied ? 'checkmark' : 'doc.on.doc'} label={copied ? 'Copied' : code ? `Copy the game code ${code}` : 'Copy'} onPress={copy} />
-            <RoundIcon
-              name="qrcode"
-              on={qr}
-              label={qr ? 'Hide the QR code' : 'Show the QR code'}
-              onPress={() => {
-                if (!code) return;
-                haptic.select();
-                setQr(!qr);
-              }}
-            />
-            <TextButton
-              title="Share"
-              bold
-              onPress={() => {
-                if (!code || !share) return;
-                haptic.tap();
-                void Share.share(share);
-              }}
-              label="Share the game code"
-            />
-          </View>
-        )}
-      </View>
+      )}
 
       {editing ? (
         <TextInput
@@ -193,15 +172,15 @@ export function CodeCard({
           onPress={start}
           accessibilityRole={onChange ? 'button' : undefined}
           accessibilityHint={onChange ? 'Change the game code' : undefined}
-          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, opacity: pressed ? 0.6 : 1 })}
+          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, opacity: pressed ? 0.6 : 1 })}
         >
-        <Swap id={code} kind="text" style={{ alignItems: 'flex-start', flexShrink: 1 }}>
+        <Swap id={code} kind="text" style={{ alignItems: 'center', flexShrink: 1 }}>
           <Text
             accessibilityLabel={`Game code ${code.split('').join(' ')}`}
             maxFontSizeMultiplier={1}
             adjustsFontSizeToFit
             numberOfLines={1}
-            style={{ fontFamily: ROUNDED, fontSize: 48, lineHeight: 56, fontWeight: '800', letterSpacing: 2, color: colors.label }}
+            style={{ fontFamily: ROUNDED, fontSize: 64, lineHeight: 72, fontWeight: '900', letterSpacing: 3, color: colors.label }}
           >
             {code}
           </Text>
@@ -209,8 +188,8 @@ export function CodeCard({
         {onChange && <Icon name="pencil" size={18} weight="semibold" color={colors.tertiaryLabel as string} />}
         </Pressable>
       ) : (
-        <View style={{ height: 56, justifyContent: 'center' }}>
-          <ThemedText tone="secondaryLabel">
+        <View style={{ height: 72, justifyContent: 'center', alignItems: 'center' }}>
+          <ThemedText tone="secondaryLabel" style={{ textAlign: 'center' }}>
             {failed ? 'Couldn’t open your table. Start game will try again.' : 'Getting your code…'}
           </ThemedText>
         </View>
@@ -218,10 +197,46 @@ export function CodeCard({
 
       <Announce text={error ? helper : null} />
       {helper ? (
-        <ThemedText variant="footnote" tone={error ? 'red' : editing ? 'tertiaryLabel' : 'secondaryLabel'} accessibilityLiveRegion="polite">
+        <ThemedText
+          variant={editing || error ? 'footnote' : 'subhead'}
+          tone={error ? 'red' : editing ? 'tertiaryLabel' : 'secondaryLabel'}
+          accessibilityLiveRegion="polite"
+          style={editing ? undefined : { textAlign: 'center' }}
+        >
           {helper}
         </ThemedText>
       ) : null}
+
+      {!editing && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.sm, opacity: wait ? 0.4 : 1 }}>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Share the game code"
+            disabled={wait}
+            onPress={() => {
+              if (!code || !share) return;
+              void Share.share(share);
+            }}
+            style={{ height: 48, paddingHorizontal: spacing.lg, borderRadius: radius.full, backgroundColor: '#ffffff', flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
+          >
+            <Icon name="square.and.arrow.up" size={17} weight="bold" color="#0b0b0f" />
+            <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: ROUNDED, fontSize: 17, fontWeight: '800', color: '#0b0b0f' }}>
+              Share invite
+            </Text>
+          </PressableScale>
+          <RoundIcon name={copied ? 'checkmark' : 'doc.on.doc'} label={copied ? 'Copied' : code ? `Copy the game code ${code}` : 'Copy'} onPress={copy} />
+          <RoundIcon
+            name="qrcode"
+            on={qr}
+            label={qr ? 'Hide the QR code' : 'Show the QR code'}
+            onPress={() => {
+              if (!code) return;
+              haptic.select();
+              setQr(!qr);
+            }}
+          />
+        </View>
+      )}
 
       {qr && code && !editing && (
         <Animated.View
@@ -239,7 +254,7 @@ export function CodeCard({
   );
 }
 
-/** A small round icon button in the code card's top row (Copy, QR): the page's tint on a faint fill, 36pt with room round it to make 44. */
+/** A round icon button beside Share invite (Copy, QR): the page's tint on a faint fill, 44pt. */
 function RoundIcon({ name, label, on, onPress }: { name: 'doc.on.doc' | 'checkmark' | 'qrcode'; label: string; on?: boolean; onPress: () => void }) {
   const tint = useLobbyTint();
   return (
@@ -247,19 +262,18 @@ function RoundIcon({ name, label, on, onPress }: { name: 'doc.on.doc' | 'checkma
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={on === undefined ? undefined : { selected: on }}
-      hitSlop={4}
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: on ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)',
         opacity: pressed ? 0.5 : 1,
       })}
     >
-      <SwapIcon name={name} size={16} weight="semibold" color={tint.link} />
+      <SwapIcon name={name} size={18} weight="semibold" color={tint.link} />
     </Pressable>
   );
 }

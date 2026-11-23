@@ -10,6 +10,7 @@ export const buyPremium = async (_plan?: Plan): Promise<boolean> => false;
 export const restorePremium = async (): Promise<boolean> => false;
 export const manageSubscription = async (): Promise<void> => {};
 export const yearlySaving = (_plans: StoreState['plans']): number | null => null;
+export const perMonth = (_plan: unknown): string | null => null;
 export const forgetPremium = (): void => {};
 export const stopStore = (): void => {};
 export const storeError = (): string | null => null;

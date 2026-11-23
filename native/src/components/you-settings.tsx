@@ -13,7 +13,7 @@ import type { MenuGroup } from './native-menu.types';
  * appearance, sound, animations, the bots' talk and fast bot games, then saved hands, share cards, card packs, the
  * table theme and hand rankings, then Premium's Gold name. Returned as groups for `NativeMenu`.
  */
-export function useYouGroups({ header, online = false }: { header?: string; online?: boolean }): MenuGroup[] {
+export function useYouGroups({ header, online = false, atTable = false }: { header?: string; online?: boolean; atTable?: boolean }): MenuGroup[] {
   const muted = useMuted();
   const haptics = useHaptics();
   const talk = useTalkLevel();
@@ -25,6 +25,30 @@ export function useYouGroups({ header, online = false }: { header?: string; onli
   const pack = CARD_PACKS.find((p) => p.id === worn.cardPack)?.name ?? 'Classic';
   const gold = useGoldName();
   const bank = useReplays().length;
+  const sound = { kind: 'toggle', id: 'sound', title: 'Sound', symbol: 'speaker.wave.2.fill', value: !muted, onChange: (on: boolean) => setMuted(!on) } as const;
+  const feel = { kind: 'toggle', id: 'haptics', title: 'Haptics', symbol: 'iphone.radiowaves.left.and.right', value: haptics, onChange: setHaptics } as const;
+  const talkRow = {
+    kind: 'segmented',
+    id: 'talk',
+    title: 'Bot talk',
+    value: talk,
+    options: [
+      { value: 'off', label: 'Off' },
+      { value: 'some', label: 'Some' },
+      { value: 'chatty', label: 'Chatty' },
+    ],
+    onChange: (v: string) => setTalkLevel(v as TalkLevel),
+  } as const;
+  // At the table (23 Nov 2026): only what matters mid-hand. Looks, Saved hands, Share cards and the rest are in the You tab.
+  if (atTable) {
+    return [
+      {
+        id: 'you',
+        header: 'Sound and feel',
+        items: [sound, feel, { kind: 'toggle', id: 'animations', title: 'Animations', symbol: 'bolt.fill', value: !calm, onChange: (on) => setCalm(!on) }, talkRow],
+      },
+    ];
+  }
   return [
     {
       id: 'you',
@@ -43,21 +67,10 @@ export function useYouGroups({ header, online = false }: { header?: string; onli
           ],
           onChange: (v) => setAppearance(v as AppearancePref),
         },
-        { kind: 'toggle', id: 'sound', title: 'Sound', value: !muted, onChange: (on) => setMuted(!on) },
-        { kind: 'toggle', id: 'haptics', title: 'Haptics', value: haptics, onChange: setHaptics },
+        { ...sound, symbol: undefined },
+        { ...feel, symbol: undefined },
         { kind: 'toggle', id: 'animations', title: 'Animations', value: !calm, onChange: (on) => setCalm(!on) },
-        {
-          kind: 'segmented',
-          id: 'talk',
-          title: 'Bot talk',
-          value: talk,
-          options: [
-            { value: 'off', label: 'Off' },
-            { value: 'some', label: 'Some' },
-            { value: 'chatty', label: 'Chatty' },
-          ],
-          onChange: (v) => setTalkLevel(v as TalkLevel),
-        },
+        talkRow,
         { kind: 'toggle', id: 'fast', title: 'Fast bot games', value: fast, onChange: setFast },
       ],
     },

@@ -5,18 +5,24 @@ import { NativeMenu } from '@/components/native-menu';
 import type { MenuGroup, MenuItem } from '@/components/native-menu.types';
 import { useYouGroups } from '@/components/you-settings';
 import { myPlayer } from '@/engine';
+import { isMyTurn, YourTurnBar } from '@/components/table/your-turn-bar';
+import { useTableNow } from '@/components/table/use-now';
+import { myHandNow } from '@/state/my-hand';
 import { tableShare } from '@/state/table-share';
 import { abandonLobby, dispatch, leaveTable, me as myDevice, requestLogs, useTable } from '@/state/session';
 
 /**
- * The table's menu, as on the web: the table (standings, hand log, invite, table settings, add a bot, sit out), you
- * (appearance, sound, animations, the bots' talk, fast bot games, the table theme, hand rankings), then Home (the
- * table keeps going), ending the game for everyone (the host) and leaving.
+ * The table's menu (shortened 23 Nov 2026, from EasyPoker's menu): a gold Your turn bar while it's your move (a tap goes
+ * back to the table), the big action tiles (end, leave, Home, sit out), This hand (hand rankings with the hand you have
+ * now, the hand log, standings), the table (invite, settings, theme, add a bot) and Sound and feel. Looks, Saved hands
+ * and Share cards are in the You tab.
  */
 export default function TableMenu() {
   const t = useTable();
-  const you = useYouGroups({ header: 'You', online: t.mode === 'online' });
+  const you = useYouGroups({ online: t.mode === 'online', atTable: true });
   const game = t.game;
+  const now = useTableNow(game?.fast, 1000);
+  const mine = myHandNow(game, myDevice, now);
   const online = t.mode === 'online';
   if (!game) return null;
   const me = myPlayer(game, myDevice);
@@ -86,21 +92,30 @@ export default function TableMenu() {
   const groups: MenuGroup[] = [
     { id: 'actions', items: actions },
     {
-      id: 'table',
-      header: 'Table',
+      id: 'hand',
+      header: 'This hand',
       items: [
-        started && { kind: 'link', id: 'standings', title: 'Standings', onPress: () => router.push('/table-standings') },
+        { kind: 'link', id: 'rankings', title: 'Hand rankings', symbol: 'trophy.fill', detail: mine ? `You: ${mine.name.toLowerCase()}` : 'Cheat sheet', onPress: () => router.push('/hand-rankings') },
         started && {
           kind: 'link',
           id: 'log',
           title: 'Hand log',
+          symbol: 'book.fill',
           onPress: () => {
             requestLogs();
             router.push('/table-log');
           },
         },
-        online && !!t.code && !ended && { kind: 'link', id: 'invite', title: 'Invite friends', detail: t.code, chevron: false, onPress: () => void Share.share(tableShare(game, t.code!)) },
-        host && !ended && { kind: 'link', id: 'settings', title: 'Table settings', onPress: () => router.push('/table-settings') },
+        started && { kind: 'link', id: 'standings', title: 'Standings', symbol: 'chart.bar.xaxis', onPress: () => router.push('/table-standings') },
+      ],
+    },
+    {
+      id: 'table',
+      header: 'Table',
+      items: [
+        online && !!t.code && !ended && { kind: 'link', id: 'invite', title: 'Invite friends', symbol: 'square.and.arrow.up', detail: t.code, chevron: false, onPress: () => void Share.share(tableShare(game, t.code!)) },
+        host && !ended && { kind: 'link', id: 'settings', title: 'Table settings', symbol: 'gearshape.fill', onPress: () => router.push('/table-settings') },
+        { kind: 'link', id: 'theme', title: 'Table theme', symbol: 'paintpalette.fill', onPress: () => router.push('/table-theme') },
         host && playing && game.players.length < 9 && { kind: 'button', id: 'bot', title: 'Add a bot', symbol: 'person.badge.plus', onPress: quick(() => dispatch({ type: 'addBot' })) },
       ],
     },
@@ -110,7 +125,7 @@ export default function TableMenu() {
   return (
     <>
       <Stack.Screen options={{ title: 'Menu' }} />
-      <NativeMenu groups={groups} />
+      <NativeMenu groups={groups} top={isMyTurn(game, myDevice) ? <YourTurnBar game={game} onPress={close} /> : undefined} />
     </>
   );
 }

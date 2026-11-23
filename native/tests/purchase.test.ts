@@ -154,6 +154,17 @@ it('buys the chosen plan as a subscription and works out the yearly saving', asy
   expect(yearlySaving({ monthly: null, yearly: null })).toBeNull();
 });
 
+it('works out what a yearly plan comes to each month, in the store\'s own format', async () => {
+  const { perMonth } = await import('../src/state/purchase');
+  const plan = (price: string, amount: number | null) => ({ price, amount, intro: null, introDays: null, introLength: null, introFree: false });
+  expect(perMonth(plan('$50.00', 50))).toBe('$4.16');
+  expect(perMonth(plan('A$79.99', 79.99))).toBe('A$6.66');
+  expect(perMonth(plan('49,99 €', 49.99))).toBe('4,16 €');
+  expect(perMonth(plan('¥6,800', 6800))).toBe('¥566');
+  expect(perMonth(plan('$50.00', null))).toBeNull();
+  expect(perMonth(null)).toBeNull();
+});
+
 it("finishes a buy by itself when the account already owns Premium and StoreKit sends no purchase signal", async () => {
   vi.useFakeTimers();
   try {

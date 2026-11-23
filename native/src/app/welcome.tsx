@@ -109,6 +109,7 @@ function Welcome() {
             <Text maxFontSizeMultiplier={1.6} style={{ fontSize: 17, lineHeight: 23, color: SOFT, textAlign: 'center' }}>
               Poker night on your phones. Pick a face and a name for the table.
             </Text>
+            {!host && <HowItWorks />}
             {!!host && (
               // From a join link: where Continue takes you, on its own line with room around it.
               <View style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.085)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
@@ -155,9 +156,18 @@ function Welcome() {
 
           <View style={{ marginTop: spacing.lg, gap: spacing.xs }}>
             <View style={{ borderRadius: 18, borderCurve: 'continuous', backgroundColor: 'rgba(255,255,255,0.085)', borderWidth: 1, borderColor: blocked ? '#ff453a' : 'rgba(255,255,255,0.12)', paddingHorizontal: spacing.md, paddingTop: spacing.xs }}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 18, color: QUIET }}>
-                Your name
-              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 18, color: QUIET }}>
+                  Your name
+                </Text>
+                <Text
+                  maxFontSizeMultiplier={1.4}
+                  accessibilityLabel={`${name.length} of ${LIMITS.maxNameLength} letters`}
+                  style={{ fontSize: 13, lineHeight: 18, color: name.length >= LIMITS.maxNameLength ? '#ffffff' : QUIET, fontVariant: ['tabular-nums'] }}
+                >
+                  {name.length}/{LIMITS.maxNameLength}
+                </Text>
+              </View>
               <TextInput
                 value={name}
                 onChangeText={setName}
@@ -177,7 +187,7 @@ function Welcome() {
             </View>
             <Announce text={blocked ? NAME_BLOCKED : null} />
             <Text maxFontSizeMultiplier={1.6} style={{ paddingHorizontal: spacing.md, fontSize: 13, lineHeight: 18, color: blocked ? '#ff6961' : QUIET }}>
-              {blocked ? NAME_BLOCKED : 'Everyone at the table sees your name and face.'}
+              {blocked ? NAME_BLOCKED : 'Everyone at your table sees your name and face.'}
             </Text>
           </View>
 
@@ -194,5 +204,34 @@ function Welcome() {
         </View>
       </KeyboardAvoidingView>
     </GrainBackground>
+  );
+}
+
+/**
+ * How FlipUp works, in three steps across one panel (23 Nov 2026, after EasyPoker's intro cards, cut to one strip):
+ * host a table, send the code, friends sit down on their own phones. Not shown from a join link, where the table
+ * pill says where you're going.
+ */
+function HowItWorks() {
+  const steps = ['Host a table', 'Send the code', 'Friends sit down on their phones'];
+  return (
+    <View
+      accessible
+      accessibilityLabel={`How it works: ${steps.map((t, i) => `${i + 1}, ${t}`).join('. ')}`}
+      style={{ marginTop: spacing.md, alignSelf: 'stretch', flexDirection: 'row', paddingVertical: spacing.sm, paddingHorizontal: spacing.xs, borderRadius: 22, borderCurve: 'continuous', backgroundColor: 'rgba(255,255,255,0.085)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}
+    >
+      {steps.map((t, i) => (
+        <View key={t} style={{ flex: 1, alignItems: 'center', gap: 6, paddingHorizontal: 4 }}>
+          <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.16)' }}>
+            <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '800', color: '#ffffff' }}>
+              {i + 1}
+            </Text>
+          </View>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 17, fontWeight: '600', color: SOFT, textAlign: 'center' }}>
+            {t}
+          </Text>
+        </View>
+      ))}
+    </View>
   );
 }

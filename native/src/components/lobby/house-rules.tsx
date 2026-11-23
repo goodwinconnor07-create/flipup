@@ -64,7 +64,7 @@ export function HouseRules({
   const edit = !!onChange;
 
   const numbers: ReactNode[] = [
-    <NumberRow key="stack" label="Starting chips" value={chips(s.startingStack)}>
+    <NumberRow key="stack" label="Starting chips" value={chips(s.startingStack)} line="What everyone sits down with">
       {edit && (
         <Stepper
           label="Starting chips"
@@ -75,7 +75,7 @@ export function HouseRules({
         />
       )}
     </NumberRow>,
-    <NumberRow key="blinds" label="Blinds" value={blindsLabel([s.smallBlind, s.bigBlind])}>
+    <NumberRow key="blinds" label="Blinds" value={blindsLabel([s.smallBlind, s.bigBlind])} line="The forced bets that start every pot">
       {edit && (
         <Stepper
           label="Blinds"
@@ -86,7 +86,7 @@ export function HouseRules({
         />
       )}
     </NumberRow>,
-    <NumberRow key="rise" label="Blinds go up" value={s.blindMinutes ? `Every ${s.blindMinutes} min` : 'Never'}>
+    <NumberRow key="rise" label="Blinds go up" value={s.blindMinutes ? `Every ${s.blindMinutes} min` : 'Never'} line="Rising blinds push a game to its finish">
       {edit && (
         <Stepper
           label="Minutes between blind rises"
@@ -98,7 +98,7 @@ export function HouseRules({
       )}
     </NumberRow>,
     !!s.blindMinutes && (
-      <NumberRow key="cap" label="Blinds stop at" value={caps[capIndex] ? blindsLabel([caps[capIndex] / 2, caps[capIndex]]) : 'No limit'}>
+      <NumberRow key="cap" label="Blinds stop at" value={caps[capIndex] ? blindsLabel([caps[capIndex] / 2, caps[capIndex]]) : 'No limit'} line="The highest the blinds will go">
         {edit && (
           <Stepper label="Blinds stop at" value={capIndex} min={0} max={caps.length - 1} onChange={(i) => set({ blindCap: caps[i] })} />
         )}
@@ -116,9 +116,12 @@ export function HouseRules({
             onChange={(v) => set({ turnSeconds: Number(v) })}
             options={TIMER_CHOICES.map((t) => ({ value: String(t), label: timerLabel(t) }))}
           />
+          <ThemedText variant="caption1" tone="secondaryLabel">
+            Run out of time and you check, or fold to a bet
+          </ThemedText>
         </View>
       ) : (
-        <NumberRow key="clock" label="Time to act" value={timerLabel(s.turnSeconds)} />
+        <NumberRow key="clock" label="Time to act" value={timerLabel(s.turnSeconds)} line="Run out of time and you check, or fold to a bet" />
       )),
   ].filter(Boolean);
 
@@ -402,11 +405,11 @@ export function Card({ children }: { children: ReactNode[] }) {
  * (19 Nov 2026): an opaque grey box was the one dead neutral on a game-coloured page, and next to a stepper it read as
  * a field you could type in. The stepper is the control.
  */
-export function NumberRow({ label, value, children }: { label: string; value: string; children?: ReactNode }) {
+export function NumberRow({ label, value, line, children }: { label: string; value: string; /** What the rule does, in a few words (23 Nov 2026). */ line?: string; children?: ReactNode }) {
   return (
     <View
       accessible={!children}
-      accessibilityLabel={`${label}, ${value}`}
+      accessibilityLabel={`${label}, ${value}${line ? `. ${line}` : ''}`}
       style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, paddingVertical: spacing.sm }}
     >
       <View style={{ flex: 1, alignItems: 'flex-start', gap: spacing.xxs }}>
@@ -416,6 +419,11 @@ export function NumberRow({ label, value, children }: { label: string; value: st
         <ThemedText variant="title2" style={{ fontWeight: '700', fontVariant: ['tabular-nums'] }}>
           {value}
         </ThemedText>
+        {line && (
+          <ThemedText variant="caption1" tone="secondaryLabel">
+            {line}
+          </ThemedText>
+        )}
       </View>
       {children}
     </View>

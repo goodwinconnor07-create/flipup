@@ -106,7 +106,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
           <CodeCard
             code={game.code}
             share={{ message: tableShareMessage({ host: hostName, game: variantInfo(variant).name, code: game.code }), url: joinLink(game.code) }}
-            hint={host && game.players.every((p) => p.bot || p.deviceId === game.hostDeviceId) ? 'Friends join from Join on the Play tab with this code.' : undefined}
+            hint={host && game.players.every((p) => p.bot || p.deviceId === game.hostDeviceId) ? 'Friends tap Join a game in FlipUp and type it in.' : ''}
           />
         )}
 

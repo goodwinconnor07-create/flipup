@@ -21,12 +21,14 @@ import { brand, gradient, ROUNDED, spacing, useColors, useScheme } from '@/theme
 import { Announce } from '@/components/announce';
 import { showDemo } from '@/components/demo/show';
 import { PassportCard } from '@/components/home/passport';
+import { YourLook } from '@/components/your-look';
 
 const PIC = 150;
 
 /**
  * The You tab (23 Nov 2026, the owner's ask; it was the profile behind the face in each tab's corner): your emoji (tap
- * it to pick another) and your name, which everyone at the table sees; your stats card (All stats opens Stats); Saved
+ * it to pick another) and your name, which everyone at the table sees; your stats card (All stats opens Stats); Your
+ * look (card backs, gold name, table felt, 23 Nov 2026); Saved
  * hands and Share cards (Home's round shortcuts until then); then FlipUp Premium, Demos (the game Home shows) and
  * Settings. The name is saved with Save; the emoji as you pick it.
  */
@@ -139,6 +141,7 @@ export default function ProfileScreen() {
         </View>
           </View>
         <View style={{ paddingHorizontal: spacing.md, gap: spacing.xl }}>
+          <YourLook />
           <MenuSection>
             <MenuRow title="Saved hands" subtitle="Hands you bookmarked at the table" onPress={() => router.push('/replays')} />
             <MenuRow title="Share cards" subtitle="Your stats, top hands and games as pictures" onPress={() => router.push('/share')} />

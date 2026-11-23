@@ -68,9 +68,9 @@ export default function GameSheet() {
       {!rules && (
         <View style={{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.08)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
           <View style={{ padding: spacing.md, gap: spacing.sm }}>
-            <PlayButton label="Play with friends" line="Host a table · share the code" onPress={() => go('friends')} />
+            <PlayButton label="Play with friends" icon="person.2.fill" line="Host a table · share the code" onPress={() => go('friends')} />
             <View style={{ flexDirection: 'row' }}>
-              <SmallButton label="Play bots" onPress={() => go('bots')} />
+              <SmallButton icon="cpu.fill" label="Play bots" onPress={() => go('bots')} />
             </View>
           </View>
           {locked && <LockVeil game={info.name} onPress={unlock} />}

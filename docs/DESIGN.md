@@ -72,6 +72,15 @@
 > buttons stay). The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
 > of leaving a gap under the link. The profile keeps Settings, Premium and Demos.
 
+> **23 Nov 2026, evening (owner, from screenshots): Home and You tightened.** Home's "Try a demo hand" link went (it
+> looked bad): a tap on the game's picture plays its demo hand. The three buttons have their icons back (two people,
+> the robot, the QR viewfinder; words alone looked flat) and sit just above the tab bar, the spare height all above the
+> game. Where your face used to be, top right, is a round glass button with a gold crown that opens Premium. On the You
+> tab the face is smaller (108pt) and the Your poker card is compact (three numbers in one row; games and table wins
+> sit in its All stats bar), so the card and Your look fit on the first screen. Every row on the You tab and in
+> Settings has an SF Symbol in one fixed column, like the table menu. The table menu's Your turn bar sits under the
+> sheet's title, not behind it.
+>
 > **23 Nov 2026 (owner): a You tab and a four-button Home.** The tab bar is Play, Train and You. You is the old
 > profile as a tab: your face and name, the Your poker card (All stats), Saved hands and Share cards, then Premium,
 > Demos and Settings. Home loses your face in the corner and the three round shortcuts, so it holds Demo, Play with

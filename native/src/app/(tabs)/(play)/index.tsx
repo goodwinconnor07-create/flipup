@@ -15,6 +15,7 @@ import { LockVeil } from '@/components/premium/lock-veil';
 import { SmallButton } from '@/components/home/small-button';
 import { Icon } from '@/components/icon';
 import { Swap } from '@/components/swap';
+import { RoundButton } from '@/components/tab-screen';
 import { useTabPush } from '@/components/use-tab-push';
 import { detail } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -30,23 +31,23 @@ import { usePokerRecord } from '@/state/record';
 import { maybeAskForReview } from '@/state/review';
 import { me as myDevice, useTable } from '@/state/session';
 import { save, useStored } from '@/state/storage';
-import { ForceScheme, ROUNDED, spacing } from '@/theme';
+import { brand, ForceScheme, ROUNDED, spacing } from '@/theme';
 
 /** The tab bar's height over the bottom safe area. */
 const TAB_BAR = 49;
-/** The space between the Demo link and Play with friends. */
+/** The space between the game's hook and Play with friends. */
 const GAP = 28;
 /** The game shown in the middle, kept between launches. */
 const PICK = 'flipup.homegame';
 
 /**
- * Home as a game lobby. The page takes the colour of the chosen game (`GameBackdrop`). "Play" top left (you, your
- * stats, Saved hands, Share cards and Settings are the You tab since 23 Nov 2026); the games as a line of cards
- * across the whole screen, locked on one at a time (`GameSwiper`), a little bigger than before; the chosen one's
- * name, hook and a Demo button under it (an interactive hand of the game, `showDemo()`); then Play with friends
- * (`PlayButton`), with Play bots and Join a game under it. No hint pill, no dots. The leftover height sits mostly
- * above the game, so the buttons ride a little above the tab bar rather than
- * leaving a gap under the Demo button. Nothing scrolls.
+ * Home as a game lobby. The page takes the colour of the chosen game (`GameBackdrop`). "Play" top left with a round
+ * Premium button (a gold crown) top right, where your face used to be (you, your stats, Saved hands, Share cards and
+ * Settings are the You tab since 23 Nov 2026); the games as a line of cards across the whole screen, locked on one at
+ * a time (`GameSwiper`); a tap on the middle card plays a demo hand of it (`showDemo()`; the "Try a demo hand" link
+ * went, 23 Nov 2026, the owner's call); the chosen one's name and hook; then Play with friends (`PlayButton`), with
+ * Play bots and Join a game under it, each with its icon. No hint pill, no dots. The leftover height sits above the
+ * game, so the buttons sit just above the tab bar. Nothing scrolls.
  */
 export default function Home() {
   const insets = useSafeAreaInsets();
@@ -116,19 +117,36 @@ export default function Home() {
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
       <GameBackdrop variant={variant} progress={progress} style={{ flex: 1 }}>
         <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.sm }}>
-          {/* Top bar: the page's name (you are the You tab now, 23 Nov 2026). */}
+          {/* Top bar: the page's name and the way to Premium (you are the You tab now, 23 Nov 2026). */}
           <Animated.View entering={arrive(0)} style={[pad, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
             <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '800', letterSpacing: -0.4, color: '#ffffff' }}>
               Play
             </Text>
+            <RoundButton
+              icon="crown.fill"
+              tint={brand.gold}
+              label={premium ? 'FlipUp Premium, unlocked' : 'FlipUp Premium'}
+              onPress={() => {
+                haptic.tap();
+                router.push('/premium');
+              }}
+            />
           </Animated.View>
 
-          {/* Most of the spare height goes above the game, a little under the buttons; never less than a clear gap under the title. */}
+          {/* The spare height goes above the game, so the buttons sit just above the tab bar; never less than a clear gap under the title. */}
           <View style={{ flex: 1, minHeight: spacing.lg }} />
 
-          {/* The middle: the games in a line across the whole screen, the chosen one's name, hook and its Demo. */}
+          {/* The middle: the games in a line across the whole screen (a tap on the chosen one plays its demo hand), its name and hook. */}
           <Animated.View entering={arrive(1)} style={{ alignItems: 'center', gap: spacing.xs }}>
-            <GameSwiper variant={variant} onChange={(v) => save(PICK, v)} size={card} width={Math.min(width, 560 + spacing.md * 2)} progress={progress} />
+            <GameSwiper
+              variant={variant}
+              onChange={(v) => save(PICK, v)}
+              size={card}
+              width={Math.min(width, 560 + spacing.md * 2)}
+              progress={progress}
+              onOpen={(v) => showDemo(v)}
+              openHint="Double-tap to play a demo hand"
+            />
             <View style={[pad, { alignItems: 'center', gap: 2 }]}>
               {/* The name and hook change with the game. Both boxes run the full width, so a longer old name isn't cut
                   to the new one's width as it leaves, and the name rolls by half its line so the two never print over
@@ -146,21 +164,6 @@ export default function Home() {
                 </Swap>
               )}
             </View>
-            {/* Demo belongs to the game, so it's a text link under the hook, not a fourth button (23 Nov 2026). */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Demo: play a hand of ${info.name}`}
-              hitSlop={12}
-              onPress={() => {
-                haptic.tap();
-                showDemo(variant);
-              }}
-              style={({ pressed }) => ({ paddingVertical: 4, paddingHorizontal: spacing.sm, opacity: pressed ? 0.6 : 1 })}
-            >
-              <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '700', color: '#ffffff', textDecorationLine: 'underline', textDecorationColor: 'rgba(255, 255, 255, 0.5)' }}>
-                Try a demo hand
-              </Text>
-            </Pressable>
           </Animated.View>
 
           {/* The main buttons. */}
@@ -168,18 +171,17 @@ export default function Home() {
             {/* A Premium game without Premium: the game sheet's lock (blur, lock, its words) over Host <game>; a tap opens the offer for this game. */}
             <View style={{ borderRadius: BUTTON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
               <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}>
-                <PlayButton label="Play with friends" line="Host a table · share the code" onPress={start(`/play-friends?variant=${variant}`)} />
+                <PlayButton label="Play with friends" icon="person.2.fill" line="Host a table · share the code" onPress={start(`/play-friends?variant=${variant}`)} />
               </View>
               {locked && <LockVeil compact game={info.name} onPress={() => unlockToHost([variant], premium)} />}
             </View>
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <SmallButton label="Play bots" onPress={start(`/play-bots?variant=${variant}`, true)} />
+              <SmallButton icon="cpu.fill" label="Play bots" onPress={start(`/play-bots?variant=${variant}`, true)} />
               {/* Where Join a game is. While you're at a table or in a party, the way back to it takes this spot. */}
-              <JoinOrLive join={<SmallButton label="Join a game" onPress={go('/join')} />} />
+              <JoinOrLive join={<SmallButton icon="qrcode.viewfinder" label="Join a game" onPress={go('/join')} />} />
             </View>
           </Animated.View>
 
-          <View style={{ flex: 0.35, minHeight: spacing.sm }} />
         </View>
       </GameBackdrop>
     </ForceScheme>

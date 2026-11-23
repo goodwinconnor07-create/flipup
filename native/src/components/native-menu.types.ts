@@ -8,13 +8,13 @@ export type MenuItem =
   | { kind: 'button'; id: string; title: string; symbol?: string; onPress?: () => void; destructive?: boolean; subtitle?: string; busy?: boolean }
   | { kind: 'toggle'; id: string; title: string; subtitle?: string; symbol?: string; value: boolean; onChange: (on: boolean) => void }
   /** The title at the start and a segmented control at the end (or under it when `stacked`). */
-  | { kind: 'segmented'; id: string; title: string; value: string; options: readonly { value: string; label: string }[]; onChange: (value: string) => void; stacked?: boolean; note?: string }
+  | { kind: 'segmented'; id: string; title: string; symbol?: string; value: string; options: readonly { value: string; label: string }[]; onChange: (value: string) => void; stacked?: boolean; note?: string }
   /** The title at the start and a pop-up menu of choices at the end. */
-  | { kind: 'picker'; id: string; title: string; value: string; options: readonly { value: string; label: string }[]; onChange: (value: string) => void }
+  | { kind: 'picker'; id: string; title: string; symbol?: string; value: string; options: readonly { value: string; label: string }[]; onChange: (value: string) => void }
   /** The title, its current value and Apple's − / + stepper. */
-  | { kind: 'stepper'; id: string; title: string; detail: string; value: number; min: number; max: number; onChange: (value: number) => void }
+  | { kind: 'stepper'; id: string; title: string; symbol?: string; detail: string; value: number; min: number; max: number; onChange: (value: number) => void }
   /** A title and a grey value, nothing to tap. */
-  | { kind: 'value'; id: string; title: string; detail: string }
+  | { kind: 'value'; id: string; title: string; symbol?: string; detail: string }
   /** A glyph, a bold line and a grey paragraph (What's New). */
   | { kind: 'info'; id: string; title: string; text: string; symbol: string }
   /** A question that opens its answer under it (Help). */

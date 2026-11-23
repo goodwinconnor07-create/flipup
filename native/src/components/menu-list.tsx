@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { spacing, useColors, useScheme } from '@/theme';
 
 import { haptic } from './haptics';
-import { Icon } from './icon';
+import { Icon, type IconName } from './icon';
 import { ThemedText } from './themed-text';
 
 /**
@@ -73,16 +73,23 @@ type MenuRowProps = {
   destructive?: boolean;
   /** Hide the chevron. */
   chevron?: boolean;
-  /** Kept so a row can be moved between this list and the lobby's without changing its props; this list draws no glyphs. */
-  icon?: unknown;
+  /** An SF Symbol at the start, in the text's colour, in a fixed column so the titles line up (like the table menu's rows). */
+  icon?: IconName;
+  /** The icon's colour when it isn't the text's (a gold crown). */
+  iconColor?: string;
 };
 
 /** One row: the title in regular 17pt, then the value and a chevron, or a control. Rows highlight while pressed. */
-export function MenuRow({ title, subtitle, detail, leading, trailing, accessory, onPress, destructive, chevron = true }: MenuRowProps) {
+export function MenuRow({ title, subtitle, detail, icon, iconColor, leading, trailing, accessory, onPress, destructive, chevron = true }: MenuRowProps) {
   const colors = useColors();
   const menu = useMenuColors();
   const body = (
     <View style={{ minHeight: MENU_ROW, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
+      {icon && (
+        <View style={{ width: 28, alignItems: 'center' }}>
+          <Icon name={icon} size={20} color={iconColor ?? (destructive ? (colors.red as string) : (colors.label as string))} />
+        </View>
+      )}
       {leading}
       <View style={{ flex: 1, gap: 1, paddingVertical: subtitle ? spacing.xxs : 0 }}>
         <ThemedText variant="body" tone={destructive ? 'red' : 'label'}>

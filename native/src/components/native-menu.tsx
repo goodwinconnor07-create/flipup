@@ -3,7 +3,7 @@ import { ScrollView, View } from 'react-native';
 
 import { spacing } from '@/theme';
 
-import { Icon } from './icon';
+import { Icon, type IconName } from './icon';
 import { MenuRow, MenuSection, useMenuColors } from './menu-list';
 import { SegmentedControl } from './segmented-control';
 import { Stepper } from './stepper';
@@ -34,14 +34,15 @@ function Item({ item }: { item: MenuItem }) {
   const [open, setOpen] = useState(false);
   switch (item.kind) {
     case 'link':
-      return <MenuRow title={item.title} subtitle={item.subtitle} detail={item.detail} chevron={item.chevron !== false} trailing={item.trailingCrown ? <Icon name="crown.fill" size={15} color="#d9a441" /> : undefined} onPress={item.onPress} />;
+      return <MenuRow icon={item.symbol as IconName | undefined} title={item.title} subtitle={item.subtitle} detail={item.detail} chevron={item.chevron !== false} trailing={item.trailingCrown ? <Icon name="crown.fill" size={15} color="#d9a441" /> : undefined} onPress={item.onPress} />;
     case 'button':
-      return <MenuRow title={item.busy ? `${item.title}…` : item.title} destructive={item.destructive} chevron={false} onPress={item.busy ? undefined : item.onPress} />;
+      return <MenuRow icon={item.symbol as IconName | undefined} title={item.busy ? `${item.title}…` : item.title} destructive={item.destructive} chevron={false} onPress={item.busy ? undefined : item.onPress} />;
     case 'toggle':
-      return <MenuRow title={item.title} subtitle={item.subtitle} accessory={<Switch label={item.title} value={item.value} onValueChange={item.onChange} />} />;
+      return <MenuRow icon={item.symbol as IconName | undefined} title={item.title} subtitle={item.subtitle} accessory={<Switch label={item.title} value={item.value} onValueChange={item.onChange} />} />;
     case 'segmented':
       return (
         <MenuRow
+          icon={item.symbol as IconName | undefined}
           title={item.title}
           subtitle={item.note}
           accessory={
@@ -54,6 +55,7 @@ function Item({ item }: { item: MenuItem }) {
     case 'picker':
       return (
         <MenuRow
+          icon={item.symbol as IconName | undefined}
           title={item.title}
           accessory={
             <View style={{ width: 190 }}>
@@ -63,9 +65,9 @@ function Item({ item }: { item: MenuItem }) {
         />
       );
     case 'stepper':
-      return <MenuRow title={item.title} detail={item.detail} accessory={<Stepper label={item.title} value={item.value} min={item.min} max={item.max} onChange={item.onChange} />} />;
+      return <MenuRow icon={item.symbol as IconName | undefined} title={item.title} detail={item.detail} accessory={<Stepper label={item.title} value={item.value} min={item.min} max={item.max} onChange={item.onChange} />} />;
     case 'value':
-      return <MenuRow title={item.title} detail={item.detail} />;
+      return <MenuRow icon={item.symbol as IconName | undefined} title={item.title} detail={item.detail} />;
     case 'info':
       return <MenuRow title={item.title} subtitle={item.text} leading={<Icon name={item.symbol as never} size={22} color="#6f9bff" />} />;
     case 'faq':

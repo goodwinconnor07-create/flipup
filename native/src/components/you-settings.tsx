@@ -31,6 +31,7 @@ export function useYouGroups({ header, online = false, atTable = false }: { head
     kind: 'segmented',
     id: 'talk',
     title: 'Bot talk',
+    symbol: 'bubble.left.fill',
     value: talk,
     options: [
       { value: 'off', label: 'Off' },
@@ -59,6 +60,7 @@ export function useYouGroups({ header, online = false, atTable = false }: { head
           kind: 'segmented',
           id: 'appearance',
           title: 'Appearance',
+          symbol: 'circle.lefthalf.filled',
           value: appearance,
           options: [
             { value: 'auto', label: 'Auto' },
@@ -67,21 +69,21 @@ export function useYouGroups({ header, online = false, atTable = false }: { head
           ],
           onChange: (v) => setAppearance(v as AppearancePref),
         },
-        { ...sound, symbol: undefined },
-        { ...feel, symbol: undefined },
-        { kind: 'toggle', id: 'animations', title: 'Animations', value: !calm, onChange: (on) => setCalm(!on) },
+        sound,
+        feel,
+        { kind: 'toggle', id: 'animations', title: 'Animations', symbol: 'bolt.fill', value: !calm, onChange: (on) => setCalm(!on) },
         talkRow,
-        { kind: 'toggle', id: 'fast', title: 'Fast bot games', value: fast, onChange: setFast },
+        { kind: 'toggle', id: 'fast', title: 'Fast bot games', symbol: 'gauge.with.needle.fill', value: fast, onChange: setFast },
       ],
     },
     {
       id: 'looks',
       items: [
-        { kind: 'link', id: 'saved', title: 'Saved hands', detail: bank ? String(bank) : undefined, onPress: () => router.push('/replays') },
-        !online && { kind: 'link', id: 'share', title: 'Share cards', onPress: () => router.push('/share') },
-        { kind: 'link', id: 'packs', title: 'Card packs', detail: pack, onPress: () => router.push('/card-packs') },
-        { kind: 'link', id: 'theme', title: 'Table theme', onPress: () => router.push('/table-theme') },
-        { kind: 'link', id: 'rankings', title: 'Hand rankings', onPress: () => router.push('/hand-rankings') },
+        { kind: 'link', id: 'saved', title: 'Saved hands', symbol: 'bookmark.fill', detail: bank ? String(bank) : undefined, onPress: () => router.push('/replays') },
+        !online && { kind: 'link', id: 'share', title: 'Share cards', symbol: 'photo.fill', onPress: () => router.push('/share') },
+        { kind: 'link', id: 'packs', title: 'Card packs', symbol: 'rectangle.portrait.on.rectangle.portrait.fill', detail: pack, onPress: () => router.push('/card-packs') },
+        { kind: 'link', id: 'theme', title: 'Table theme', symbol: 'paintpalette.fill', onPress: () => router.push('/table-theme') },
+        { kind: 'link', id: 'rankings', title: 'Hand rankings', symbol: 'trophy.fill', onPress: () => router.push('/hand-rankings') },
       ],
     },
     {
@@ -89,8 +91,8 @@ export function useYouGroups({ header, online = false, atTable = false }: { head
       header: 'Premium',
       items: [
         premium
-          ? { kind: 'toggle', id: 'gold', title: 'Gold name', value: gold, onChange: setGoldName }
-          : { kind: 'link', id: 'gold', title: 'Gold name', trailingCrown: true, onPress: () => router.push({ pathname: '/premium', params: { reason: 'gold' } }) },
+          ? { kind: 'toggle', id: 'gold', title: 'Gold name', symbol: 'signature', value: gold, onChange: setGoldName }
+          : { kind: 'link', id: 'gold', title: 'Gold name', symbol: 'signature', trailingCrown: true, onPress: () => router.push({ pathname: '/premium', params: { reason: 'gold' } }) },
       ],
     },
   ];

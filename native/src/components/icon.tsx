@@ -71,6 +71,8 @@ const WEB = {
   link: 'link',
   'gearshape.fill': 'settings',
   'moon.fill': 'dark_mode',
+  'circle.lefthalf.filled': 'contrast',
+  'rectangle.portrait.on.rectangle.portrait.fill': 'style',
   'bolt.fill': 'bolt',
   'paintpalette.fill': 'palette',
   'questionmark.circle.fill': 'help',

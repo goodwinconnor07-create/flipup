@@ -17,9 +17,6 @@ export const brand = {
   violetDeep: '#163a9e',
   /** The night end, for big cards. */
   violetNight: '#081433',
-  /** A game's page (`GameBackdrop`): the night blue every game's colour glows on, top and bottom. */
-  backdropTop: '#0c1533',
-  backdropBottom: '#050914',
   gold: '#f5b700',
   goldDeep: '#d48a00',
   /** Ink on gold. */

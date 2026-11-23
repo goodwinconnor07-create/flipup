@@ -58,7 +58,13 @@
 > buttons stay). The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
 > of leaving a gap under the link. The profile keeps Settings, Premium and Demos.
 
-> **23 Nov 2026 (owner): a game's page is night blue with the game's colour as a glow.** Mixing each game's colour
+> **23 Nov 2026, later (owner): the full-page colour is back, without the blue.** The night-blue base below was
+> tried and dropped the same day: `GameBackdrop` is the game's own colour over the whole page again (lighter behind
+> the picture, deepest at the foot), with no blue base and no blue light, but it keeps the calm: two faint white
+> lights on 22s and 31s clocks, a few percent of breathing, and the colour following the swiper. Home's buttons (Play
+> with friends, Play bots, Join a game) are words only, no icons.
+>
+> **23 Nov 2026 (owner): a game's page is night blue with the game's colour as a glow.** *(Replaced by the note above.)* Mixing each game's colour
 > towards black turned the warm games brown (Die on the River's orange became a chocolate page) and the lights moved
 > too much. Now `GameBackdrop` is the same night blue for every game (`brand.backdropTop` to `brand.backdropBottom`),
 > with the game's colour as a glow centred on its picture (`focus`) that fades out before the buttons, and a faint

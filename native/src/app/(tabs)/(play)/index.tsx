@@ -186,14 +186,14 @@ export default function Home() {
             {/* A Premium game without Premium: the game sheet's lock (blur, lock, its words) over Host <game>; a tap opens the offer for this game. */}
             <View style={{ borderRadius: 26, borderCurve: 'continuous', overflow: 'hidden' }}>
               <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}>
-                <PlayButton label="Play with friends" icon="person.2.fill" line="Host a table · share the code" onPress={start(`/play-friends?variant=${variant}`)} />
+                <PlayButton label="Play with friends" line="Host a table · share the code" onPress={start(`/play-friends?variant=${variant}`)} />
               </View>
               {locked && <LockVeil compact game={info.name} onPress={() => unlockToHost([variant], premium)} />}
             </View>
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <SmallButton icon="cpu.fill" label="Play bots" onPress={start(`/play-bots?variant=${variant}`, true)} />
+              <SmallButton label="Play bots" onPress={start(`/play-bots?variant=${variant}`, true)} />
               {/* Where Join a game is. While you're at a table or in a party, the way back to it takes this spot. */}
-              <JoinOrLive join={<SmallButton icon="qrcode.viewfinder" label="Join a game" onPress={go('/join')} />} />
+              <JoinOrLive join={<SmallButton label="Join a game" onPress={go('/join')} />} />
             </View>
           </Animated.View>
 

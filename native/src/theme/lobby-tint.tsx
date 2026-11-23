@@ -34,16 +34,10 @@ const lift = (h: string, k: number) => hex(channels(h).map((v) => v + (255 - v) 
 /** Towards black by `k` (dark enough to read on white). */
 const deepen = (h: string, k: number) => hex(channels(h).map((v) => v * (1 - k)));
 
-/** From `a` towards `b` by `k`. */
-const mix = (a: string, b: string, k: number) => {
-  const to = channels(b);
-  return hex(channels(a).map((v, i) => v + (to[i] - v) * k));
-};
-
 /** A game's tint: a pale version of its light tone for links (4.5:1 or better on its page), its band darkened for ink on white. */
 export function gameTint(variant: string): Tint {
   const look = gameLook(variant as Parameters<typeof gameLook>[0]);
-  return { link: lift(look.tone, 0.45), ink: deepen(look.band, 0.15), inkSoft: deepen(look.band, 0.3), night: brand.backdropBottom, idle: deepen(look.band, 0.55), surface: mix(look.card[0], brand.backdropTop, 0.62) };
+  return { link: lift(look.tone, 0.45), ink: deepen(look.band, 0.15), inkSoft: deepen(look.band, 0.3), night: deepen(look.band, 0.84), idle: deepen(look.band, 0.55), surface: deepen(look.card[0], 0.55) };
 }
 
 const Ctx = createContext<Tint | null>(null);

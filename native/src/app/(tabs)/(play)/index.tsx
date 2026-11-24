@@ -13,8 +13,10 @@ import { LiveButton } from '@/components/home/live-button';
 import { BUTTON_RADIUS, PlayButton } from '@/components/home/play-button';
 import { LockVeil } from '@/components/premium/lock-veil';
 import { SmallButton } from '@/components/home/small-button';
-import { Icon } from '@/components/icon';
+import { Icon, type IconName } from '@/components/icon';
+import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
+import { RoundButton } from '@/components/tab-screen';
 import { useTabPush } from '@/components/use-tab-push';
 import { detail } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -30,20 +32,25 @@ import { usePokerRecord } from '@/state/record';
 import { maybeAskForReview } from '@/state/review';
 import { me as myDevice, useTable } from '@/state/session';
 import { save, useStored } from '@/state/storage';
-import { ForceScheme, ROUNDED, spacing } from '@/theme';
+import { brand, ForceScheme, radius, ROUNDED, spacing } from '@/theme';
 
 /** The tab bar's height over the bottom safe area. */
 const TAB_BAR = 49;
-/** The space between the Demo link and Play with friends. */
-const GAP = 28;
+/** The space between the Demo button and the shortcuts. */
+const GAP = 20;
+/** The round shortcuts' see-through fill and edge. */
+const GLASS = 'rgba(255, 255, 255, 0.12)';
+const EDGE = 'rgba(255, 255, 255, 0.14)';
 /** The game shown in the middle, kept between launches. */
 const PICK = 'flipup.homegame';
 
 /**
- * Home as a game lobby. The page takes the colour of the chosen game (`GameBackdrop`). "Play" top left (you, your
- * stats, Saved hands, Share cards and Settings are the You tab since 23 Nov 2026); the games as a line of cards
+ * Home as a game lobby (brought back on 23 Nov 2026, the owner's pick from a screenshot, after a day of a full-page
+ * colour and words-only buttons): night blue with the chosen game's colour as a glow (`GameBackdrop`). "Play" top left
+ * and a gold crown top right that opens Premium (you, Premium, Demos and Settings are the You tab); the games as a line of cards
  * across the whole screen, locked on one at a time (`GameSwiper`), a little bigger than before; the chosen one's
- * name, hook and a Demo button under it (an interactive hand of the game, `showDemo()`); then Play with friends
+ * name, hook and a Demo button under it (an interactive hand of the game, `showDemo()`); a row of three round shortcuts (Stats, Saved hands, Share
+ * cards; the owner brought them back on 19 Nov 2026 and kept the big game and buttons); then Play with friends
  * (`PlayButton`), with Play bots and Join a game under it. No hint pill, no dots. The leftover height sits mostly
  * above the game, so the buttons ride a little above the tab bar rather than
  * leaving a gap under the Demo button. Nothing scrolls.
@@ -86,8 +93,7 @@ export default function Home() {
   // At 320pt wide (an SE with Display Zoom) there's no room for the hook line and a full-size card: the card shrinks
   // and the hook goes, so the page dots never sit on the shortcuts.
   const narrow = width < 350;
-  // The card took the room the round shortcuts left (23 Nov 2026): up to 290pt, a third of the height.
-  const hero = Math.round(Math.max(narrow ? 120 : 140, Math.min(narrow ? 210 : 290, height * (narrow ? 0.22 : 0.32))));
+  const hero = Math.round(Math.max(narrow ? 110 : 130, Math.min(narrow ? 190 : 248, height * (narrow ? 0.19 : 0.27))));
   const card = Math.min(hero, width - spacing.md * 2 - 80);
 
   // PLAY opens the page straight away; no colour fills the screen. A Premium game without Premium opens its sheet
@@ -116,15 +122,16 @@ export default function Home() {
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
       <GameBackdrop variant={variant} progress={progress} style={{ flex: 1 }}>
         <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.sm }}>
-          {/* Top bar: the page's name (you are the You tab now, 23 Nov 2026). */}
+          {/* Top bar: the page's name on the left, Premium (a gold crown) on the right; you are the You tab. */}
           <Animated.View entering={arrive(0)} style={[pad, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
             <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '800', letterSpacing: -0.4, color: '#ffffff' }}>
               Play
             </Text>
+            <RoundButton icon="crown.fill" tint={brand.gold} label={premium ? 'FlipUp Premium, unlocked' : 'FlipUp Premium'} onPress={go('/premium')} />
           </Animated.View>
 
-          {/* Most of the spare height goes above the game, a little under the buttons; never less than a clear gap under the title. */}
-          <View style={{ flex: 1, minHeight: spacing.lg }} />
+          {/* Most of the spare height goes above the game, a little under the buttons. */}
+          <View style={{ flex: 1 }} />
 
           {/* The middle: the games in a line across the whole screen, the chosen one's name, hook and its Demo. */}
           <Animated.View entering={arrive(1)} style={{ alignItems: 'center', gap: spacing.xs }}>
@@ -146,25 +153,27 @@ export default function Home() {
                 </Swap>
               )}
             </View>
-            {/* Demo belongs to the game, so it's a text link under the hook, not a fourth button (23 Nov 2026). */}
-            <Pressable
+            <PressableScale
               accessibilityRole="button"
               accessibilityLabel={`Demo: play a hand of ${info.name}`}
-              hitSlop={12}
-              onPress={() => {
-                haptic.tap();
-                showDemo(variant);
-              }}
-              style={({ pressed }) => ({ paddingVertical: 4, paddingHorizontal: spacing.sm, opacity: pressed ? 0.6 : 1 })}
+              onPress={() => showDemo(variant)}
+              haptics={false}
+              style={{ minHeight: 36, paddingHorizontal: spacing.md, borderRadius: radius.full, borderWidth: 1, borderColor: EDGE, backgroundColor: GLASS, flexDirection: 'row', alignItems: 'center', gap: 6 }}
             >
-              <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '700', color: '#ffffff', textDecorationLine: 'underline', textDecorationColor: 'rgba(255, 255, 255, 0.5)' }}>
-                Try a demo hand
+              <Icon name="play.fill" size={12} color="#ffffff" />
+              <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
+                Demo
               </Text>
-            </Pressable>
+            </PressableScale>
           </Animated.View>
 
-          {/* The main buttons. */}
+          {/* The shortcuts, then the main buttons. */}
           <Animated.View entering={arrive(2)} style={[pad, { gap: spacing.sm, marginTop: GAP }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xl, paddingBottom: spacing.xxs }}>
+              <Shortcut icon="chart.bar.xaxis" label="Stats" onPress={go('/stats')} />
+              <Shortcut icon="film.stack.fill" label="Saved hands" onPress={go('/replays')} />
+              <Shortcut icon="square.and.arrow.up" label="Share cards" onPress={go('/share')} />
+            </View>
             {/* A Premium game without Premium: the game sheet's lock (blur, lock, its words) over Host <game>; a tap opens the offer for this game. */}
             <View style={{ borderRadius: BUTTON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
               <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}>
@@ -173,9 +182,9 @@ export default function Home() {
               {locked && <LockVeil compact game={info.name} onPress={() => unlockToHost([variant], premium)} />}
             </View>
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <SmallButton label="Play bots" onPress={start(`/play-bots?variant=${variant}`, true)} />
+              <SmallButton icon="cpu.fill" label="Play bots" onPress={start(`/play-bots?variant=${variant}`, true)} />
               {/* Where Join a game is. While you're at a table or in a party, the way back to it takes this spot. */}
-              <JoinOrLive join={<SmallButton label="Join a game" onPress={go('/join')} />} />
+              <JoinOrLive join={<SmallButton icon="qrcode.viewfinder" label="Join a game" onPress={go('/join')} />} />
             </View>
           </Animated.View>
 
@@ -183,6 +192,20 @@ export default function Home() {
         </View>
       </GameBackdrop>
     </ForceScheme>
+  );
+}
+
+/** A shortcut over Host <game>: a round see-through button with its name under it. */
+function Shortcut({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  return (
+    <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} haptics={false} style={{ alignItems: 'center', gap: 5, minWidth: 72 }}>
+      <View style={{ width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE }}>
+        <Icon name={icon} size={23} color="#ffffff" />
+      </View>
+      <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ fontSize: 12, fontWeight: '600', color: 'rgba(255, 255, 255, 0.85)' }}>
+        {label}
+      </Text>
+    </PressableScale>
   );
 }
 

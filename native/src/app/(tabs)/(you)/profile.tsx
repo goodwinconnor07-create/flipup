@@ -23,7 +23,8 @@ import { showDemo } from '@/components/demo/show';
 import { PassportCard } from '@/components/home/passport';
 import { YourLook } from '@/components/your-look';
 
-const PIC = 150;
+/** Your face: smaller since 23 Nov 2026, so the stats card and Your look fit on the first screen. */
+const PIC = 108;
 
 /**
  * The You tab (23 Nov 2026, the owner's ask; it was the profile behind the face in each tab's corner): your emoji (tap
@@ -68,8 +69,8 @@ export default function ProfileScreen() {
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" contentInsetAdjustmentBehavior="never" contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}>
         {/* The Games-app header: a deep blue glow behind your face that fades into the page (scrolls with it). */}
         <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${page as string} 100%)`), opacity: dark ? 1 : 0.9 }} />
-          <View style={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.md, paddingBottom: spacing.md }}>
-        <View style={{ alignItems: 'center', gap: spacing.sm, paddingTop: spacing.md }}>
+          <View style={{ paddingTop: insets.top + spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.md }}>
+        <View style={{ alignItems: 'center', gap: spacing.xs }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Your emoji, ${profile.emoji}. Change it`}
@@ -88,8 +89,8 @@ export default function ProfileScreen() {
                 {profile.emoji}
               </Text>
             </Animated.View>
-            <View style={{ position: 'absolute', right: 0, bottom: 0, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet, borderWidth: 3, borderColor: dark ? brand.violetDeep : '#ffffff' }}>
-              <Icon name="pencil" size={14} color="#ffffff" />
+            <View style={{ position: 'absolute', right: -2, bottom: -2, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet, borderWidth: 3, borderColor: dark ? brand.violetDeep : '#ffffff' }}>
+              <Icon name="pencil" size={13} color="#ffffff" />
             </View>
           </Pressable>
           <TextInput
@@ -106,7 +107,7 @@ export default function ProfileScreen() {
             returnKeyType="done"
             onSubmitEditing={save}
             maxFontSizeMultiplier={1.3}
-            style={{ fontFamily: ROUNDED, fontSize: 40, fontWeight: '800', textAlign: 'center', color: dark ? '#ffffff' : (colors.label as string), minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}
+            style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '800', textAlign: 'center', color: dark ? '#ffffff' : (colors.label as string), minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}
           />
           <Swap id={changed ? 'save' : 'hint'} kind="text">
             {changed ? (
@@ -115,7 +116,7 @@ export default function ProfileScreen() {
                 accessibilityLabel="Save your name"
                 disabled={!ok}
                 onPress={save}
-                style={{ height: 36, paddingHorizontal: 20, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? (ok ? '#ffffff' : 'rgba(255,255,255,0.3)') : ok ? brand.violet : 'rgba(0,0,0,0.12)' }}
+                style={{ height: 32, paddingHorizontal: 18, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? (ok ? '#ffffff' : 'rgba(255,255,255,0.3)') : ok ? brand.violet : 'rgba(0,0,0,0.12)' }}
               >
                 <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: dark ? brand.violetDeep : '#ffffff' }}>
                   Save name
@@ -123,7 +124,7 @@ export default function ProfileScreen() {
               </PressableScale>
             ) : (
               // Plain text, not a pill: a filled capsule here read as a button that did nothing.
-              <ThemedText variant="subhead" style={{ height: 36, lineHeight: 36, color: dark ? 'rgba(255,255,255,0.7)' : (colors.secondaryLabel as string) }}>
+              <ThemedText variant="footnote" style={{ height: 32, lineHeight: 32, color: dark ? 'rgba(255,255,255,0.7)' : (colors.secondaryLabel as string) }}>
                 Tap your name to change it
               </ThemedText>
             )}
@@ -136,25 +137,26 @@ export default function ProfileScreen() {
           )}
         </View>
         {/* Your poker on one card: hands, win rate, biggest pot; All stats opens Stats, its corner button Share cards. */}
-        <View style={{ marginTop: spacing.lg }}>
-          <PassportCard />
+        <View style={{ marginTop: spacing.sm }}>
+          <PassportCard compact />
         </View>
           </View>
         <View style={{ paddingHorizontal: spacing.md, gap: spacing.xl }}>
           <YourLook />
-          <MenuSection>
-            <MenuRow title="Saved hands" subtitle="Hands you bookmarked at the table" onPress={() => router.push('/replays')} />
-            <MenuRow title="Share cards" subtitle="Your stats, top hands and games as pictures" onPress={() => router.push('/share')} />
+          <MenuSection inset={spacing.md + 28 + spacing.sm}>
+            <MenuRow icon="bookmark.fill" title="Saved hands" subtitle="Hands you bookmarked at the table" onPress={() => router.push('/replays')} />
+            <MenuRow icon="photo.fill" title="Share cards" subtitle="Your stats, top hands and games as pictures" onPress={() => router.push('/share')} />
           </MenuSection>
-          <MenuSection>
+          <MenuSection inset={spacing.md + 28 + spacing.sm}>
             <MenuRow
+              icon="crown.fill"
+              iconColor={brand.gold}
               title="FlipUp Premium"
               detail={premium ? 'Unlocked' : `${VARIANTS.length - FREE_VARIANTS} more games`}
-              trailing={<Icon name="crown.fill" size={15} color={brand.gold} />}
               onPress={() => router.push('/premium')}
             />
-            <MenuRow title="Demos" subtitle="Play a hand of any game, with a guide" onPress={() => showDemo(game)} />
-            <MenuRow title="Settings" subtitle="Sound, looks and your data" onPress={() => router.push('/settings')} />
+            <MenuRow icon="play.rectangle.fill" title="Demos" subtitle="Play a hand of any game, with a guide" onPress={() => showDemo(game)} />
+            <MenuRow icon="gearshape.fill" title="Settings" subtitle="Sound, looks and your data" onPress={() => router.push('/settings')} />
           </MenuSection>
         </View>
       </ScrollView>

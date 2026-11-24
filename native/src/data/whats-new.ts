@@ -39,8 +39,6 @@ export const RELEASES: Release[] = [
       { icon: 'chart.bar.xaxis', title: 'Hold’em or mini games', text: 'Switch your stats between all your poker, Texas Hold’em alone and the mini games alone. The two halves count from this update.' },
       { icon: 'chart.line.uptrend.xyaxis', title: 'Stats in big blinds', text: 'Your stats count in big blinds, so a bigger stack or a rebuy never changes them.' },
       { icon: 'square.and.arrow.up', title: 'Share cards', text: 'Turn a big hand, a game or your stats into a picture worth sending, drawn in the colours of the game you played. Every card is free.' },
-      { icon: 'timer', title: 'Your turn, even in the menu', text: 'Open the menu on your turn and a gold bar counts your seconds down. Tap it to get back to the table. Hand rankings show the hand you have right now.' },
-      { icon: 'paintbrush.fill', title: 'Your look', text: 'Your card backs, gold name and table felt sit together on the You tab. Try on any card pack before you unlock it.' },
       { icon: 'questionmark.circle.fill', title: 'Rules when you need them', text: 'The first time you play a game, a short card sums up its rules before the first hand.' },
       { icon: 'eye.fill', title: 'Easy to read', text: 'VoiceOver reads out your turn, the result of each hand and every step of a Demo. FlipUp follows Reduce Motion, Reduce Transparency, Increase Contrast and your text size, and a Haptics switch in Settings turns the buzzes off without muting the sounds.' },
       { icon: 'arrow.uturn.backward', title: 'Undo', text: 'Removed a bot, a game from the playlist or a saved hand by mistake? Tap Undo for a few seconds.' },

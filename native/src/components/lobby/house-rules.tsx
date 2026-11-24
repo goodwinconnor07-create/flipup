@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from 'react';
+import { Fragment, isValidElement, useState, type ReactNode } from 'react';
 import { Platform, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
@@ -390,8 +390,9 @@ export function Card({ children }: { children: ReactNode[] }) {
         overflow: 'hidden',
       }}
     >
+      {/* Keyed by the row's own key: index keys handed a row's native controls to the next row when one appeared above it. */}
       {children.map((row, i) => (
-        <Fragment key={i}>
+        <Fragment key={isValidElement(row) && row.key != null ? row.key : i}>
           {i > 0 && <View style={{ height: 0.5, marginLeft: spacing.md, backgroundColor: colors.separator }} />}
           {row}
         </Fragment>

@@ -38,7 +38,7 @@ def inspect(app, coach):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--app',default='https://gtoduel.online')
+    p.add_argument('--app',default='https://playflipup.com')
     p.add_argument('--coach',default='https://flipup-gto.fly.dev')
     p.add_argument('--out',type=Path,required=True)
     a=p.parse_args();report=inspect(a.app,a.coach)

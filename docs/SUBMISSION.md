@@ -77,7 +77,7 @@ The nine slides are finished: `store/screenshots/6.9in-1320x2868/` and `store/sc
 
 ## 5. App Store Connect: the listing
 
-Version 1.0 page and App Information. Your App Store name and legal name: Connor Joel Goodwin.
+Version 1.0 page and App Information. Your App Store seller and legal name: Clodex Studios Pty Ltd (the owner's company, 25 Nov 2026; Apple asks for a company for simulated gambling, guideline 5.1.1(ix)).
 
 | Field | What to put |
 |---|---|
@@ -89,7 +89,7 @@ Version 1.0 page and App Information. Your App Store name and legal name: Connor
 | Support URL | https://playflipup.com/support |
 | Marketing URL | https://playflipup.com |
 | Privacy Policy URL | https://playflipup.com/privacy |
-| Copyright | 2026 Connor Joel Goodwin |
+| Copyright | 2026 Clodex Studios Pty Ltd |
 | Price | Free |
 | Availability | Every country except **China mainland** and **South Korea** (South Korea needs a rating number for simulated gambling) |
 | Version release | Manually release this version (so you choose the day) |

@@ -2981,7 +2981,7 @@ const HANDS: Hand[] = [
     clues: [
       { street: 'preflop', text: 'The big blind 3-bets your button open and you call. Their range: pairs, suited aces and suited connectors.' },
       { street: 'flop', text: 'J♥8♠2♣: top pair. They bet half the pot and you call.' },
-      { street: 'turn', text: 'The 7♠ and they bet the pot. T-9 just made a straight, and spade and straight draws keep firing.' },
+      { street: 'turn', text: 'The 7♠ and they bet half the pot. T-9 just made a straight, and spade and straight draws keep firing.' },
       { street: 'river', text: 'The J♦ gives you trips and they shove. Value: straights, full houses, better trips and some overpairs. Bluffs: missed spade draws, gutshots and combo draws, though they give up on about half of them.' },
     ],
     why: 'They shove straights and full houses, but also some overpairs and plenty of missed spade and straight draws. You need about 29% and you’re good about half the time. Call.',

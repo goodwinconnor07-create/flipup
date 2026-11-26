@@ -3,5 +3,10 @@
 import type { Lesson } from '../model';
 import { L1 } from './1';
 import { L2 } from './2';
+import { L3 } from './3';
+import { L4 } from './4';
+import { L5 } from './5';
+import { L6 } from './6';
+import { L7 } from './7';
 
-export const LESSONS: Record<string, Lesson> = { ...L1, ...L2 };
+export const LESSONS: Record<string, Lesson> = { ...L1, ...L2, ...L3, ...L4, ...L5, ...L6, ...L7 };

@@ -200,6 +200,8 @@ describe('facing an all-in', () => {
       best: 'call',
       clues: [],
       why: '',
+      read: [],
+      takeaway: '',
     };
     const r = replay(s);
     expect(r.stacks.BTN).toBe(0);

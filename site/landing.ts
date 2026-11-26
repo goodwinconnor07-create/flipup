@@ -8,7 +8,7 @@ import ALL_GAMES from '../store/scripts/games-22.json';
 const LAUNCHED = false;
 const APP_STORE_URL = 'https://apps.apple.com/app/id6829639428';
 
-/** Game names by id (src/game/variants.ts), for the join page's "Connor's table · Crazy Deuces". */
+/** Game names by id (src/game/variants.ts), for the join page's "Sam's table · Crazy Deuces". */
 const GAMES: Record<string, string> = {
   holdem: "Texas Hold'em",
   pineapple: 'Crazy Pineapple',

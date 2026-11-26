@@ -1,14 +1,13 @@
-// After a miss (or a good-but-not-best answer): what they could have, laid out against what you held. Real example
-// hands as little cards, how often you win against each kind of hand, and one line to look for next time. The same
-// example hands are shown on the opponents' seats on the table.
+// What they could have, laid out against what you held: real example hands as little cards, the kind of hand each
+// stands for, whether yours is ahead of it, and the rule to remember. The same example hands are shown on the
+// opponents' seats on the table. No share of their range is shown (the owner, 26 Nov 2026).
 import { Text, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { rankLabel, suitOf } from '@/engine';
-import { brand, radius, spacing, useColors } from '@/theme';
+import { radius, spacing, useColors } from '@/theme';
 import { combosOf, type Pos, type RangeGroup, type Scenario } from '@train/ranges/model';
 
-const NUM = { fontVariant: ['tabular-nums' as const] };
 const SYMBOL = { s: '♠', h: '♥', d: '♦', c: '♣' } as const;
 const RED = { s: false, h: true, d: true, c: false } as const;
 
@@ -64,6 +63,13 @@ export function MiniCard({ card, w = 22 }: { card: string; w?: number }) {
   );
 }
 
+/** Your hand against one kind of theirs, in words. */
+export function standing(equity: number): { words: string; ahead: boolean | null } {
+  if (equity >= 0.6) return { words: 'You’re ahead of these', ahead: true };
+  if (equity <= 0.4) return { words: 'These beat you', ahead: false };
+  return { words: 'Close to even', ahead: null };
+}
+
 /** Their likely hands against yours. `opponents` are the ones still in the hand, with their ranges as worked out. */
 export function TheirHands({ scenario, opponents, facing, dead, nextTime }: { scenario: Scenario; opponents: OpponentHands[]; facing: boolean; dead: string[]; nextTime: string | null }) {
   const colors = useColors();
@@ -73,7 +79,6 @@ export function TheirHands({ scenario, opponents, facing, dead, nextTime }: { sc
     .map((g) => ({ g, ex: exampleOf(g, dead) }))
     .filter((x): x is { g: GroupView; ex: [string, string] } => !!x.ex);
   if (!rows.length) return null;
-  const total = first.groups.reduce((n, g) => n + g.weight, 0) || 1;
   return (
     <View style={{ gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell }}>
       <ThemedText variant="title3" accessibilityRole="header">
@@ -89,8 +94,10 @@ export function TheirHands({ scenario, opponents, facing, dead, nextTime }: { sc
           You held this
         </ThemedText>
       </View>
-      {rows.map(({ g, ex }) => (
-        <View key={g.group.label + g.group.role} accessibilityLabel={`${g.group.label}, for example ${ex.join(' and ')}. You win ${Math.round(g.equity * 100)} percent against these`} style={{ gap: 4 }}>
+      {rows.map(({ g, ex }) => {
+        const st = standing(g.equity);
+        return (
+        <View key={g.group.label + g.group.role} accessible accessibilityLabel={`${g.group.label}, for example ${ex.join(' and ')}. ${st.words}.`} style={{ gap: 4 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
             <View style={{ flexDirection: 'row', gap: 3 }}>
               {ex.map((c) => (
@@ -101,21 +108,19 @@ export function TheirHands({ scenario, opponents, facing, dead, nextTime }: { sc
               <ThemedText variant="subhead" numberOfLines={2} style={{ fontWeight: '600' }}>
                 {g.group.label}
               </ThemedText>
-              <ThemedText variant="caption1" tone="tertiaryLabel" style={NUM}>
-                {Math.round((g.weight / total) * 100)}% of their hands · you win {Math.round(g.equity * 100)}%
+              <ThemedText variant="caption1" style={{ fontWeight: '600', color: st.ahead ? (colors.blueInk as string) : (colors.secondaryLabel as string) }}>
+                {st.words}
               </ThemedText>
             </View>
           </View>
-          <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.cellPressed, overflow: 'hidden' }}>
-            <View style={{ width: `${Math.round(g.equity * 100)}%`, height: '100%', borderRadius: 3, backgroundColor: g.equity >= 0.5 ? brand.violet : (colors.quaternaryLabel as string) }} />
-          </View>
         </View>
-      ))}
+        );
+      })}
       {nextTime ? (
         <View style={{ padding: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.blueBg }}>
           <ThemedText variant="subhead" style={{ color: colors.blueInk }}>
             <ThemedText variant="subhead" style={{ fontWeight: '800', color: colors.blueInk }}>
-              Next time:{' '}
+              Remember:{' '}
             </ThemedText>
             {nextTime}
           </ThemedText>

@@ -8,9 +8,13 @@
 // Clues: on each street, what their range is now and what that means for you, in a sentence or two. No headings.
 // On the river nothing is left to come: never talk about protection, charging draws or outs there.
 
+import { LESSONS } from './lessons';
 import type { Scenario } from './model';
 
-export const SCENARIOS: Scenario[] = [
+/** A hand without its explanation, which lives in lessons/ (keyed by the hand's id). */
+type Hand = Omit<Scenario, 'why' | 'read' | 'takeaway'> & { why?: string };
+
+const HANDS: Hand[] = [
   {
     id: 'deuces-river-shove',
     title: 'Bottom set facing the river shove',
@@ -10249,3 +10253,8 @@ export const SCENARIOS: Scenario[] = [
     why: 'You need about 35%. Only five combos have you all but drawing dead; the overpairs leave you 14 outs, and the bluffs are drawing to six. Folding top pair with the nut flush draw here gives up a lot: call.',
   },
 ];
+
+export const SCENARIOS: Scenario[] = HANDS.map((h) => {
+  const lesson = LESSONS[h.id];
+  return { ...h, why: lesson?.why ?? h.why ?? '', read: lesson?.read ?? [], takeaway: lesson?.takeaway ?? '' };
+});

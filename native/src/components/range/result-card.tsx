@@ -1,7 +1,7 @@
 // The answer's result, risen out of the answer bar it replaces (motion rules 10 and 20: the bar opens into it from
 // the bottom, from 95%), so the table above never moves while you take it in. Pinned, it stays short so it never
 // covers the page: the verdict, one sentence of why, Breakdown and Next hand. Its numbers (`ResultDetails`: your odds
-// against the price or what each play wins against the best, and their range as piles) sit in the page under the
+// against the price or what each play wins against the best, and their range in words) sit in the page under the
 // table. Everything else is one tap away in the `range-breakdown` sheet.
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -140,8 +140,8 @@ export function ResultCard({
 
 /**
  * The result's numbers, in the page under the table: your odds against the price (facing a bet) or what each play wins
- * against the best (when you could bet), then their range as piles, answering the bet you made, or the one you could
- * have made. A range that's all one pile is said in words; one bar at 100% says nothing.
+ * against the best (when you could bet), then their range in words, answering the bet you made, or the one you could
+ * have made.
  */
 export function ResultDetails({
   numbers,
@@ -173,7 +173,7 @@ export function ResultDetails({
       </Animated.View>
       {piles.length > 0 && (
         <Animated.View entering={detail(1, reduce)}>
-          <Piles piles={piles} caption={caption} />
+          <RangeWords piles={piles} caption={caption} />
         </Animated.View>
       )}
     </View>
@@ -276,55 +276,32 @@ function Plays({ numbers, best, pick, label }: { numbers: HandNumbers; best: Opt
   );
 }
 
-/** A range that's all one pile, in words. */
-const ONE_PILE: Record<Pile['key'], string> = {
-  beats: 'Every hand they have beats you.',
-  beaten: 'You beat every hand they have.',
-  bluffs: 'They’re always bluffing here.',
-  folds: 'They’d fold every hand.',
-  ahead: 'Every hand that calls is worse than yours.',
-  behind: 'Every hand that would call has you beat.',
-};
-
-/** Their range as one bar in three parts, with a key under it. */
-function Piles({ piles, caption }: { piles: Pile[]; caption: string }) {
+/**
+ * Their range in words: each pile (beat you, you beat, bluffs; or fold, call ahead, call behind) with the kinds of
+ * hand in it. No shares: how much of a range is one kind of hand is never shown, only what the kinds are.
+ */
+export function RangeWords({ piles, caption }: { piles: Pile[]; caption?: string }) {
   const colors = useColors();
-  if (piles.length === 1)
-    return (
-      <View accessible style={{ gap: 4 }}>
-        <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600' }}>
-          {caption}
-        </ThemedText>
-        <ThemedText variant="footnote" style={{ fontWeight: '600' }}>
-          {ONE_PILE[piles[0].key]}
-        </ThemedText>
-      </View>
-    );
   const fill = (p: Pile) =>
     !p.good ? (colors.quaternaryLabel as string) : p.key === 'bluffs' || p.key === 'folds' ? brand.gold : brand.violet;
   return (
-    <View accessible accessibilityLabel={`${caption}: ${piles.map((p) => `${p.label} ${pct(p.share)}`).join(', ')}`} style={{ gap: 6 }}>
-      <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600' }}>
-        {caption}
-      </ThemedText>
-      <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', gap: 2 }}>
-        {piles.map((p) => (
-          <View key={p.key} style={{ flex: p.share, backgroundColor: fill(p) }} />
-        ))}
-      </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm, rowGap: 2 }}>
-        {piles.map((p) => (
-          <View key={p.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: fill(p) }} />
-            <ThemedText variant="footnote" style={NUM}>
-              {p.label}{' '}
-              <ThemedText variant="footnote" style={[{ fontWeight: '700' }, NUM]}>
-                {pct(p.share)}
-              </ThemedText>
+    <View style={{ gap: spacing.xs }}>
+      {caption ? (
+        <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600' }}>
+          {caption}
+        </ThemedText>
+      ) : null}
+      {piles.map((p) => (
+        <View key={p.key} accessible accessibilityLabel={`${p.label}: ${p.hands.join(', ')}`} style={{ flexDirection: 'row', gap: spacing.xs }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, marginTop: 6, backgroundColor: fill(p) }} />
+          <ThemedText variant="footnote" style={{ flex: 1 }}>
+            <ThemedText variant="footnote" style={{ fontWeight: '700' }}>
+              {p.label}:{' '}
             </ThemedText>
-          </View>
-        ))}
-      </View>
+            {p.hands.join(' · ')}
+          </ThemedText>
+        </View>
+      ))}
     </View>
   );
 }

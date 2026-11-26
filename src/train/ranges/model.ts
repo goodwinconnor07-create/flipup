@@ -52,6 +52,26 @@ export interface Clue {
   text: string;
 }
 
+/**
+ * One thing to read in a hand, shown with the answer: what the preflop action, the seats, the number of players, the
+ * kind of player, the board, the bet sizes and their likely hands say. Hand types are named in words, never as a share of the range.
+ */
+export type ReadAbout = 'preflop' | 'position' | 'players' | 'opponent' | 'board' | 'sizing' | 'range';
+export interface Read {
+  about: ReadAbout;
+  text: string;
+}
+
+/** The explanation shown with the answer (kept in lessons/, apart from the hand itself). */
+export interface Lesson {
+  /** Why the best play is best: the reasoning, in a short paragraph. Its first sentence is the result card's line. */
+  why: string;
+  /** How to read the hand, factor by factor. */
+  read: Read[];
+  /** The one thing to remember, as a rule you can use at the table. */
+  takeaway: string;
+}
+
 export type OptionId = 'fold' | 'call' | 'raise' | 'check' | 'bet33' | 'bet75' | 'bet125';
 
 /** Which preflop range a player is playing from (see charts.ts). */
@@ -93,8 +113,12 @@ export interface Scenario {
   /** When the best play is to check: the bet it's measured against (default ¾ pot). */
   compare?: OptionId;
   clues: Clue[];
-  /** Why the best play is best, in a few sentences. */
+  /** Why the best play is best (from its lesson, `lessons/`). */
   why: string;
+  /** How to read the hand, factor by factor (from its lesson). */
+  read: Read[];
+  /** The rule to remember (from its lesson). */
+  takeaway: string;
 }
 
 // ── Hands and ranges ────────────────────────────────────────────────────────

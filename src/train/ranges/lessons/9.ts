@@ -75,7 +75,7 @@ export const L9: Record<string, Lesson> = {
       { about: 'preflop', text: 'Five players saw the flop. The big blind is very sticky and doesn’t like to fold.' },
       { about: 'opponent', text: 'A sticky player calls with any pair and rarely folds once they’ve called. Against them, bet big with strong hands and bluff rarely.' },
       { about: 'players', text: 'Five took the flop; only the sticky big blind called your bet. They called a multiway bet with a pair or a draw.' },
-      { about: 'board', text: 'T♥7♠2♠ gave you middle set with a spade draw out. The K♣ helps you, and the 3♣ misses every draw.' },
+      { about: 'board', text: 'T♥7♠2♠ gave you middle set with a spade draw on the board. The K♣ helps you, and the 3♣ misses every draw.' },
       { about: 'sizing', text: 'They check-called two medium bets. You sized the turn so their top pairs would stay in and draws would pay.' },
       { about: 'range', text: 'Any pair (tens, kings and others) and two pair call. Sets beat you. Missed spade and straight draws fold.' },
     ],

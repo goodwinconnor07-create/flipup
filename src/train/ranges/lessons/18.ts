@@ -95,7 +95,7 @@ export const L18: Record<string, Lesson> = {
     read: [
       { about: 'preflop', text: 'Ten left in a big tournament, the cutoff opened and you called A♣Q♥ on the button.' },
       { about: 'position', text: 'You’re in position and called two bets. They kept firing.' },
-      { about: 'board', text: 'A♥J♦7♦ gave you top pair with a diamond draw out. The 5♥ adds a heart draw, and the 2♣ misses everything.' },
+      { about: 'board', text: 'A♥J♦7♦ gave you top pair with a diamond draw on the board. The 5♥ adds a heart draw, and the 2♣ misses everything.' },
       { about: 'sizing', text: 'Three bets, ending with almost half the pot. With every draw missing, the river bet is polarised: strong aces and sets, or missed draws.' },
       { about: 'range', text: 'For value: A-K, A-J, A-7, A-5, A-2, J-J and 7-7. For bluffs: missed diamond draws, and missed heart and straight draws.' },
     ],

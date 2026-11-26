@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isCard } from '../../game/cards';
 import { CHARTS, inChart } from './charts';
 import { analyse, combosOf, comboKey, expandHand, expandRange, optionsFor, replay, spotOf, streetOfBoard, type OptionId, type Scenario } from './model';
+import { CONCEPTS } from './concepts';
 import { SCENARIOS } from './scenarios';
 
 /** Words that would name an author, a site or a source. */
@@ -42,6 +43,9 @@ describe('hands', () => {
 
 /** Words that only make sense with cards still to come: protection, charging draws, free cards, outs. */
 const RIVER_WORDS = /protect|charg|free card|outdraw|to come|next card|draw out|outs\b|semi-bluff|equity to/i;
+
+/** A share of someone's range or hand frequency given as a number: "60% of their hands", "good about 33% of the time". */
+const RANGE_SHARE = /\d+\s*%\s+of\s+(their|his|her|the)\s+(hands|range|combos)|(good|ahead|best|win|winning)\s+(about\s+|over\s+|nearly\s+)?\d+\s*%|\d+\s*%\s+of\s+the\s+time/i;
 
 /** The best play has to beat the alternative by at least this much: 3% of the pot, or 3 points of equity. */
 const MARGIN = 0.03;
@@ -128,19 +132,34 @@ describe('every scenario', () => {
       it('explains every street up to the decision', () => {
         const streets = ['preflop', 'flop', 'turn', 'river'].slice(0, s.board.length - 1);
         for (const st of streets) expect(s.clues.some((c) => c.street === st), `${s.id}: no clue for the ${st}`).toBe(true);
-        expect(s.why.length).toBeGreaterThan(80);
         expect(streetOfBoard(s.board)).not.toBe('flop');
+      });
+
+      it('has a lesson that reads the hand factor by factor', () => {
+        expect(s.why.length, s.id).toBeGreaterThan(120);
+        expect(s.takeaway.length, s.id).toBeGreaterThan(30);
+        const about = s.read.map((r) => r.about);
+        for (const need of ['preflop', 'board', 'sizing', 'range'] as const) expect(about, `${s.id}: no ${need} read`).toContain(need);
+        expect(new Set(about).size, `${s.id}: a factor read twice`).toBe(about.length);
+        for (const r of s.read) expect(r.text.length, `${s.id} ${r.about}`).toBeGreaterThan(40);
+        expect(CONCEPTS[s.concept], `${s.id}: no theory for "${s.concept}" in concepts.ts`).toBeTruthy();
+      });
+
+      it('names their hands in words, never as a share of their range', () => {
+        // The owner (26 Nov 2026): "get rid of the percentages in which they have a certain type of hand".
+        const lesson = [s.why, s.takeaway, ...s.read.map((r) => r.text)].join(' | ');
+        expect(lesson, s.id).not.toMatch(RANGE_SHARE);
       });
 
       it('never says where the hand came from', () => {
         // The owner's call (17 Nov 2026): no author, site or "the article" in anything a player reads.
-        const shown = [s.title, s.concept, s.why, ...s.clues.map((c) => c.text)].join(' | ');
+        const shown = [s.title, s.concept, s.why, s.takeaway, ...s.read.map((r) => r.text), ...s.clues.map((c) => c.text)].join(' | ');
         expect(shown, s.id).not.toMatch(NAMES_A_SOURCE);
       });
 
       it('never talks about cards to come once the river is out', () => {
         if (s.board.length !== 5) return;
-        const river = [s.why, ...s.clues.filter((c) => c.street === 'river').map((c) => c.text)].join(' ');
+        const river = [s.why, s.takeaway, ...s.read.map((r) => r.text), ...s.clues.filter((c) => c.street === 'river').map((c) => c.text)].join(' ');
         expect(river, s.id).not.toMatch(RIVER_WORDS);
       });
 

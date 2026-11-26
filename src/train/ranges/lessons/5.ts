@@ -31,6 +31,7 @@ export const L5: Record<string, Lesson> = {
       { about: 'opponent', text: 'A loose-aggressive player bets whenever you show weakness. Against someone who bluffs too often, call more often with hands that beat bluffs.' },
       { about: 'position', text: 'They’re in position, and you checked to them twice. That invites bets from their whole range, not just their strong hands.' },
       { about: 'board', text: '5♥3♥2♠ is low with a heart draw and wheel draws. The 3♦ pairs the board. You have two overcards and a gutshot to a 4.' },
+      { about: 'sizing', text: 'About half the pot on the flop and two thirds on the turn: normal sizes that a loose-aggressive player uses with strong hands, draws and air alike, so the size tells you little.' },
       { about: 'range', text: 'Ahead of you: A-3 and A-4, fives (A-5, 6-5, 5-4, 5-5) and overpairs. Behind you: big cards with no pair and heart draws.' },
     ],
     takeaway: 'Against a player who bluffs too often, call more with hands that beat bluffs and can improve.',

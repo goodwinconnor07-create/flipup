@@ -6,13 +6,18 @@
 // owner's call, 17 Nov 2026). `docs/RANGE_SOURCES.md` is the record, kept outside the code.
 //
 // Clues: on each street, what their range is now and what that means for you, in a sentence or two. No headings.
-// On the river nothing is left to come: never talk about protection, charging draws or outs there.
+// They're the hints before you answer, so they never give the answer away. On the river nothing is left to come:
+// never talk about protection, charging draws or outs there.
+//
+// The explanation shown with the answer (why, the factor-by-factor read, the rule to remember) is the hand's lesson
+// in lessons/, keyed by its id: a new hand needs one. Hand types are named in words there, never as a share of
+// anyone's range (the owner, 26 Nov 2026).
 
 import { LESSONS } from './lessons';
 import type { Scenario } from './model';
 
 /** A hand without its explanation, which lives in lessons/ (keyed by the hand's id). */
-type Hand = Omit<Scenario, 'why' | 'read' | 'takeaway'> & { why?: string };
+type Hand = Omit<Scenario, 'why' | 'read' | 'takeaway'>;
 
 const HANDS: Hand[] = [
   {
@@ -67,7 +72,6 @@ const HANDS: Hand[] = [
         text: 'The 8♥ completes hearts and they shove 118 into 77.5. Value: flushes, 6-6, 8-8, and two pair like A-J and A-8 that you beat. Bluffs: every missed spade and wheel draw.',
       },
     ],
-    why: 'You lose to flushes and higher sets, but you beat every two pair and every missed spade and wheel draw, and that’s most of what shoves here. You need about 38% and you’re good about 60% of the time. Never fold this set.',
   },
   {
     id: 'jacks-paired-river',
@@ -113,7 +117,6 @@ const HANDS: Hand[] = [
         text: 'The 3♠ pairs the board and the big blind leads after checking twice. That’s mostly a queen betting for value, plus sets and two pair. Missed straight draws are the only bluffs, and there aren’t many.',
       },
     ],
-    why: 'Jacks beat only bluffs, and queens alone outnumber the missed draws several times over. At 3-to-1 you need 25%, and you’re good about one time in six. Fold. Raising as a bluff doesn’t work either: after checking the turn, you don’t look like a queen.',
   },
   {
     id: 'kings-double-paired',
@@ -153,7 +156,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 2♥ is a blank and they call again: queens, jacks, and straight draws like K-T and T-9. Most pairs below jacks fold to a second bet.' },
       { street: 'river', text: 'The Q♣ double-pairs the board. You check and they bet ¾ pot. Every queen and jack now has trips or a full house; their only bluffs are missed straight draws.' },
     ],
-    why: 'About 50 combos of queens and jacks beat you. The bluffs are T-9 suited and the two K-T suited combos your kings don’t block: six combos. You need 30% and you’re good about one time in ten. Fold.',
   },
   {
     id: 'trip-aces-shove',
@@ -199,7 +201,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The K♦ and UTG check-calls again: aces, kings, and pairs that want a showdown.' },
       { street: 'river', text: 'The Q♠ and UTG, who checked twice, shoves. A passive line that suddenly bets this big is almost never a bluff: it’s A-K, A-Q, full houses, or A-J and A-T that chop.' },
     ],
-    why: 'Nothing they shove is worse than you: you chop with A-J and A-T and lose to the rest. You need about 25% and you have about 17%. Early-position ranges hold the good aces, and you only have one ace yourself. Fold the trips.',
   },
   {
     id: 'queens-best-bluff-catcher',
@@ -243,7 +244,6 @@ const HANDS: Hand[] = [
       },
       { street: 'river', text: 'The A♥ and they shove for more than the pot. The straights and sets are still value. Every missed draw (K-9, 9-8, 7-6, 6-5) is now a pure bluff.' },
     ],
-    why: 'Queens beat every missed draw and block half the Q-9 straights, the hand you fear most. You need about 36% and you’re good over 40% of the time. Call. Aces would be a worse catcher here: they block neither Q-9 nor 9-7.',
   },
   {
     id: 'aq-blank-river',
@@ -283,7 +283,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 5♦: A-4 makes the wheel, A-5 pairs, and A-K keeps barrelling with a gutshot. Calling again with ace high is defensible.' },
       { street: 'river', text: 'The 3♦ pairs the board and changes nothing. They shove: overpairs, sets, A-J, A-4 and A-5 for value, and A-K as the main bluff.' },
     ],
-    why: 'You don’t even beat the bluffs: A-K, their main one, has you outkicked, and A-5 has a pair. The only bet you beat is a rare K-Q. An unimproved bluff catcher folds on a blank river; when you don’t beat bluffs, the decision is easy.',
   },
   {
     id: 'flush-or-bluff',
@@ -330,7 +329,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The Q♦ puts a third diamond out and both check. Your top pair is good against their pairs and missed draws, so take it to the river cheaply.' },
       { street: 'river', text: 'The 8♠ is a blank. You bet and they check-raise all in. That’s a flush, a set or 5-4, or a bluff with a hand that can’t call: a small pair like 4-4 or a missed 6-5.' },
     ],
-    why: 'Against “flush or bluff”, top pair and a straight do the same job. What matters is the price: call 81 to win 322, so you need to be right one time in four. Your A♦ means they can’t have the nut flush they’re representing. Call.',
   },
   {
     id: 'wheel-vs-overbet',
@@ -377,7 +375,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 5♠ and both check. The big blind gave up with a lot of A-A, A-K and Q-Q that would rather see a cheap showdown.' },
       { street: 'river', text: 'The 3♣ makes your wheel. Out of nowhere they overbet: A-A, A-K and K-K for value, or a bluff from a hand that gave up on the turn.' },
     ],
-    why: 'Your straight beats aces, A-K and every bluff; only kings full beats you. So call. Don’t raise all in: every worse hand folds to a raise, and the hands that call it beat you or chop. You don’t know exactly what the overbet means, but you know what it doesn’t: a hand that will pay you more.',
   },
   {
     id: 'queens-four-bet-pot',
@@ -417,7 +414,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 3♠ and a big second barrel: aces, the K♣ flush draws, flushes, and 5-4 with the wheel. Your set is still ahead of most of it.' },
       { street: 'river', text: 'The 9♦ is a blank and they shove. Value: the few flushes, 5-4 and aces. Bluffs: missed suited connectors. A-K and K-K don’t shove here; they’d check or give up.' },
     ],
-    why: 'A flush needs a suited hand that 4-bet from under the gun, and there are few of those. Your set beats every bluff, and you need about 32%. Calling makes complete sense. Their bluff’s problem: it doesn’t block your calls, and it holds the cards you’d fold anyway.',
   },
   {
     id: 'rivered-set-tens',
@@ -458,7 +454,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The Q♦ and a pot-sized barrel: overpairs, A-K and A-Q, draws, and some air. Your tens have a gutshot and beat the air, so call one more.' },
       { street: 'river', text: 'The T♥ gives you a set. They bet ⅔ pot. Value: A-K, A-9 and 9-8 straights, Q-Q and J-J. Bluffs: aces with no pair, like A-3, that can’t win a showdown.' },
     ],
-    why: 'Straights and bigger sets beat you, but you beat every bluff, every two pair, every smaller set and every thin one-pair bet. You need about 28% and you’re well above that. Call: your line already looks strong, so their bluffs are aimed at exactly this hand.',
   },
   {
     id: 'raise-then-fold-eights',
@@ -498,7 +493,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 4♠ checks through again. Two checks take out most of their bluffs: if they don’t bluff now, they won’t bluff the river.' },
       { street: 'river', text: 'The 8♥ gives you a full house. They bet small, you raise, and they shove. A range with no bluffs that re-raises all in has something specific.' },
     ],
-    why: 'Raising was right: kings, A-x and worse full houses can pay you. But the shove is almost always aces full, sometimes quads, and you beat neither. When something that seldom happens happens, they have something specific. Raise, then fold.',
   },
   {
     id: 'aces-full-river-shove',
@@ -552,7 +546,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 2♣ pairs the board and both check. Their flop call and this check take out the bluffs.' },
       { street: 'river', text: 'The 2♦ and they shove. Shoving a flush into a big flop raise would be insane, so it’s full houses: A-Q, Q-Q and 8-8.' },
     ],
-    why: 'You beat A-Q (six combos) and lose to Q-Q and 8-8 (three each). That’s close to half, and you need about 32%. Even if they shove A-Q only half the time, you’re near break-even. Unless you have an epic read, you can’t fold here.',
   },
   {
     id: 'nut-flush-paired-river',
@@ -592,7 +585,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The A♠ gives you the nut flush. They raise, you re-raise, they call. Calling a 3-bet on a four-flush board means a flush, a set, or two pair that can fill up.' },
       { street: 'river', text: 'The A♦ pairs the board and you’re first. Their range is mostly full houses (A-Q, A-8, sets) plus three small flushes. They have no bluffs.' },
     ],
-    why: 'A bet only gets called by full houses, which beat you; the small flushes fold, and they’d never bluff with one. Full houses outnumber the flushes about four to one. Check, and if a good player shoves, make the disciplined fold. Only against someone who makes crying calls does calling look better.',
   },
   {
     id: 'trip-aces-shove-for-value',
@@ -642,7 +634,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 9♣: the limper folds and the small blind calls again. Mostly an ace now, plus draws.' },
       { street: 'river', text: 'The A♦ gives you trips and they check. Their aces are mostly small kickers (A-8 down to A-2), since the big ones raise preflop. The draws missed and fold to any bet.' },
     ],
-    why: 'Any ace they have calls whatever you bet, and more of their aces lose to you than beat you. So bet the most you can: all in. A smaller bet leaves money behind that those aces would have paid.',
   },
   {
     id: 'top-two-four-straight',
@@ -682,7 +673,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 8♣ and another call. Add J-9, which just made a straight, and some club draws.' },
       { street: 'river', text: 'The K♠ puts four to a straight out: any jack has broadway. Their weaker two pairs (A-T, Q-T, K-T) won’t call a bet; jacks, A-K and sets will.' },
     ],
-    why: 'A bet only gets called by better hands, and the worse ones you want to pay you fold. Nothing better folds either, so there’s no bluff. Check. If they shove, most players have it here: fold, unless they’re the kind who pays off with any two pair.',
   },
   {
     id: 'second-nuts-capped-range',
@@ -726,7 +716,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 4♦ and another lead, about two-thirds pot. Calling is the only good option: you’re ahead of draws like A-9 and flush draws, and a raise wouldn’t represent much.' },
       { street: 'river', text: 'The 9♦ gives you the second-nut straight and they check. A player who led twice and checks the river is capped: mostly one pair or two pair, rarely a straight.' },
     ],
-    why: 'Bet for value, but don’t overdo it: their range is capped at two pair, so a huge bet only folds the hands that would have paid. A bet a bit over half pot gets called by two pair and some top pairs.',
   },
   {
     id: 'top-pair-river-shove',
@@ -781,7 +770,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 3♦ completes the flush. Bet about half pot: one-pair hands and single diamonds call. The cutoff calls; most flushes would raise.' },
       { street: 'river', text: 'The 4♥ changes nothing. The cutoff has tens and eights with a diamond, pairs, and the odd flush that slow-played. There are few bluffs to catch if you check.' },
     ],
-    why: 'Checking would usually win the pot, but betting gets called by worse: tens, eights and pairs with a diamond. Your stack is about the size of the pot, so put it all in and let them make the call.',
   },
   {
     id: 'trips-sizing-river',
@@ -832,7 +820,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The K♦ gives you top pair and a flush draw. Bet small again to get called by worse; the small blind calls.' },
       { street: 'river', text: 'The K♥ gives you trips and they check. The small blind has a busted draw, which folds to any bet, or a pocket pair or other one-pair hand that can call a medium bet.' },
     ],
-    why: 'Betting is certainly best. Size it for the hands that pay: pocket pairs call a medium bet but fold to a big one, and the busted draws fold to anything. When their range is mostly trash and marginal hands, don’t bet big.',
   },
   {
     id: 'trips-check-fold',
@@ -879,7 +866,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 8♠: you bet and they call again. Straights (J-9), full houses, better queens, and draws to broadway.' },
       { street: 'river', text: 'The A♥ completes broadway for K-J and fills up A-Q. The hands below you (A-K, A-J, kings) won’t put more in, and nothing better will fold.' },
     ],
-    why: 'A bet gets called by every hand that beats you and folded by the pairs you beat. They also won’t bluff into trips, because you never fold them. So check, and fold to a real bet.',
   },
   {
     id: 'nines-full-check-raise',
@@ -924,7 +910,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 9♥ gives you nines and kings, and they lead two-thirds pot. You call.' },
       { street: 'river', text: 'The K♥ makes your full house. You bet and they check-raise all in. A river check-raise all in is a king or a bigger full house almost every time.' },
     ],
-    why: 'Most of their range beats you: every king has quads, and A-A, Q-Q, J-J and T-T have bigger full houses. You only beat 2-2 and the rare bluff. Even with a strong hand, make the disciplined fold.',
   },
   {
     id: 'ak-hearts-river-raise',
@@ -971,7 +956,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 5♥ and a second small bet, called. Heart draws join their range.' },
       { street: 'river', text: 'The J♠ pairs the board and your small bet gets raised big. Value: full houses, quads and K-Q’s straight. The cutoff has few natural bluffs here, so it has to use missed heart draws.' },
     ],
-    why: 'Your two hearts are exactly the cards their bluffs need, so you block the bluffs and none of the value. You’re good too rarely to call 27.5 into 57: fold. The same A-K without hearts is a call, because those bluffs are still out there.',
   },
   {
     id: 'aq-overbet-shove',
@@ -1011,7 +995,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 5♠: you check, they bet again. Same range: value, and draws still betting.' },
       { street: 'river', text: 'The 5♥ pairs the board and misses every draw. They shove for more than the pot. Value: Q-9. Bluffs: every missed diamond, and J-T, K-J, K-T.' },
     ],
-    why: 'Against a balanced shove this size you have to call with about 45% of your range, and A-Q is near the top of it. Your queen blocks their Q-9; you block none of the missed diamonds or straight draws. Call.',
   },
   {
     id: 'ak-four-straight-call',
@@ -1049,7 +1032,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The A♣ and both check. Top pair top kicker is a bluff catcher now; checking keeps their weaker hands in.' },
       { street: 'river', text: 'The K♥ puts four to a straight out and they lead about ¾ pot. Q-T and J-T have the straight; A-Q, K-Q, A-J and K-J are two pair below yours.' },
     ],
-    why: 'They hold the straights, but you’re too high in your range to fold: your 3-bet range has very few tens either. With that edge they’d be expected to overbet; a normal-sized bet gives you the price to call.',
   },
   {
     id: 'aces-multiway-shove',
@@ -1099,7 +1081,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 2♣: you bet big and middle position raises. Sets and two pair, but also big draws and, at a loose table, weaker hands like A-9 or T-T. Going all in beats calling: a call leaves only 70 behind anyway.' },
       { street: 'river', text: 'The Q♥: you check and they shove 70 into 245. Every draw missed except J-T, which made a straight. Value: sets, two pair, J-T, Q-Q. Bluffs: missed flush and straight draws.' },
     ],
-    why: 'You need only 18%: call 70 to win 385. Their range still has plenty of missed draws and weaker made hands that you beat. Call.',
   },
   {
     id: 'two-pair-vs-maniac',
@@ -1145,7 +1126,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 6♠: the cutoff checks, the maniac bets, you call. Raise here against him: he calls with weaker aces and draws.' },
       { street: 'river', text: 'The J♥ and he bets half pot. K-Q and A-J now beat you, and 8-7 has had the straight since the turn, but most of his value is A-9, T-9, A-6 and one-pair aces, and with a range this wide he can have a strange bluff.' },
     ],
-    why: 'You beat almost everything he bets for value: only K-Q, 8-7 and A-J beat you. You need about 26%. Calling is clearly right.',
   },
   {
     id: 'middle-pair-thin-value',
@@ -1186,7 +1166,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 9♦ doesn’t help you, so check back: it keeps your checking range from being only weak hands.' },
       { street: 'river', text: 'The T♥ pairs the board and they check again. They’d bet every ten and most nines here, so their check is a 6, a 4, a small pair or overcards. You beat almost all of it.' },
     ],
-    why: 'Your pair of sixes is ahead of nearly everything that checks here. A small bet gets called by sixes, fours and small pairs, and not much better is left. Thin value like this adds up.',
   },
   {
     id: 'two-pair-turn-shove',
@@ -1233,7 +1212,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: 'K♣J♥3♣: you bet top pair top kicker and the hijack calls with kings, jacks, two pair, club draws and straight draws. With about 3 times the pot behind, you’re happy to get it in.' },
       { street: 'turn', text: 'The 3♦ pairs the board. You bet small and they shove: K-J and sets for value, but also worse kings and club and straight draws.' },
     ],
-    why: 'Your hand is near the top of your range, so folding here is very exploitable. They shove some hands that beat you, but also worse kings and draws, and you need only 23%. Call. Betting small and then folding to a shove is the mistake here.',
   },
   {
     id: 'big-draw-multiway-turn',
@@ -1307,7 +1285,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: 'K♥8♣7♣: checked to the button, who bets; everyone calls. Kings, pairs, straight draws and club draws.' },
       { street: 'turn', text: 'The 3♥ gives you a flush draw to go with your open-ender: about 15 outs. The button bets small and two players call before you.' },
     ],
-    why: 'You’re getting about 8.5-to-1 with a likely 15-outer, and four of your outs (the black tens and fives) are well disguised. A raise is far less likely to win the pot with three players still in. Call and keep everyone in.',
   },
   {
     id: 'top-pair-ace-river',
@@ -1348,7 +1325,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The T♥ and a bigger bet: overpairs like A-A, K-K and Q-Q, plus draws that picked up hearts or a straight draw. Your king blocks some of those. Call again.' },
       { street: 'river', text: 'The A♠ is the worst card for you: it pairs their overcards and the heart draws that held an ace. Few missed draws are left, and they bet again.' },
     ],
-    why: 'Top pair is a bluff catcher, and the ace hit the hands they were barrelling with. You lose to all their aces, overpairs and K-Q, and many of their draws now have a pair. Make the snug fold.',
   },
   {
     id: 'passive-overbet-limped',
@@ -1395,7 +1371,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The Q♠: you bet and only the passive limper calls. A queen, a spade draw, a 6 or a 3, or ace high.' },
       { street: 'river', text: 'The A♠ completes spades and gives you top pair. Then the passive player, who never raised, bets 1½ times the pot. A bet that big is polarised: trips or a flush draw that got there, and few, if any, bluffs.' },
     ],
-    why: 'Ace-seven only beats a bluff, and a passive player who suddenly overbets has few, if any. With almost no bluffs in their range, a bluff catcher must fold. Watch the slow-play: queens check the flop and just call the turn.',
   },
   {
     id: 'top-pair-all-in-and-call',
@@ -1456,7 +1431,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: 'A♣4♦2♥: top pair, but against six players checking is the default; one pair is rarely good for big money multiway. You bet and two call: aces, two pair, sets and wheel draws.' },
       { street: 'turn', text: 'The 5♣ makes a straight for any 3 and adds two pairs and sets. You check, UTG shoves nearly three times the pot, and the button calls. That much money in is face-up: sets, straights, two pair.' },
     ],
-    why: 'When a shove gets called with you still to act, both hands are strong. The shover has sets, straights and two pair; the caller is mostly a straight, with all the A-3, 5-3, 4-3 and 3-2 a loose limper holds. You’re drawing nearly dead most of the time. Fold top pair without a second thought.',
   },
   {
     id: 'kings-turn-overbet-shove',
@@ -1497,7 +1471,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: '8♣7♣2♥ is wet: straight draws and flush draws. Kings are still well ahead with two players in, so c-bet. The big blind calls: eights, pairs, draws.' },
       { street: 'turn', text: 'The 3♥ changes little, and the big blind shoves for nearly twice the pot. With 60bb that’s a range of one-pair hands like T-T to Q-Q and eights, plus the flush and straight draws.' },
     ],
-    why: 'An overbet needs you to be good more often, but at this stack depth the shove is weaker than it looks: worse pairs, eights and draws. Kings beat every one of those made hands, and only the draws can catch up: you win often enough to call.',
   },
   {
     id: 'turned-nuts-river-check-raise',
@@ -1547,7 +1520,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 6♠ gives you the nut straight, and he check-raises. Good check-raises here are pair-plus-draw hands like 8-6 or 7-5; he should be checking his whole range, so this one is wide.' },
       { street: 'river', text: 'The A♥ pairs the board. You bet, and he check-raises all in for more than four times the pot. He’s representing exactly a straight, and he should rarely if ever have a full house after this line.' },
     ],
-    why: 'Full houses beat you, but his line almost never has one: he’d have played them differently on the turn. Everything else that shoves, smaller straights and missed draws, loses to you or chops. You need about 36%. Despite the size, call: folding would be a mistake.',
   },
   {
     id: 'ace-seven-river-give-up',
@@ -1587,7 +1559,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 5♣ is the worst card for you: it can’t represent anything. Both check. Their range is still 9-9 to Q-Q and big aces.' },
       { street: 'river', text: 'The 6♠ and you’re first. Every hand they hold beats ace-seven: pairs make a full house and big aces outkick you. And this player doesn’t fold.' },
     ],
-    why: 'A bluff only works if they fold, and this opponent with this range won’t. An overbet shove here only makes sense with exactly aces, and against a player who expects you to try it, it’s awful. Check and give up the pot.',
   },
   {
     id: 'nut-flush-river-size-wsop',
@@ -1633,7 +1604,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 7♦: bet again for value; a check would usually get checked back. The button calls with kings, queens and pairs.' },
       { street: 'river', text: 'The Q♦ gives you the nut flush. K-J, A-K and small pairs would check behind; K-Q and Q-Q will call a bet but rarely raise. They see you as a loose 3-bettor.' },
     ],
-    why: 'You have to bet: checking hopes for a bluff that rarely comes. Pick a size that looks like it could be a bluff, around two-thirds of the pot. K-Q and Q-Q call it, and so does a suspicious A-K. A smaller bet is fine too; an overbet only gets called by the hands that would call anyway.',
   },
   {
     id: 'two-pair-river-size-wsop',
@@ -1685,7 +1655,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The T♦ adds more draws. Bet big: the draws pay, and two pair is still vulnerable. They call again.' },
       { street: 'river', text: 'The 3♥ misses every draw and they check. Their draws fold to any bet. Their kings think “all the draws missed” and will call, just not any amount.' },
     ],
-    why: 'Keep it simple: what’s the most a king will surely call? About two-thirds of the pot gets called by every king. A pot-sized bet might fold some of them, and locking up the call is worth more than a slightly bigger bet that gets folded.',
   },
   {
     id: 'ak-high-turn-call-vs-lag',
@@ -1725,7 +1694,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: '5♥3♥2♠: you check and call a small bet with two overcards and a gutshot to the wheel.' },
       { street: 'turn', text: 'The 3♦ pairs the board and they bet again. This player bluffs too often: their range has lots of big cards and heart draws next to the pairs and trips.' },
     ],
-    why: 'Ace-king beats every bluff, and you still have outs to aces, kings and the 4. Against a player who over-bluffs, call more often with bluff catchers like this. Raise only with hands like pairs and flush draws; ace high just wants to see the river cheaply.',
   },
   {
     id: 'bottom-set-four-bet-pot-river',
@@ -1773,7 +1741,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The K♥ is good and bad: it helps A-K and K-K. They bet; raising would fold A-A and A-K and only get called by K-K. Call.' },
       { street: 'river', text: 'The 7♠ and you check. They bet again: A-A and A-K for value, plus the odd bluff.' },
     ],
-    why: 'Your set beats aces and A-K, the hands that bet here, and you need about 28%: calling is the only good play. A raise would get A-A and A-K to fold and only K-K would call. In a tournament the chips you’d risk are worth more than the ones you’d win.',
   },
   {
     id: 'set-of-sixes-tiny-river-bet',
@@ -1824,7 +1791,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The Q♣ puts three clubs out. You bet small for value from pairs and draws; the cutoff makes a small, confusing raise. Re-raising only gets called by flushes, so call.' },
       { street: 'river', text: 'The 8♥ and the cutoff bets a quarter of the pot. That’s a flush a lot of the time, but also two pair, smaller sets and one-pair hands betting small.' },
     ],
-    why: 'Facing a tiny bet you need only about 17%. Folding is right only if you’re certain this player bets nothing but a flush, and you can’t be. Call: folding the best hand costs far more than paying off a flush now and then.',
   },
   {
     id: 'set-of-queens-river-size',
@@ -1868,7 +1834,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 7♠ and they bet the pot. You beat their bluffs and some value bets, so call any turn bet; raising risks too much against a better hand.' },
       { street: 'river', text: 'The Q♥ gives you a set and they check. Their range is full of jacks, tens and overpairs that can call a decent bet, plus sets you now beat.' },
     ],
-    why: 'Bet for value, sized for the hands that pay: a bet around two-thirds of the pot gets called by jacks, overpairs and sets. A third of the pot gets more calls but less money; an overbet folds the marginal hands you want to pay you.',
   },
   {
     id: 'top-pair-river-check-behind',
@@ -1908,7 +1873,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 6♥ completes many draws and they lead small. You have top pair and a flush draw: folding is out, and a raise could get re-raised. Call.' },
       { street: 'river', text: 'The 2♣ misses your flush and they check. If you bet, two pair or better calls almost any size, and most one-pair hands fold.' },
     ],
-    why: 'You’re often best, but betting only gets called by the hands that beat you; the worse pairs fold. With no read that they call down light, check behind and take the showdown.',
   },
   {
     id: 'nut-flush-river-size-multiway',
@@ -1978,7 +1942,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 6♠ gives you the nut flush. UTG bets and the lojack calls: both have strong ranges, and everyone else is drawing thin or dead. Call to keep them in; a raise could fold the hands that are behind.' },
       { street: 'river', text: 'The 2♣ and both check to you. Checking twice caps them: overpairs, top pair and Q-J. Neither has a flush; they’d have bet it.' },
     ],
-    why: 'Both players are capped, so a big bet or a shove rarely gets called. Bet small enough that an overpair, Q-J or a stubborn top pair still calls: that’s where the money is.',
   },
   {
     id: 'eights-full-river-raise',
@@ -2021,7 +1984,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The T♣ and they check-raise. Unusual action means an unusual hand, but not necessarily the nuts: overpairs, tens, trips, and the odd float.' },
       { street: 'river', text: 'The J♥ and they bet the pot. Overpairs Q-Q to A-A are 18 combos; J-J, T-T and quads are 7.' },
     ],
-    why: 'Calling needs only about a third, but raising needs to beat more than half of the hands that would call, and it does: the 18 combos of Q-Q, K-K and A-A dwarf the 7 that beat you. Only their air folds to a raise. Just calling here is a clear river mistake: get the rest in.',
   },
   {
     id: 'jacks-incoherent-story',
@@ -2061,7 +2023,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 5♦ and they check behind. A-2, A-7, 7-7 or a turned 4-3 would keep building the pot; a pair of fives might check, but it isn’t betting the pot on the river.' },
       { street: 'river', text: 'The 2♣ pairs the board and they bet the pot. The second deuce cuts their value combos further. Either they turned quads, or it’s a bluff.' },
     ],
-    why: 'Their story doesn’t add up: a min-raise, a check, then a pot-sized bet. Nearly all of their value is gone, so this is a hand that gave up on the turn and is bluffing. You need a third; jacks beat every bluff. Call.',
   },
   {
     id: 'fours-full-check-behind',
@@ -2106,7 +2067,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The Q♠: they check and you bet over half the pot. A check-call against that size drops pairs worse than the queen; they’re left with kings and queens.' },
       { street: 'river', text: 'The 4♣ puts trips on board. Every king or queen they hold now has a bigger full house than your sixes full. Pocket sixes play like a bluff here, and a poor one.' },
     ],
-    why: 'Your full house loses to every hand that called the turn, and none of them fold to a shove. Bluff, if at all, with hands that block their calls, like A-J or A-5; sixes block nothing. Check and give up: shoving just loses another stack and a half.',
   },
   {
     id: 'king-high-overbet-bluff',
@@ -2150,7 +2110,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 3♣ and you keep the pressure on; they call quickly. Still tens, pairs and draws: no strong hand would just call twice like this.' },
       { street: 'river', text: 'The A♥ and they check. Their best hands are a suited A♦x or K-T; everything else is a ten, a small pair or a missed draw.' },
     ],
-    why: 'Checking only wins when they have nothing at all. A big overbet wins almost every time: their range is capped, and it tells them the worst you can have is a better ace. Play their range, not your cards. Bet big.',
   },
   {
     id: 'middle-set-river-raise',
@@ -2192,7 +2151,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 9♥ gives you a set. Another small bet, and you just call.' },
       { street: 'river', text: 'The 3♥ completes hearts and the wheel, and they bet two-thirds of the pot. That range is flushes and straights, but also overpairs, top pairs and smaller sets betting for value.' },
     ],
-    why: 'Sets raise here even though flushes are possible: overpairs alone are a huge share of the hands that call a raise. You beat overpairs, top pairs and smaller sets, which together outnumber the flushes and wheels. Raise all in for value.',
   },
   {
     id: 'nines-full-small-river-bet',
@@ -2236,7 +2194,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 7♦: check behind. Few worse hands call another bet, and mostly better hands stick around.' },
       { street: 'river', text: 'The 9♣ gives you nines full and they check. A king never folds, and it beats you now. Underpairs always fold. What’s left is ace high, Q-J and Q-T.' },
     ],
-    why: 'A big bet only gets called by kings, which beat you. The hands you beat are weak, ace high and Q-J types, and they only call something small. Bet small, around a quarter to a third of the pot, and take value from them.',
   },
   {
     id: 'aces-crying-call-vs-min-raise',
@@ -2279,7 +2236,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 7♦ and they lead: a premium hand like trips, or a draw. Aces are protected against draws, so just call.' },
       { street: 'river', text: 'The T♥ and they check. A ten or a nine checks here, so bet big for value. They min-raise: full houses and trips, or a bluff from paired tens and nines that block the full houses.' },
     ],
-    why: 'The min-raise gives you a great price: you need to be good only about one time in five. A loose-aggressive player bluffs more than that, so make the crying call. Only fold if they see you as a calling station and never bluff you.',
   },
   {
     id: 'two-pair-river-call-not-raise',
@@ -2325,7 +2281,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The A♠: check behind. Betting big pressures queens and nines; checking keeps the pot small. Both are fine.' },
       { street: 'river', text: 'The K♦ gives you two pair and the small blind leads two-thirds of the pot. That line is mostly a king or a queen, with some better two pair.' },
     ],
-    why: 'You beat the kings and queens that make up most of this bet, so folding is out. But a king or queen won’t call a raise, and the better two pairs would. Call: it wins against the hands you beat and loses the least when you’re beaten.',
   },
   {
     id: 'ten-high-overbet-jam',
@@ -2370,7 +2325,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 6♦ hits your range (flushes, straights, two pair), and you have an open-ender. Bet small; only the cutoff calls.' },
       { street: 'river', text: 'The J♠ misses you. The cutoff checked the flop and just called the turn: an extremely capped, marginal range of pairs and weak kings.' },
     ],
-    why: 'Their range is capped, and you could have flushes and straights here. Overbet all in: it puts their whole stack on a marginal hand and folds the pairs and weak kings that make up most of it. A small bet just gets called by them.',
   },
   {
     id: 'set-of-sevens-river-jam',
@@ -2425,7 +2379,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The K♣: keep betting, and bet big. They hate to fold, you get value from kings and tens, and the spade draws pay.' },
       { street: 'river', text: 'The 3♣ misses the spades and they check. Busted draws fold to any size; tens, kings and even underpairs like 6-6 can call a big bet.' },
     ],
-    why: 'Size doesn’t matter to the busted draws, so size for the hands that call: a calling station’s tens, kings and pairs. All in is only a slight overbet and gets the most from them.',
   },
   {
     id: 'top-set-turn-check-raise-all-in',
@@ -2483,7 +2436,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: 'T♥6♠4♣: top set on a dry board. They bet and only you call; their overpairs are paying.' },
       { street: 'turn', text: 'The Q♦ and they bet again. Their overpairs are still there, and the queen gives A-Q and K-Q top pair. A tight, passive player often checks the river, so the money has to go in now.' },
     ],
-    why: 'Their range is overpairs, A-Q and K-Q, and you beat all of it but queens. They won’t bet three streets for you, so get the money in now: check-raise all in.',
   },
   {
     id: 'kings-vs-aggressive-turn-shove',
@@ -2520,7 +2472,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: '2♣4♠6♥: they check-raise. An aggressive player does that with the pairs below yours and with wheel draws.' },
       { street: 'turn', text: 'The 7♠ and they shove. Value: lots of pairs below kings. Semi-bluffs: 5-5, A-5 and A-3.' },
     ],
-    why: 'Against this aggressive player the shove is many pairs below yours, and draws like 5-5, A-5 and A-3. Folding an overpair here would make you easy to exploit. You need about 35% and you have close to 90%, so call.',
   },
   {
     id: 'top-pair-fold-turn-check-raise',
@@ -2558,7 +2509,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: 'K♦J♥8♠: top pair. They call your bet with kings, jacks, two pair and straight draws.' },
       { street: 'turn', text: 'The 4♣ changes nothing, you bet again and they check-raise. A raise on a blank, after calling the flop, is strong: sets and two pair. A few straight draws do it, but not many.' },
     ],
-    why: 'Most players only check-raise this blank turn with two pair or better. One pair isn’t good enough after two rounds of aggression. You need about 26% and you have about 19%, so fold.',
   },
   {
     id: 'kings-full-shove-short-stack',
@@ -2599,7 +2549,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 5♥ and they bet small. Trip aces, pairs and draws all bet here. Just call and keep them in.' },
       { street: 'river', text: 'The 3♦ and they bet more than half the pot, leaving under 5bb. They do that with every ace. Only A-K, the last ace pair, A-5 and A-3 beat you.' },
     ],
-    why: 'They bet every ace here, and you beat nearly all of them; only A-K, A-A, A-5 and A-3 have you. They have so little left that any ace will call. Raise all in.',
   },
   {
     id: 'kings-call-multiway-lead-shove',
@@ -2645,7 +2594,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: '9♦7♣3♣: you bet and only the limper calls. Sets do that, and so does every club draw and backdoor hand.' },
       { street: 'turn', text: 'The 5♦ brings a second flush draw and the limper leads all in. A set might lead to protect itself, but there are far more flush draws than sets.' },
     ],
-    why: 'A set could lead to protect itself, but there are only nine of them, and far more combos of the two flush draws. You need about 30% and you have about 47%, so call happily.',
   },
   {
     id: 'aces-up-raise-small-river-bet',
@@ -2691,7 +2639,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The T♠ gives you a pair and it goes check, check. Their check looks weak.' },
       { street: 'river', text: 'The A♣ gives you aces up and they bet about a third of the pot. That’s an ace, a pocket pair, or a bluff. Only a full house beats you.' },
     ],
-    why: 'You beat almost everything they bet: every weaker ace, every pocket pair, every bluff. A big raise still gets paid by their aces, which find it hard to fold to a raise. Raise.',
   },
   {
     id: 'trips-weak-kicker-river-call',
@@ -2740,7 +2687,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 2♠ and they bet again. You call: their range is still kings, jacks and draws.' },
       { street: 'river', text: 'The K♣ gives you trips and they bet two thirds of the pot. A better king or a full house beats you. But they also bet a pair of jacks for value and busted straight draws, and your king makes their kings rarer.' },
     ],
-    why: 'Better kings and full houses beat you, but you hold a king, so they have fewer of them. They also bet every pair of jacks and some busted straight draws. You need about 28% and you’re good about 70% of the time. You might be beaten, but you can’t fold.',
   },
   {
     id: 'two-pair-fold-river-lead',
@@ -2787,7 +2733,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 4♥ and they check again. You bet small and they call.' },
       { street: 'river', text: 'The 8♣ and they lead out for more than half the pot. From a straightforward player that’s jacks, straights like T-9 and 6-5, and paired eights. Real bluffs are rare.' },
     ],
-    why: 'A straightforward player leads here with a jack, a straight or a paired eight, and all of those beat your sevens. They rarely bluff. A solver might call, but against this player and range, fold.',
   },
   {
     id: 'underpair-turn-call-vs-three-bettor',
@@ -2831,7 +2776,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: 'T♠8♠3♣: they check and you check back.' },
       { street: 'turn', text: 'The 2♥ and they bet about 40% of the pot. Overpairs and top pair bet, but so do lots of unpaired high cards like K-J and A-K that missed. Your sevens beat all of those.' },
     ],
-    why: 'They bet top pair and overpairs, but plenty of unpaired high cards bluff here too, and your sevens beat them. The price is excellent, so call. There’s no point raising: worse hands fold and better ones don’t.',
   },
   {
     id: 'low-straight-just-call-river',
@@ -2886,7 +2830,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 5♥ gives you a six-high straight, and the big blind bets big. That’s some threes, every 8-7 and some 7-3, which beat you, plus two pair and sevens drawing. Just call.' },
       { street: 'river', text: 'The 9♠ and they bet about 60% of the pot. They bet 8-7 and 7-3, but also two pair for value and missed sevens as a bluff.' },
     ],
-    why: 'Their bet is two pair or a missed seven as often as it’s 8-7 or 7-3. You need about 28% and you’re good about 68% of the time, so call. Don’t raise: the hands that call a raise are the ones that beat you.',
   },
   {
     id: 'weak-flush-river-call',
@@ -2941,7 +2884,6 @@ const HANDS: Hand[] = [
         text: 'The 8♠ gives you a small flush and they bet three quarters of the pot. Most of the time they don’t hold a spade at all, and with one they bet only strong ones, the 9♠ or better. Without one, this is a bluff.',
       },
     ],
-    why: 'They only bet the 9♠ or better here, and most of the time they don’t have a spade at all, so a lot of this is bluffs. You need about 30% and you’re good about 45% of the time. Folding would be a blunder.',
   },
   {
     id: 'trips-call-river-shove-3bet-pot',
@@ -2984,7 +2926,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 7♠ and they bet half the pot. T-9 just made a straight, and spade and straight draws keep firing.' },
       { street: 'river', text: 'The J♦ gives you trips and they shove. Value: straights, full houses, better trips and some overpairs. Bluffs: missed spade draws, gutshots and combo draws, though they give up on about half of them.' },
     ],
-    why: 'They shove straights and full houses, but also some overpairs and plenty of missed spade and straight draws. You need about 29% and you’re good about half the time. Call.',
   },
   {
     id: 'straight-never-fold-to-river-shove',
@@ -3029,7 +2970,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 6♠ gives you a straight. Check is right; they bet three quarters of the pot and you call.' },
       { street: 'river', text: 'The 6♦ pairs the board and they shove about the size of the pot. Queens and sets just made full houses, but A-Q and the overpairs shove here too.' },
     ],
-    why: 'They shove full houses, but also A-Q and their overpairs, and there are far more of those. You need about 35% and you’re good about 70% of the time. A solver never folds a straight here; folding costs about 49bb.',
   },
   {
     id: 'aces-full-call-quads-shove',
@@ -3074,7 +3014,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 6♣ gives you aces full. They lead small, and their range is close to drawing dead, so just call.' },
       { street: 'river', text: 'The 6♠ and they shove. Every hand they have is a full house now, and you beat them all; only the 6♥ makes quads.' },
     ],
-    why: 'You have the second nuts. Their kings full and sixes full all lose to you, and only two hands, the ones holding the 6♥, beat you. You need about 30% and you win nearly 80% of the time. The easiest call there is.',
   },
   {
     id: 'second-pair-river-call-four-handed',
@@ -3121,7 +3060,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 9♣ gives you second pair. They bet small and you call; plenty of draws are betting too.' },
       { street: 'river', text: 'The 3♥ misses every draw and they bet two thirds of the pot. They expect your check-call to be a weak hand that folds, so missed club draws and gutshots bluff here a lot.' },
     ],
-    why: 'Lots of draws missed, and they’ll bluff them, expecting you to fold a weak made hand. You lose to top pairs, two pair and straights, but you beat every bluff. You need about 29% and you’re good about 33% of the time, so call.',
   },
   {
     id: 'queens-full-bet-big-not-overbet',
@@ -3165,7 +3103,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 9♠ and you lead; they call. They have more trips than you, so checking to call is the usual play.' },
       { street: 'river', text: 'The Q♥ gives you queens full. A five calls a normal bet but rarely an overbet. A queen chops with you. Marginal pairs won’t call anything, and missed draws fold.' },
     ],
-    why: 'Their trips will call a big bet about as often as a smaller one, so make it big. An overbet only gets called by calling stations: their fives fold to it. Bet about three quarters of the pot.',
   },
   {
     id: 'top-pair-small-river-value-bet',
@@ -3207,7 +3144,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 3♣ and they check-call again. A big bet would fold hands you beat, so bet small and keep them in.' },
       { street: 'river', text: 'The T♠ and they check a third time. Weaker aces and a few two pairs are in there, but so are lots of nines and middle pairs that only call something small.' },
     ],
-    why: 'Their range is weak and you beat most of it. A big bet folds the nines and middle pairs you beat; a small one gets called by hands like Q-9. Bet small. If they check-raise, you can usually fold.',
   },
   {
     id: 'overpair-check-river-vs-tens',
@@ -3252,7 +3188,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 4♣ completes clubs and they check. Maybe no ten, or scared of the flush. Bet small and they call.' },
       { street: 'river', text: 'The 8♥ and they check again. They likely have a ten, which beats you and never folds. Otherwise it’s a weak pair or a busted draw, and those fold to any bet.' },
     ],
-    why: 'A bet only gets called by a ten or a flush, which beat you. Everything you beat folds to any bet. So betting can only lose more. Check, unless they’re an extreme calling station.',
   },
   {
     id: 'ace-high-river-bluff-vs-tight-3bet',
@@ -3304,7 +3239,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The J♥ and they check back. A tight player bets top pair or better here, so they don’t have it.' },
       { street: 'river', text: 'The T♠. Their range is worse than top pair: A-K, 8-8 and 7-7 beat your ace high but can’t stand a real bet. Only tens and K-Q got there.' },
     ],
-    why: 'Their checks say they have less than top pair. A-K and the middle pairs beat you at showdown but fold to a decent bet, and a small bet lets them call. Bet about two thirds of the pot as a bluff.',
   },
   {
     id: 'aces-full-river-overbet-vs-tag',
@@ -3350,7 +3284,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 2♠ brings three spades. Don’t bet too big: the aces and queens without a spade are drawing thin, and you want to keep them in. If they raise, call it off.' },
       { street: 'river', text: 'The 2♣ gives you aces full, the effective nuts. Their marginal hands fold to almost any bet. What calls is flushes, full houses, and the odd hero call with an ace and a spade.' },
     ],
-    why: 'Their marginal hands fold to any bet, so don’t size for them. The hands that call (flushes, full houses, aces with a spade) call a big bet as readily as a small one. You don’t hold a spade, so they have all their flushes. Go for it all: bet as big as you can.',
   },
   {
     id: 'straight-flush-multiway-river-shove',
@@ -3413,7 +3346,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 8♥ gives you an open-ended straight draw and a flush draw. They check to you; bet small, not big, since only better hands call a big one. Both call.' },
       { street: 'river', text: 'The 5♥ gives you a straight flush. You have less than the pot behind. Both opponents call a shove with flushes, straights, sets and even two pair.' },
     ],
-    why: 'You have less than the pot left, and with flushes, straights, sets and two pair around, someone will pay. Betting small to keep them in rarely makes sense here. Shove.',
   },
   {
     id: 'trips-ace-kicker-river-overbet',
@@ -3455,7 +3387,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 7♥ and you check; they check back. That caps them: no strong hands left, mostly draws and low pairs.' },
       { street: 'river', text: 'The K♠ gives you trips with the best kicker. Their range is a missed draw or a low pair. Missed draws fold to anything; the low pairs are bluff-catchers.' },
     ],
-    why: 'Their turn check capped them at missed draws and low pairs, and you beat all of it. A big bet loses a few of the weakest pairs, but wins much more each time it’s called. Bet as big as you can.',
   },
   {
     id: 'ace-five-fold-to-river-overbet',
@@ -3502,7 +3433,6 @@ const HANDS: Hand[] = [
         text: 'The 7♥ and they overbet 153% of the pot. That size is queens and full houses for value, with suited aces like A-2, A-3 and A-4 as the bluffs. Your A♥ takes away some of those bluffs.',
       },
     ],
-    why: 'Their overbet is full houses and trip queens, or ace-high bluffs. You only beat the bluffs, and your ace removes some of them. You need about 38% and you’re good about 28% of the time. The solver folds A-5 here almost always; a five without an ace would be a better bluff catcher.',
   },
   {
     id: 'top-pair-call-lag-river-barrel',
@@ -3551,7 +3481,6 @@ const HANDS: Hand[] = [
         text: 'The 9♣ and they bet three quarters again. J-T and 7-6 just got there, and some two pairs are in there. But a loose-aggressive player has plenty of missed diamond and straight draws that bluff.',
       },
     ],
-    why: 'J-T, 7-6 and two pair beat you, but this player arrives here with lots of missed draws and keeps firing them. You need about 30% and you’re good about 34% of the time. It’s a call with top pair, top kicker unless they never bluff.',
   },
   {
     id: 'ace-king-call-splashy-river-lead',
@@ -3601,7 +3530,6 @@ const HANDS: Hand[] = [
         text: 'The 4♦ and they lead about half the pot. A lead shows some strength, but a splashy player also leads worse aces here to set their own price.',
       },
     ],
-    why: 'Their lead could be two pair or a set, but from a splashy player it’s often a worse ace making a blocker bet. You need about 25% and you’re good about 55% of the time. Call; fold only against a very weak, tight, straightforward player.',
   },
   {
     id: 'flush-river-all-in-vs-checked-turn',
@@ -3649,7 +3577,6 @@ const HANDS: Hand[] = [
         text: 'The 6♠. Their turn check says marginal: a jack, an ace, an underpair or junk. Most of those would check the river back, and the aces and jacks will still call a bet.',
       },
     ],
-    why: 'After they checked the turn, a bluff from them is unlikely, so you won’t win more by checking. Their jacks and aces call even a shove, and you beat both. Go all in.',
   },
   {
     id: 'two-pair-river-value-vs-aces',
@@ -3702,7 +3629,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The Q♠ gives you top two. Bet about ¾ pot: worse aces call, and a bigger bet would fold them.' },
       { street: 'river', text: 'The 9♣ and they check. Underpairs fold to any bet; the hands that pay you are worse aces.' },
     ],
-    why: 'Your targets are worse aces, and they’ll call a solid bet but not a shove; underpairs fold whatever you do. Bet about ¾ of the pot; a smaller bet is fine too. Don’t shove: nothing worse calls.',
   },
   {
     id: 'aces-river-shove-one-to-one',
@@ -3752,7 +3678,6 @@ const HANDS: Hand[] = [
         text: 'The 5♥ misses everything and they check. Busted draws will fold to anything. One-pair hands like a queen or nine will call, and you crush them.',
       },
     ],
-    why: 'The draws missed and will fold anyway, so size for the one-pair hands that call. With about a pot left behind, go all in: a queen won’t fold often enough for a smaller bet to be better.',
   },
   {
     id: 'set-river-shove-vs-sticky-player',
@@ -3807,7 +3732,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The K♣ is excellent for you. Bet a medium size: a big bet folds their top pairs, a small one gives draws a cheap call.' },
       { street: 'river', text: 'The 3♣ misses every draw and they check. A player like this calls with any pair; the busted draws fold whatever you bet.' },
     ],
-    why: 'The draws missed and will fold to anything, but this player calls with any pair. So bet the most you can: all in, a bit more than the pot. A smaller bet just loses value against the pairs that would have called anyway.',
   },
   {
     id: 'nut-flush-river-big-bet-paired-board',
@@ -3855,7 +3779,6 @@ const HANDS: Hand[] = [
         text: 'The T♦ and they check. Two pair, straights and flushes call any bet you make. Full houses are possible, but that’s no reason to check.',
       },
     ],
-    why: 'You have the effective nuts. Their second-best hands (two pair, straights, smaller flushes) call whatever you bet, so make it big. Only the one-pair hands care about size, and they’re not who you’re betting for.',
   },
   {
     id: 'top-pair-value-monotone-river',
@@ -3903,7 +3826,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 9♥ and they check back. A better hand usually keeps betting this turn, so their range just got weaker.' },
       { street: 'river', text: 'The 6♣ and you’re first. They have lots of worse jacks, nines, eights and small pairs, and those call a normal bet. A huge one folds them.' },
     ],
-    why: 'Their turn check takes most of the hands that beat you out of their range, and plenty of worse made hands are left. Bet for value at a size they’ll call: about half to ¾ of the pot. A huge bet folds the hands you beat, and checking only works against someone who bluffs a lot.',
   },
   {
     id: 'set-call-river-lead-straight-board',
@@ -3951,7 +3873,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The Q♠ gives you top set. Bet; they call with pairs, draws and two pair.' },
       { street: 'river', text: 'The 8♥ puts a straight out and they lead more than half the pot. Plenty of straights are in their range, but so are sets and two pair betting thin.' },
     ],
-    why: 'Any five and T-9 beat you, and a loose defender has lots of those. But they also lead sets and two pair for thin value, and your set beats all of them. You need about 26% and you’re good about 33% of the time. Fold only if you’re sure they only ever lead a straight here.',
   },
   {
     id: 'ace-high-check-river-vs-flop-raiser',
@@ -3995,7 +3916,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The Q♦ goes check, check.' },
       { street: 'river', text: 'The 6♦. Their overpairs, trips and straights never fold. Their missed draws would fold to a bet, and if you check they may bluff with them.' },
     ],
-    why: 'A bet only gets called by overpairs and better, which beat you, and folds the missed draws you could beat. Your ace high has some showdown value, and checking lets their busted draws bluff. Check; never shove here.',
   },
   {
     id: 'king-high-fold-blocks-bluffs',
@@ -4051,7 +3971,6 @@ const HANDS: Hand[] = [
         text: 'The 7♠ and they bet a third of the pot. They have flushes, trips, straights and queens. Their bluffs are trash like K-x and J-T, and there aren’t many hands worse than yours. Your K♥ takes away some of their K-x bluffs.',
       },
     ],
-    why: 'King high only beats their bluffs, and there are very few of them. Your king blocks their most natural bluffs, the K-x hands. The price is good, but not good enough: you need about 20% and you’re good only about 8% of the time. King-ten should go in the muck.',
   },
   {
     id: 'straight-raise-river-paired-board',
@@ -4101,7 +4020,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The Q♦ gives you a king-high straight. You lead and they call.' },
       { street: 'river', text: 'The Q♠ pairs the board. You check and they bet small. That’s a queen or a jack for value, plus a few full houses.' },
     ],
-    why: 'The paired board makes full houses possible, but most of their small value bets are trip queens and jacks, which your straight beats. Those hands will call a raise. Check-raise for value.',
   },
   {
     id: 'quads-river-overbet-vs-aces',
@@ -4153,7 +4071,6 @@ const HANDS: Hand[] = [
         text: 'The Q♠ and they check. Their aces and full houses won’t fold to anything. Pairs and queens only call a small bet, and missed draws fold.',
       },
     ],
-    why: 'Every ace they have calls, whatever you bet; it’s near impossible to fold aces full or trip aces. So bet big: an overbet wins far more from those hands than a normal bet loses from the pairs that would only call small.',
   },
   {
     id: 'aces-full-fold-river-raise',
@@ -4212,7 +4129,6 @@ const HANDS: Hand[] = [
         text: 'The 7♣ gives you aces full. You lead small to block, and they shove. They’d only shove a hand that beats aces full: the last four, or a seven.',
       },
     ],
-    why: 'Your small lead was a clever block bet, but a shove over it is only quads or a seven, and both beat aces full. Nothing worse shoves here. It hurts, but fold.',
   },
   {
     id: 'trip-eights-pot-bet',
@@ -4264,7 +4180,6 @@ const HANDS: Hand[] = [
         text: 'The 4♣ misses the hearts. You check and they bet the pot. Better trips, full houses and 7-6 or A-3 beat you; every missed heart draw is a bluff.',
       },
     ],
-    why: 'Most of what you beat here is missed flush draws, and there are a lot of them, so folding is out: you need about a third and you’re good more often than that. Don’t raise: the missed draws fold, and the hands that call (better trips, full houses, straights) mostly beat you. Just call.',
   },
   {
     id: 'top-pair-four-flush-fold',
@@ -4319,7 +4234,6 @@ const HANDS: Hand[] = [
         text: 'The 8♣ puts four clubs on the board and they bet again. Their range is full of strong clubs, and betting a third time shows no fear of you having one.',
       },
     ],
-    why: 'On most boards top pair calls here, but not with four clubs out. The button has plenty of strong clubs, and they bet as if you can’t have one. You beat only a few bluffs, well under the quarter you need. Fold.',
   },
   {
     id: 'marginal-top-pair-induced-raise',
@@ -4370,7 +4284,6 @@ const HANDS: Hand[] = [
         text: 'The 6♠. You bet small to get called by worse, and the loose cutoff raises to 9,000. That’s a full house, or a bluff with a missed heart draw or K-Q.',
       },
     ],
-    why: 'This raise is the action your small bet invited. You hold no hearts, so you don’t block any of the missed draws they’d bluff with, and a loose-aggressive player has plenty of them. You need about a third and you’re ahead more often than that. Call.',
   },
   {
     id: 'top-pair-ace-river-chop',
@@ -4418,7 +4331,6 @@ const HANDS: Hand[] = [
         text: 'The A♦ pairs your ace, but every ace now has aces and fives with a king kicker. You check, and they bet about two-thirds of the pot: mostly aces you chop with, plus A-K and the odd full house.',
       },
     ],
-    why: 'You’ve improved, but most hands that bet here are aces that split the pot with you; some beat you, and few kings are left after their turn check. Folding gives up a pot you often share, so call. Raising doesn’t work: the aces you chop with won’t fold to a small raise, and a big one only gets called by hands that beat you.',
   },
   {
     id: 'trip-nines-shoved-on',
@@ -4459,7 +4371,6 @@ const HANDS: Hand[] = [
         text: 'The 9♥ gives you trips. You bet the pot on a scary board and they move all in over the top. A regular doesn’t shove a weaker nine for value, and 6-5 just calls: what shoves is full houses and nines with a better kicker.',
       },
     ],
-    why: 'You put the most pressure you could on this board, and they moved all in anyway. Your five doesn’t play, so every better nine beats you and every full house does too. Trips here only catch bluffs, and a regular raising all in rarely has one. Fold.',
   },
   {
     id: 'eights-polarised-river-call',
@@ -4510,7 +4421,6 @@ const HANDS: Hand[] = [
         text: 'The 5♥ and they bet half the pot. That’s polarised: overpairs, sets, flushes and straights, or one of the many single-spade hands that missed.',
       },
     ],
-    why: 'Against a half-pot bet you need to be good only about a quarter of the time. They check-called the flop with a lot of single big spades, and those missed, so their range holds plenty of bluffs. Raising does nothing, since the bluffs fold and the value doesn’t. Call.',
   },
   {
     id: 'queens-block-bluffs-fold',
@@ -4558,7 +4468,6 @@ const HANDS: Hand[] = [
         text: 'The 2♠ and they move all in. Their bluffs are broadway hands like K-Q and Q-J, and your queens block most of them; their aces, sets and the odd flush you don’t block.',
       },
     ],
-    why: 'Blockers can work against you. Your two queens take away many of the K-Q and Q-J hands they’d bluff with, and leave every ace and set. You need about 30% and you’re ahead less often than that. A hand that called the turn isn’t always good enough on a blank river: fold.',
   },
   {
     id: 'kj-full-house-fold-river-shove',
@@ -4602,7 +4511,6 @@ const HANDS: Hand[] = [
         text: 'The T♥ gives you tens full of jacks. You bet and they move all in. Queens, kings, aces and jacks all make bigger full houses, and a regular rarely checks back the turn to bluff a river that fills so many full houses.',
       },
     ],
-    why: 'A full house sounds too good to fold, but here yours only beats a bluff. Every pair they’d call a 4-bet with now makes a bigger full house, and they’d rarely turn a missed hand into a river shove. You need to be good about a quarter of the time, and you’re good only about one time in five. Fold.',
   },
   {
     id: 'ace-ten-hero-call-paired-board',
@@ -4649,7 +4557,6 @@ const HANDS: Hand[] = [
         text: 'The 8♣ and they bet big, nearly putting you all in. With an eight or a four they’d check: this bet is a jack, a better made hand, or a busted straight draw.',
       },
     ],
-    why: 'The weak pairs that beat you check here, so the bet is a jack, a bigger hand or a bluff, and an aggressive player has plenty of busted straight draws. You need about a quarter and you’re good more often than that. Call; raising only folds the bluffs and gets called by better.',
   },
 
   {
@@ -4689,7 +4596,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'You check back the 4♦ with your pair of nines. That shows weakness and gives them room to bluff.' },
       { street: 'river', text: 'The 6♥ misses their spade draws and their T-8, Q-T and K-T. A worse nine wouldn’t bet, so you beat none of their value, but their missed T-8, Q-T, K-T and spade draws have no other way to win.' },
     ],
-    why: 'Their bet is only half the pot, and players at this level usually bet bigger when they beat you. With so many missed draws in their range after you checked back the turn, a call is a nice bluff catch.',
   },
   {
     id: 'middle-pair-call-button-triple-barrel',
@@ -4730,7 +4636,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 3♦ and they bet small again. You’ve only called, so you’ve given them room to keep firing.' },
       { street: 'river', text: 'The 3♣ pairs the board. Their value is tens and better, which beats you, but a button that bets this wide still has lots of 9-7, 6-5, J-9, Q-9 and missed hearts with nothing.' },
     ],
-    why: 'You don’t beat their value, but you only need to be good about a quarter of the time against a half-pot bet, and a wide button range has plenty of hands that missed. Call.',
   },
   {
     id: 'two-pair-call-polar-ace-river',
@@ -4770,7 +4675,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The T♣ gives you tens and sixes. They bet again, with value and plenty of straight draws like Q-J and J-8.' },
       { street: 'river', text: 'The A♦. Weak aces would check here and take a showdown, so this bet is polarised: strong aces, trips, straights and full houses, or missed draws.' },
     ],
-    why: 'Against a polarised bet you’re a pure bluff catcher: you lose to all their value and beat all their bluffs. They have enough missed Q-J, K-J and J-8 to make a call pay. Just call; raising only folds out the bluffs you beat.',
   },
   {
     id: 'jacks-river-overbet-bluff-vs-reg',
@@ -4813,7 +4717,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 2♣. You overbet and they call: aces, two pair and K-J, plus some K-Q and K-T.' },
       { street: 'river', text: 'The 6♠ and they check. Your jacks beat almost nothing that called twice. Their weak aces and K-Q can’t call a huge bet.' },
     ],
-    why: 'Checking gives up: your jacks beat almost nothing they’d call twice with. A huge bet makes a decent player fold A-9, A-8, A-7 and K-Q nearly every time, and your jacks make K-J, their one common strong hand, unlikely. Go big.',
   },
   {
     id: 'ace-high-call-half-pot-river-lead',
@@ -4851,7 +4754,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 4♦. Your ace high still beats all their draws, so you check back and aim for a showdown.' },
       { street: 'river', text: 'The 2♦ and they bet half the pot. After a checked turn, players with trips or top pair get greedy and bet bigger; small bets carry more missed draws.' },
     ],
-    why: 'A bet of 60% of the pot or less after the turn checks through is weighted toward missed draws like T-8, Q-T, K-T and spades, all of which your ace beats. You only need to win about a quarter of the time. Call.',
   },
   {
     id: 'ace-high-fold-pot-size-river-lead',
@@ -4889,7 +4791,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 4♦. Your ace high still beats all their draws, so you check back and aim for a showdown.' },
       { street: 'river', text: 'The 2♦, and this time they bet the whole pot. Players are meant to bluff more with big bets, but most live players bluff less the bigger they go.' },
     ],
-    why: 'Same hand, bigger bet. Above about 60% of the pot their range is weighted toward jacks, trips and full houses, and they under-bluff it. Against a range that under-bluffs, every bluff catcher does better as a fold. Fold.',
   },
   {
     id: 'bottom-pair-call-small-river-bet',
@@ -4927,7 +4828,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The K♥. You check back to get to showdown.' },
       { street: 'river', text: 'The 2♠ and they bet half the pot. Their club draws, J-T, 7-6 and floated aces all missed and have no way to win but to bet.' },
     ],
-    why: 'Wide against wide, they get to the river with lots of hands that have nothing, and a small bet after a checked turn is where those bluffs show up. Your threes beat all of them. Call.',
   },
   {
     id: 'queens-fold-ace-flush-river-3bet-pot',
@@ -4967,7 +4867,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The A♠ brings the flush and the ace. You check back.' },
       { street: 'river', text: 'The 2♣ and they bet over 60% of the pot. Their draws got there, their aces got there, and 9-9 or T-T wouldn’t bet.' },
     ],
-    why: 'In a tight early-position 3-bet pot there are hardly any natural bluffs left: the flushes and aces got there, and small pairs don’t bet. Their range is nearly all value. An easy fold with queens.',
   },
   {
     id: 'sevens-call-small-bet-king-river-3bet-pot',
@@ -5006,7 +4905,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 4♠. Your sevens beat their Q-J and ace highs, so you check back.' },
       { street: 'river', text: 'The K♦. When a king lands after you 3-bet and checked the turn, they put you on A-K: they won’t bet tens or jacks thinly. They bet with a king or better, or with nothing.' },
     ],
-    why: 'Even though the bet is small, their range is polarised: kings and better, or Q-J, A-Q and A-J that floated the flop. You beat all of those bluffs and get a good price. Just call; raising only folds out the hands you beat.',
   },
   {
     id: 'second-pair-check-river-out-of-position',
@@ -5045,7 +4943,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The K♣ goes check, check, so they rarely have a strong hand they wanted to bet.' },
       { street: 'river', text: 'The 2♣. You beat their ace highs, smaller pairs and worse nines. A bet only gets called by queens, kings, flushes and better nines.' },
     ],
-    why: 'Wide against wide, after a small c-bet and a checked turn, your nines have showdown value: you beat lots of ace highs, smaller pairs and worse nines. A bet folds those and gets called by better. Check and get to showdown.',
   },
   {
     id: 'ace-ten-fold-utg-triple-barrel',
@@ -5086,7 +4983,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The Q♦. They bet again: their J-T picks up a straight draw and K-T a gutshot.' },
       { street: 'river', text: 'The 6♥ and a third bet. On an ace-high board their natural bluffs are only J-T and K-T. Live players don’t turn K-8 or small pairs into triple barrels, and they bet A-K and A-Q for value.' },
     ],
-    why: 'Ace-high boards give an early opener very few natural bluffs: J-T and K-T, and little else. Players rarely find the odd ones, and they value-bet their better aces. Your A-T is a bluff catcher against a range that’s nearly all value. Fold.',
   },
   {
     id: 'top-pair-fold-turn-raise-after-checked-flop',
@@ -5121,7 +5017,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: 'K♣7♠2♦ goes check, check. They’d bet most top pairs, so their range is weaker than yours.' },
       { street: 'turn', text: 'The J♦. You bet half the pot and they raise three times your bet. A player who checked the flop with nothing doesn’t start raising a gutshot or a jack here, and top pair doesn’t play this fast. This is sets, K-J and the odd slowplayed aces.' },
     ],
-    why: 'In theory K-Q continues here, but live players hardly ever raise this turn as a bluff after checking the flop. Against sets, two pair and aces you’re nearly drawing dead. Fold.',
   },
   {
     id: 'top-two-fold-big-river-bet-after-check-raise',
@@ -5164,7 +5059,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The A♦. They bet big and you call.' },
       { street: 'river', text: 'The K♣ gives you two pair and they bet over 100 big blinds. You’ve looked strong all hand, and they have almost no hands with nothing left: maybe 6-5 suited.' },
     ],
-    why: 'The worst hand they bet this big is A-Q or 4-4, both of which beat you. You check-raised and made the pot huge, so they rarely bluff, the bet is huge for the game, and they have hardly any missed hands. Against an under-bluffed range every bluff catcher folds, even two pair.',
   },
   {
     id: 'queens-overbet-blank-turn-capped-range',
@@ -5201,7 +5095,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: 'J♠9♠2♣: a half-pot c-bet gets their sets and two pair to raise, while weaker jacks, nines and draws just call.' },
       { street: 'turn', text: 'The 3♦ changes nothing and they check. Their best hand is usually A-J or K-J, and they won’t fold that, or their draws, to any size.' },
     ],
-    why: 'They’re capped: they’d have raised their sets and two pair on the flop. When their best hands are jacks that won’t fold, put the money in while you can and go big.',
   },
   {
     id: 'nut-flush-overbet-turn-vs-check-raiser',
@@ -5236,7 +5129,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: 'J♠9♠2♣: they check-raise. Live players rarely check-raise flush draws here, so it’s mostly sets and J-9. You call with the nut flush draw.' },
       { street: 'turn', text: 'The 3♠ gives you the nut flush and they check. A player who check-raises a flush draw is aggressive and would keep betting it, so they rarely have a flush.' },
     ],
-    why: 'Their sets and two pair can make a full house, so they won’t fold to any size this turn. That means the bigger you bet, the more you win.',
   },
   {
     id: 'aces-fold-turn-check-raise',
@@ -5272,7 +5164,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: 'K♥7♣4♦: you c-bet small and they call with kings, pairs and draws.' },
       { street: 'turn', text: 'The J♠. You bet big to get value from kings and they check-raise. You’ve done nothing but bet, and live players almost never check-raise the turn as a bluff into that. It’s K-J, two pair and sets.' },
     ],
-    why: 'When you’ve taken every aggressive action and they answer with a turn check-raise, it isn’t a bluff: it’s K-J, two pair and sets. Your aces are almost drawing dead against that. Throw them away.',
   },
   {
     id: 'set-fold-big-river-donk-flush',
@@ -5311,7 +5202,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 9♦. Their kings and draws won’t fold, so you overbet and they call.' },
       { street: 'river', text: 'The 6♣ completes the clubs and they lead for over half the pot. You’ve bet every street; they aren’t turning K-Q into a big bluff here.' },
     ],
-    why: 'When you’ve shown nothing but aggression and they lead big as soon as the flush comes in, it’s flushes almost every time. Bluffs in this spot are very rare. Your set is a bluff catcher, and it’s a fold.',
   },
   {
     id: 'second-pair-call-small-river-after-stab',
@@ -5349,7 +5239,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 2♣. They stab small: after you check, lots of players stab with anything, including hands with no showdown value. You call.' },
       { street: 'river', text: 'The Q♠ and another small bet. Players often bet twice with hands like 3-3, 4-4 or a missed straight draw once they think you’re weak.' },
     ],
-    why: 'After you check back the flop, players over-bluff with small bets on the turn and river, often with small pairs and missed draws. Call with your pairs, from the top down: nines are a much better call than king high.',
   },
   {
     id: 'middle-pair-call-small-river-after-checked-turn',
@@ -5387,7 +5276,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The Q♠. You check back with your pair of fives.' },
       { street: 'river', text: 'The 2♦ and they bet half the pot. When live players make a strong hand here they get greedy and bet big; with a bluff they fear a call and bet small.' },
     ],
-    why: 'They call too wide, raise their strong flop hands, and get to the river with lots of missed gutshots and overcards. A small bet after you check the turn is where those bluffs show up. You’re good here a lot. Call.',
   },
   {
     id: 'seven-high-river-overbet-bluff-capped',
@@ -5426,7 +5314,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 4♦. They’re capped at A-J or K-J and won’t fold jacks or draws, so you bet nearly twice the pot. They call.' },
       { street: 'river', text: 'The 3♣ misses everything and they check. They almost never have better than A-J. If you had aces you wouldn’t bet this big to get called by A-J, so this size is where A-J folds.' },
     ],
-    why: 'They’re so capped that their best hand is usually A-J or K-J, and their missed draws can’t call. Bet huge and you fold out everything but the odd set or straight.',
   },
   {
     id: 'king-flush-shove-over-river-check-raise',
@@ -5471,7 +5358,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 9♠ goes check, check. You pick up the king-high flush draw.' },
       { street: 'river', text: 'The 4♠ gives you a king-high flush. You bet small and they raise to half their stack. A late-position opener has more small suited hands than usual, so more lower flushes, plus straights, and only a few A♠-x flushes beat you. Your small bet also invites bluff raises.' },
     ],
-    why: 'Only the handful of ace-high flushes beat you. Lower flushes, straights and sets all lose to you and they’re already half in, and some raises are bluffs at your small bet. You’re way ahead of what they raise with, so put the rest in. Charlie says all in.',
   },
   {
     id: 'bottom-pair-fold-small-river-bet-multiway',
@@ -5518,7 +5404,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The T♠ goes check, check.' },
       { street: 'river', text: 'The Q♥. You check and they bet small. After checking the turn, this is a one-pair hand going for a little value: a queen, a ten, an overpair, threes. A raise won’t make any of that fold.' },
     ],
-    why: 'Your big flop lead folded out the ace highs you could beat, so their range is pairs, and every one of them beats a deuce. A small bet here is almost always value. You can’t raise them off it, so fold.',
   },
   {
     id: 'queens-check-river-four-bet-pot',
@@ -5569,7 +5454,6 @@ const HANDS: Hand[] = [
         text: 'The J♦ completes the flush and they check. They hold all the flushes, and jacks full, aces and kings too; the only worse hand left is a missed 5-4, and that won’t call.',
       },
     ],
-    why: 'An all in only gets called by hands that beat you: flushes, jacks full, aces and kings. The one worse hand left in their range, a missed 5-4, folds to it. Betting only loses more when you’re beaten, so check and see a showdown.',
   },
   {
     id: 'bottom-two-pair-polarized-river-bet',
@@ -5610,7 +5494,6 @@ const HANDS: Hand[] = [
         text: 'The K♠ and they bet almost the pot. The big pairs and A-K are gone from their range, so this bet is a full house (K-9 suited, 7-7) or a draw that missed. There is very little in between.',
       },
     ],
-    why: 'Their bet is polarized: a full house or a bluff. There are only a handful of full houses (one combo of K-9 suited and three of 7-7) against more than fifty missed flush and straight draws, and your nines beat every one of those. You need to win about 32% of the time, so call.',
   },
   {
     id: 'set-of-queens-check-on-flush-river',
@@ -5653,7 +5536,6 @@ const HANDS: Hand[] = [
         text: 'The Q♥ gives you top set, but it also completes the flush. You act first. Hands that called twice are mostly heart draws, and they all just made a flush.',
       },
     ],
-    why: 'If you bet, the flushes call and the kings fold: only better hands put more money in. It is very unlikely a worse hand calls, so a bet just loses more when you are beaten. Check, and fold if they bet big.',
   },
   {
     id: 'aces-fold-after-turn-call',
@@ -5696,7 +5578,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 6♥ and they bet again; you call to see what they do on the river, not to put more in yourself.' },
       { street: 'river', text: 'The T♠ and they move all in. This type of player only bets like this with sets and two pair; bluffs are very rare.' },
     ],
-    why: 'Calling the turn was to find out where you stand so you can fold the river safely. Check-raise, bet, then all in: from a player who only bets his monsters, that is sets and two pair nearly every time. You need about 25% and win far less, so fold.',
   },
   {
     id: 'nines-call-polarized-river-bet-low-stakes',
@@ -5747,7 +5628,6 @@ const HANDS: Hand[] = [
         text: 'The 8♦ and they lead big, more than half the pot. With T-T or J-J they would bet small or check. The only straight that makes sense is T-9, and your nines leave just two combos of it; there are no 9-8 at all.',
       },
     ],
-    why: 'A big river lead from this player is polarized. The value is a couple of combos of T-9, because your hand blocks most of them. Missed heart draws (like the A♥T♥ they showed) are far more common, and they all lose to your nines. Folding quickly would be a mistake; call.',
   },
   {
     id: 'top-pair-fold-calling-station-river-bet',
@@ -5791,7 +5671,6 @@ const HANDS: Hand[] = [
         text: 'The 6♦ and, for the first time, they lead out big. A calling station rarely raises a set earlier in the hand, but on the river they bet their strong hands for value, afraid you will check behind.',
       },
     ],
-    why: 'A player who has only called all hand now bets big. Their range is sets, the 5-4 straight and two pair; very few hands you beat would lead like this. You need about 28% and win much less, so fold.',
   },
   {
     id: 'nines-call-river-bluffer',
@@ -5833,7 +5712,6 @@ const HANDS: Hand[] = [
         text: 'The J♦ and they bet nearly the pot. This player is more likely to bluff the river than to have called the turn with something real, so their range has lots of hands that missed.',
       },
     ],
-    why: 'Against this player, a river bet after the turn checks through is often a bluff with a hand that gave up on the turn. Your nines beat all of those and every small pair and seven. Folding would be too weak; call.',
   },
   {
     id: 'top-pair-call-small-river-bet-loose-player',
@@ -5875,7 +5753,6 @@ const HANDS: Hand[] = [
         text: 'The 2♦: you check, and they bet half the pot. A loose, weak player bets worse aces for value and missed draws as bluffs here, and the small size gives you a good price.',
       },
     ],
-    why: 'You only need about 25% against this half-pot bet. A loose player bets worse aces like A-J and A-T for value and turns missed heart draws into bluffs, and you beat all of those. Only A-Q and sets beat you. This is an easy call.',
   },
   {
     id: 'top-pair-fold-passive-river-raise',
@@ -5917,7 +5794,6 @@ const HANDS: Hand[] = [
         text: 'The K♦ gives you top pair, top kicker. You bet and they raise three times your bet. A very passive player almost never raises the river as a bluff.',
       },
     ],
-    why: 'A raise from a player who almost never bluffs is a strong hand: trips, a full house, the 6-5 straight or a backdoor flush. You beat none of those. You need about 27%, and calling just pays them off, so fold.',
   },
   {
     id: 'aces-fold-flush-river-shove',
@@ -5970,7 +5846,6 @@ const HANDS: Hand[] = [
         text: 'The 6♥ completes the flush. You check, and they move all in for more than the pot. Most players wouldn’t go all in with top pair here, and many wouldn’t turn 9-9 or 8-7 into a bluff either.',
       },
     ],
-    why: 'An overbet all in from a good player on the flush card is almost always a flush or a set. Top pair isn’t shoving, and the hands that could bluff mostly won’t. You need about 34% and win much less, so fold your aces.',
   },
   {
     id: 'trip-aces-weak-kicker-call-lag',
@@ -6023,7 +5898,6 @@ const HANDS: Hand[] = [
         text: 'The 6♦ and they bet about three-quarters of the pot. Their value is better aces and full houses; their bluffs are missed spade draws and broadway draws, and a loose player has plenty of those.',
       },
     ],
-    why: 'Holding an ace yourself means there is only one ace left for them, which cuts their value hands a lot. Against a loose, aggressive player the missed draws outnumber the better hands. You need about 30%, so make the hero call.',
   },
   {
     id: 'nines-call-down-loose-small-blind',
@@ -6065,7 +5939,6 @@ const HANDS: Hand[] = [
         text: 'The 4♣ and they bet again, about three-quarters of the pot. Two pair and better rarely play like this; most of what they hold is a smaller pair, a missed gutshot or nothing.',
       },
     ],
-    why: 'This player bets with any pair on the board, any gutshot and some pure bluffs, and rarely has two pair or better. Your nines beat every smaller pair and every miss, and lose only to the occasional king. You need about 30%, so call.',
   },
   {
     id: 'sevens-call-turn-shove-three-bet-pot',
@@ -6107,7 +5980,6 @@ const HANDS: Hand[] = [
         text: 'The 6♦ and they move all in for about half the pot. Their range is quite strong, but this player is capable of shoving aces and suited connectors that picked up draws.',
       },
     ],
-    why: 'You only need to win about a quarter of the time. Their value is big pairs and top pair, but they also shove A-K, A-5, A-2 and suited connectors with straight and flush draws, and you are ahead of all of those for now. With this price you have to call.',
   },
   {
     id: 'queen-jack-call-four-flush-lead',
@@ -6157,7 +6029,6 @@ const HANDS: Hand[] = [
         text: 'The 6♣ puts four clubs on the board and the small blind leads a little over half the pot. Most players won’t lead with a marginal flush here, and a good player bluffs much more often than normal when the scary card comes.',
       },
     ],
-    why: 'The lead comes from strong flushes and straights, or from hands like J-T and small pairs turned into bluffs, because marginal flushes would rather check. You beat all the bluffs and need only about 27%, so call.',
   },
   {
     id: 'top-pair-call-fast-river-bet-three-bet-pot',
@@ -6199,7 +6070,6 @@ const HANDS: Hand[] = [
         text: 'The 8♣ and they bet small, and fast. A fast bet usually means they planned to bet whatever came. Their range is mostly bluffs plus a few nut hands.',
       },
     ],
-    why: 'A player who barrels every street and fires fast on the river has a range of mostly bluffs and a few strong hands. Raising only gets called by the strong hands, and folding gives up to all the bluffs. You need only about 17% here, so simply call down.',
   },
   {
     id: 'queens-call-down-ace-ace-board',
@@ -6245,7 +6115,6 @@ const HANDS: Hand[] = [
         text: 'The 7♦ and they bet over half the pot. A tight player’s range for betting three times here is trips or better, but this player uses the same sizes with bluffs and value.',
       },
     ],
-    why: 'Against most players this is a fold. Against this one, broadway hands and middle pairs that kept betting make up a big part of the range, and your queens beat all of them. You need about 28%, so this is a somewhat easy call with a bluff catcher.',
   },
   {
     id: 'tens-hero-call-polarized-loose-raiser',
@@ -6291,7 +6160,6 @@ const HANDS: Hand[] = [
         text: 'The 3♦ and they bet almost the pot. Small bet, normal bet, then a huge bet: their range is polarized, an overpair, two pair, a set, a flush or a busted draw.',
       },
     ],
-    why: 'Your tens block some of the flushes and the J-T straight, and a strong, loose player turns missed hands like K-J, 7-6 or ace-high with one club into a bluff. Against that polarized range your tens beat every bluff, and you need about 33%. Make the hero call, at least until you know more about this opponent.',
   },
   {
     id: 'kings-call-splashy-river-bet-three-bet-pot',
@@ -6340,7 +6208,6 @@ const HANDS: Hand[] = [
         text: 'The 7♣ and they bet about three-quarters of the pot. A player like this has a decent hand when they raise first in, but they also bet weaker queens and hands like A-J and J-9 that missed.',
       },
     ],
-    why: 'Your kings beat every queen except two pair and sets, and every missed draw. A splashy player bets a wide range here, so this is an easy river call.',
   },
   {
     id: 'trip-aces-call-after-turn-check',
@@ -6395,7 +6262,6 @@ const HANDS: Hand[] = [
         text: 'The A♥ gives you trips and they bet about two-thirds of the pot. With two aces on the board and one in your hand, only one ace is left for them, and most ace-x would have bet the turn.',
       },
     ],
-    why: 'Their turn check took most of the strong aces out of their range, and your own ace leaves them just one. What bets now is mostly K-Q and other hands that missed. Raising only gets called by trips or better, so call: you need about 28%.',
   },
   {
     id: 'ace-king-fold-flush-turn-paired-board',
@@ -6443,7 +6309,6 @@ const HANDS: Hand[] = [
         text: 'The 6♥ completes the flush and they bet about half the pot. A player who bets twice on this board usually has a strong made hand that can stand more pressure, or a draw.',
       },
     ],
-    why: 'Their range now holds every flush plus trips and top pairs, and you have ace-high with no heart. Against the made hands an ace or a king helps only some of the time, and against the flushes it never does. You are one of the worst hands in your range here: you need 24% and have far less, so fold.',
   },
   {
     id: 'ace-king-fold-turn-shove-recreational',
@@ -6490,7 +6355,6 @@ const HANDS: Hand[] = [
         text: 'The 9♣ and they move all in for about half the pot. A player like this usually has what they are representing: 7-6 suited, A-9 or 9-8.',
       },
     ],
-    why: 'When a straightforward player suddenly shoves on the turn, their range is mostly hands that crush top pair: the straight and two pair. You need about 24% and have far less. You are not pot committed: fold.',
   },
   {
     id: 'eights-call-scary-club-river-polarized',
@@ -6553,7 +6417,6 @@ const HANDS: Hand[] = [
         text: 'The K♣ and they bet three-quarters of the pot after you check. Their range is polarized: a flush or trips, or a hand worse than yours that they turn into a bluff on this scary card.',
       },
     ],
-    why: 'An aggressive player turns most hands worse than yours into a bluff on a card this scary, like missed heart draws and small pairs. Your eights beat every one of them. You need about 30%, so this call is fairly standard against this player. Against a tight, passive player you would fold.',
   },
   {
     id: 'weak-ace-fold-river-straight-limped-pot',
@@ -6619,7 +6482,6 @@ const HANDS: Hand[] = [
         text: 'The Q♣ makes a straight for any jack and they bet over 40% of the pot; the hijack folds. Your 3 doesn’t play, so you only split with another weak ace.',
       },
     ],
-    why: 'The gutshots they were betting with on the flop and turn, Q-J and J-T, have now made the straight, and two pair and sets bet here too. With this board your best hand is aces with K-Q-T, so you split with the weaker aces and lose to everything else. You need about 23% and have less, so fold.',
   },
   {
     id: 'nines-call-turn-bet-three-bet-pot',
@@ -6661,7 +6523,6 @@ const HANDS: Hand[] = [
         text: 'The 3♠ and they bet over half the pot. Their range is polarized: top pair or better, a draw, or a total bluff.',
       },
     ],
-    why: 'With a marginal made hand against a polarized range you call or fold, never raise. They bet big with draws and air as well as top pair or better, and your nines are well ahead of all the draws and bluffs. You need about 26%, so call, and check behind if they check the river.',
   },
   {
     id: 'king-high-fold-river-aggressive-big-blind',
@@ -6707,7 +6568,6 @@ const HANDS: Hand[] = [
         text: 'The 3♦ and they bet $60 into $81. They bet a jack, nine or deuce for value, and may even bet an underpair or ace-high. You beat only their worst bluffs.',
       },
     ],
-    why: 'King-high beats only queen-high and worse. Their value is every jack, nine and deuce, plus underpairs and ace-high they overvalue, which is far more than the missed draws. You need about 30% and have much less, so fold. Only if you were sure they bet every turn after a checked flop would calling get close.',
   },
   {
     id: 'king-high-straight-fold-river-shove-flush-board',
@@ -6760,7 +6620,6 @@ const HANDS: Hand[] = [
         text: 'The T♥ gives you a straight. You bet $75 and they raise all in for $370. Very few players in a $1-$3 game shove a bluff here anywhere near 30% of the time.',
       },
     ],
-    why: 'A raise all in on a board with three clubs is a flush the vast majority of the time. Your straight beats only the odd set they might shove and splits with K-J. You need about 32% and have far less, so this is an easy fold, even with a straight.',
   },
   {
     id: 'nines-straight-fold-river-overbet-flush',
@@ -6811,7 +6670,6 @@ const HANDS: Hand[] = [
         text: 'The 6♦ gives you a straight but puts three diamonds out. You check and they move all in for almost twice the pot. It is hard to find many natural bluffs here: A♦ with a jack is about the only one.',
       },
     ],
-    why: 'Overbetting all in on the flush card is a flush or a higher straight almost every time; there are very few hands that make sense as a bluff. You need about 39% and have far less, so this is an easy fold.',
   },
   {
     id: 'fours-fold-river-big-blind-lead',
@@ -6860,7 +6718,6 @@ const HANDS: Hand[] = [
         text: 'The 5♦ and they bet just over half the pot. They are more likely to bet twice with a missed flush draw than with pure air, and any queen, jack or deuce bets for value.',
       },
     ],
-    why: 'Your fours beat only missed heart draws and air; every queen, jack and deuce, plus bigger pairs and anything with a five, beats you. Those value hands outnumber the bluffs. You need about 26%, so on average this is a pretty simple fold.',
   },
   {
     id: 'top-pair-fold-river-overbet-solver',
@@ -6909,7 +6766,6 @@ const HANDS: Hand[] = [
         text: 'The 3♥ and they bet 140% of the pot. With a bet this size they are a little more likely to be greedy with the top of their range than setting up a huge bluff.',
       },
     ],
-    why: 'An overbet this big comes from sets, straights, two pair and the best top pairs, plus missed spade draws. Your king with an 8 kicker beats only the bluffs, and they are a bit less likely to bluff than to value bet here. You need about 37%, and the solver folds this hand every time.',
   },
   {
     id: 'ace-nine-fold-turn-jam-after-min-raise',
@@ -6967,7 +6823,6 @@ const HANDS: Hand[] = [
         text: 'The T♥ gives you the nut flush draw and an open-ended straight draw. You check, they bet $20, you min-raise to $40 and they move all in for $146. When someone bets more than once and then shoves, it is usually a clear sign of strength.',
       },
     ],
-    why: 'Against a flush, a straight, a set or two pair your big draw wins only about 24% of the time, and some of your straight cards pair the board or give them a better hand. Calling $106 more into the pot needs about 31%, so fold. Calling the $20 bet instead of raising would have kept this decision away.',
   },
   {
     id: 'king-high-straight-value-bet-river-in-position',
@@ -7017,7 +6872,6 @@ const HANDS: Hand[] = [
         text: 'The K♠ gives you a king-high straight and they check. They are supposed to check-call hands like A♣K♣, A-A and K-Q a lot, and they call often enough with worse.',
       },
     ],
-    why: 'Almost everything that called the turn is worse than you, and plenty of it, two pair, sets, aces, A♣K♣, calls a big bet. Checking wins nothing more. Bet more than half the pot. Two pair and sets call even an overbet, which wins the most; three-quarters pot is nearly as good.',
   },
   {
     id: 'top-pair-value-bet-river-checked-to',
@@ -7068,7 +6922,6 @@ const HANDS: Hand[] = [
         text: 'The 5♦ and they check again. Their most likely hands are a pair of queens, a pair of eights or a busted club draw. It is now very unlikely they beat top pair with a decent kicker.',
       },
     ],
-    why: 'Queens and eights are worse than you and some of them will call a modest bet. The busted draws fold whatever you do, and the few hands that beat you would have played the hand faster. Bet a modest size, around a third to a half of the pot, to get called by the most worse hands.',
   },
   {
     id: 'two-pair-call-flush-turn-splashy-button',
@@ -7110,7 +6963,6 @@ const HANDS: Hand[] = [
         text: 'The 7♠ gives you two pair and completes the flush. You check and they bet nearly the pot. A big bet like this says their range is polarized: a flush or better, or a hand going for thin value or a bluff.',
       },
     ],
-    why: 'Raising makes no sense: they fold the hands you beat and continue with the flushes. Their big bet also includes plenty of aces going for thin value and junk that a splashy player bets, and you are way ahead of those. You need about 32%, so call.',
   },
   {
     id: 'top-pair-weak-kicker-call-aggressive-button-limped',
@@ -7171,7 +7023,6 @@ const HANDS: Hand[] = [
         text: 'The K♦ and it checks to the button, who bets less than half the pot; the first limper folds. Overly aggressive players keep bluffing whenever they get the chance, and they also bet top pair and better.',
       },
     ],
-    why: 'If this player bets almost their whole range, your top pair is in excellent shape: kings, eights, worse aces, draws and air all bet here, and only better aces, two pair and sets beat you. Raising folds out the hands you beat. Calling is the only play that makes sense; then check and let them keep bluffing.',
   },
   {
     id: 'weak-ace-call-lag-river-ace-barrel',
@@ -7217,7 +7068,6 @@ const HANDS: Hand[] = [
         text: 'The A♠ and they bet about two-thirds of the pot. The ace is a scare card for the hands you represent, so it would be no surprise if they tried to buy the pot here.',
       },
     ],
-    why: 'A loose player who barrels this wide arrives at the river with plenty of missed straight and flush draws, and the ace is the perfect card to keep bluffing. Your ace beats all of those and every pair they turn into a bluff. They have enough bluffs for a call to win: you need about 28%.',
   },
   {
     id: 'top-two-pair-fold-fish-river-lead-flush',
@@ -7264,7 +7114,6 @@ const HANDS: Hand[] = [
         text: 'The J♦ completes the flush and K-T’s straight, and the passive player suddenly leads for most of the pot. Even fish can see three diamonds on a board.',
       },
     ],
-    why: 'A passive player who has only called all hand and now leads big on the flush card is politely telling you they have the nuts: a flush, K-T or a set. They could have worse two pair, but nothing they have done says so. You need about 31%, so fold.',
   },
   {
     id: 'set-value-bet-river-calling-station-backdoor-flush',
@@ -7308,7 +7157,6 @@ const HANDS: Hand[] = [
         text: 'The 2♠ completes a backdoor flush and they check. A station calls with any queen or nine, tens and even ace-high, and their check doesn’t point to a strong hand.',
       },
     ],
-    why: 'A calling station pays off with a wide range of worse hands: every queen, every nine and tens. The odd backdoor flush beats you, but not checking that out of fear costs far more. This is a clear value bet: bet about two-thirds of the pot. If they check-raise all in, your set is probably no good.',
   },
   {
     id: 'jack-high-probe-river-after-turn-check-back',
@@ -7350,7 +7198,6 @@ const HANDS: Hand[] = [
         text: 'The 7♦ misses you. A flush is very unlikely for them, and their bluff catchers, a ten or a middle pair, won’t want to call much. Nobody is happy with their hand.',
       },
     ],
-    why: 'Their turn check means they mostly gave up with ace-high, king-high and small pairs, and those can’t call a bet. Jack-high loses to most of that if you check. Take the initiative: a bet of around half the pot folds out the better high cards, and only their weak queens call.',
   },
   {
     id: 'ace-high-third-barrel-capped-big-blind',
@@ -7391,7 +7238,6 @@ const HANDS: Hand[] = [
         text: 'The K♣. Their likely draws, Q-T, T-9, Q-9 and T-7, all missed, and they will rarely have the heart to call down with what is now second or third pair.',
       },
     ],
-    why: 'Their range is full of jacks, small pairs and missed draws, and the king turns every jack into second pair. Those fold to a third bet; only a king calls. Ace-high would lose to all those pairs at showdown, so bet about half the pot and make them fold.',
   },
   {
     id: 'second-pair-call-maniac-river-ace',
@@ -7433,7 +7279,6 @@ const HANDS: Hand[] = [
         text: 'The A♣ and they bet about a third of the pot. Now they are repping an ace, but aces are only a small part of a range this loose.',
       },
     ],
-    why: 'A maniac’s range is so wide there’s no point narrowing it much: aces and better jacks are a small part of it, and pairs below yours, missed draws and air make up most of it. You only need about 20%, so this is a clear bluff-catching spot. Call.',
   },
   {
     id: 'full-house-overbet-river-passive-caller',
@@ -7477,7 +7322,6 @@ const HANDS: Hand[] = [
         text: 'The T♠ gives you jacks full and completes the spade flush. They check. In theory only T-T beats you, and passive players don’t fold trips, flushes or weaker full houses.',
       },
     ],
-    why: 'Their range is full of hands that just got there or were already good: trip tens, spade flushes and weaker full houses like T-5. A passive player calls with all of them and won’t fold for any price. Bet as big as you can: an overbet wins the most.',
   },
   {
     id: 'ace-king-fold-turn-check-raise-draw-board',
@@ -7518,7 +7362,6 @@ const HANDS: Hand[] = [
         text: 'The 8♦ completes straights and flushes. You bet and they check-raise. They are telling you they aren’t scared of this board, and they would never do this with A-J or A-T.',
       },
     ],
-    why: 'A check-raise on a card that completes this many draws is very rarely a bluff: it is a straight, a flush, a set or two pair. Against all of those top pair is drawing thin, and the worse aces you beat never play this way. You need about 21%, so fold. This is a textbook spot where overplaying ace-king costs you.',
   },
   {
     id: 'ace-high-check-turn-loose-passive-button',
@@ -7554,7 +7397,6 @@ const HANDS: Hand[] = [
         text: 'The 8♠ adds a spade draw and more straights. You act first. They didn’t fold on the flop, so they aren’t likely to fold on the turn either.',
       },
     ],
-    why: 'A second bet only works if they fold, and a loose, passive player who called the flop with a pair or one of the many draws on this board won’t. You would be betting into hands that call and beat you or have plenty of ways to. Check and give up the bluff.',
   },
   {
     id: 'weak-ace-call-river-shove-three-bet-pot',
@@ -7599,7 +7441,6 @@ const HANDS: Hand[] = [
         text: 'The 3♦ pairs the board and they shove about 60% of the pot. A third barrel means a stronger hand a good part of the time, but they also get here with busted straight and flush draws.',
       },
     ],
-    why: 'Their value is the better aces, Q-Q and 6-6; with the board paired your 4 no longer plays, so the weaker aces split with you. Against that sit all the spade draws and K-J and K-T that missed, and they keep firing. You need about 27%, so call.',
   },
   {
     id: 'queens-fold-river-shove-over-block-bet',
@@ -7642,7 +7483,6 @@ const HANDS: Hand[] = [
         text: 'The 8♠. You make a small bet and they shove for about twice the pot. A shove that looks this preposterous and inconsistent with the nuts is very often exactly the nuts.',
       },
     ],
-    why: 'Most regulars are too nitty and don’t bluff enough, and a raise all in over a small bet on this board is full houses, quads and the odd straight. Your queens beat only the missed club draws. You need about 35%, so unless they are hyper-aggressive, make the exploitative fold.',
   },
   {
     id: 'king-high-shove-river-capped-tight-big-blind',
@@ -7689,7 +7529,6 @@ const HANDS: Hand[] = [
         text: 'The 4♦ pairs the board and they check, with 29bb left. Their likely hands are top pair, second pair and busted straight and flush draws.',
       },
     ],
-    why: 'A tight player with a capped range can’t call off their tournament with second pair or a weak ten, and the busted draws fold to anything. King-high wins very little at showdown. Moving all in puts their tournament on the line and makes all of those fold; only the strongest tens call.',
   },
   {
     id: 'ace-high-check-river-instant-turn-call',
@@ -7735,7 +7574,6 @@ const HANDS: Hand[] = [
         text: 'The T♠ and they check. Pressure only works against players who care about their tournament life, and this one has shown a made hand.',
       },
     ],
-    why: 'The instant turn call says they have a pair or better and won’t fold it, so a bluff mostly gets called by better. The hands that would fold, overcards and missed draws, are exactly the ones your ace-high already beats. Check behind and take the showdown.',
   },
   {
     id: 'ace-king-fold-river-three-bet-pot-counterfeit-board',
@@ -7782,7 +7620,6 @@ const HANDS: Hand[] = [
         text: 'The Q♣ and they bet half the pot. Their range is now A-A, K-K, Q-Q, J-J, very rarely T-T, maybe 9-9, and a few improbable bluffs.',
       },
     ],
-    why: 'With two pairs on the board you are playing ace-king high, and almost everything in their range beats that: every overpair and J-J. You only beat 9-9 and the odd bluff. Even at 3-to-1 you can’t beat enough, so the fold is justified.',
   },
   {
     id: 'top-pair-fold-river-overbet-paired-board',
@@ -7830,7 +7667,6 @@ const HANDS: Hand[] = [
         text: 'The 4♣ and they bet more than one and a half times the pot. Their range is polarized, but the big blind may well have an eight or even a full house.',
       },
     ],
-    why: 'There’s a good chance they are bluffing, but they would play a monster exactly the same way, and a big blind has too many eights in their range. Against an overbet you need about 38%, and the odds just don’t justify a call. Fold.',
   },
   {
     id: 'third-pair-call-short-stack-river-bet-three-bet-pot',
@@ -7877,7 +7713,6 @@ const HANDS: Hand[] = [
         text: 'The 4♦ and they bet 40% of the pot, leaving themselves 10bb. Their play has been inconsistent: only a runner-runner flush connects all the dots, and A-K and A-Q are still in their range.',
       },
     ],
-    why: 'Their range is highly polarized and holds more weak hands than strong ones: A-K, A-Q and other high cards that missed bet here as often as the few overpairs, sets and runner-runner flushes. You need about 22%, so make the strong call against a weak range.',
   },
   {
     id: 'queens-check-river-paired-board-three-bet-pot',
@@ -7925,7 +7760,6 @@ const HANDS: Hand[] = [
         text: 'The 4♥ and they check to you. Which hand worse than jacks can still call another bet here? Middle pairs and ace-x will never pay three streets.',
       },
     ],
-    why: 'After calling twice on this board their range is trips, full houses, jacks, middle pairs and ace-high. If you bet, the trips and full houses call and the hands you beat fold, apart from the odd J-J. Check behind and see if your hand is good; if they check-raise, it isn’t.',
   },
   {
     id: 'quads-call-river-all-in-raise-flush-board',
@@ -7977,7 +7811,6 @@ const HANDS: Hand[] = [
         text: 'The J♠ completes the flush and a straight flush with Q♠T♠. You bet and they move all in. With the nut flush they would just call, not raise; K-K and J-J would have 3-bet before the flop.',
       },
     ],
-    why: 'Their raise narrows them to K-K, J-J, 9-9 and Q♠T♠, and K-K and J-J would have 3-bet preflop. That leaves 9-9 and Q♠T♠, and there are three ways to hold nines for every one straight flush. You need about 25%, so calling is the correct decision.',
   },
   {
     id: 'top-pair-call-river-barrel-missed-draws',
@@ -8020,7 +7853,6 @@ const HANDS: Hand[] = [
         text: 'The 2♣ and they bet almost half the pot. None of the draws came in. They might polarize to the max here: A-K, A-J, A-7 or a set for value, or a big bluff with a missed draw.',
       },
     ],
-    why: 'They would bet A-K, A-J, A-7 and sets the same way, but every diamond draw, heart draw and gutshot missed, and those have nothing left but a bluff. Because none of the draws came in, you pretty much have to call: you need about 24%.',
   },
   {
     id: 'top-pair-top-kicker-call-turn-check-raise-shove',
@@ -8063,7 +7895,6 @@ const HANDS: Hand[] = [
         text: 'The 3♠ brings a flush draw. They check, you bet small and they check-raise all in. Their line says a set or a semi-bluff like A♠K♠ with lots of outs and fold equity, and the semi-bluff is much more likely.',
       },
     ],
-    why: 'A set is possible, but sets are rare and they would often bet them earlier. Semi-bluffs with spades and overcards are far more common for a bluffy player, and you are well ahead of those and of any worse jack. You need about 40%; knowing their game and your history, you can’t fold top pair, top kicker.',
   },
   {
     id: 'aces-call-turn-check-raise-all-in-low-board',
@@ -8109,7 +7940,6 @@ const HANDS: Hand[] = [
         text: 'The 3♦ brings straights and a flush draw. You bet and they check-raise all in. In theory they shove only a small part of their range here: sets, straights and some draws.',
       },
     ],
-    why: 'Their all-in range has sets and straights, but also diamond draws and pairs with straight draws, and you are well ahead of all of those. You need about 34%. The solver calls aces every time, and even against a tighter, value-heavy range aces are still a profitable call.',
   },
   {
     id: 'jacks-call-small-river-bet-four-flush-lag',
@@ -8156,7 +7986,6 @@ const HANDS: Hand[] = [
         text: 'The T♥ makes four hearts and they bet less than half the pot. Their range is polarized: strong flushes, or weak pairs and no pair. They are unlikely to value bet a weak flush.',
       },
     ],
-    why: 'With the J♥ on the board there are few K♥ and Q♥ combos, and a loose player has relatively few hands that can value bet here and at least as many that can’t win without bluffing. You beat every weak pair and every float. You need about 22%, so call.',
   },
   {
     id: 'ten-high-bluff-river-capped-flop-check-back',
@@ -8199,7 +8028,6 @@ const HANDS: Hand[] = [
         text: 'The K♠ misses you; you have ten-high and act first. Their range will very rarely have anything stronger than one pair.',
       },
     ],
-    why: 'Their flop check capped them at one pair most of the time, and the king adds nothing to that. Ten-high can’t win at showdown, so bet about three-quarters of the pot: one-pair hands, even most aces, can’t call that, and only the odd two pair does.',
   },
   {
     id: 'ace-high-call-river-weak-limper-paired-board',
@@ -8248,7 +8076,6 @@ const HANDS: Hand[] = [
         text: 'The 7♦ misses you and they bet two-thirds of the pot. A weak player gets to the river with a lot of air here, so their value range would have to be quite narrow.',
       },
     ],
-    why: 'Their value range is a nine, trip deuces and the odd pocket pair. Against that sit all the missed heart draws, broadway hands and wheel draws a weak player bets when checked to. Ace-high beats all of those. You need about 29%, so call.',
   },
   {
     id: 'top-pair-small-river-bet-after-three-checks',
@@ -8289,7 +8116,6 @@ const HANDS: Hand[] = [
         text: 'The A♥ gives you top pair and you act first. After three checks they will often think the pot is too small to bluff, but weak aces and small pairs might call a small bet.',
       },
     ],
-    why: 'They are unlikely to bluff if you check, so you have to bet to win more. Their range is weak aces, small pairs and high cards: the best way to get called by really weak hands is to give them irresistible odds. Bet small, about a quarter to a third of the pot.',
   },
   {
     id: 'top-pair-fold-sudden-big-river-bet-straightforward',
@@ -8335,7 +8161,6 @@ const HANDS: Hand[] = [
         text: 'The 4♥ and they suddenly bet 80% of the pot. From a straightforward regular a sudden big bet is polarizing, and they are a little too tight in big pots.',
       },
     ],
-    why: 'A player like this isn’t bluffing here and isn’t value betting worse: a big bet after checking the turn means trips or a full house. Top pair only beats the odd missed club draw. You need about 31%, so this is the right fold, even if you checked the turn hoping to call.',
   },
   {
     id: 'top-two-check-river-good-aggressive-player',
@@ -8386,7 +8211,6 @@ const HANDS: Hand[] = [
         text: 'The 4♣ and they check again. This player is good enough to check nutted hands on the river, and isn’t likely to pay off with worse.',
       },
     ],
-    why: 'After calling a flop raise and checking twice, their range is sets and straights they are happy to check to you, or one pair that won’t call a big bet. Few of their hands need to bluff, so a bet gets paid only by better and folds out the worse. Checking is better.',
   },
   {
     id: 'top-pair-fold-big-river-bet-best-player',
@@ -8438,7 +8262,6 @@ const HANDS: Hand[] = [
         text: 'The T♠ completes the flush and gives 9-8 a straight. They bet 80% of the pot. A large bet means they are weighted towards value, a common tendency even among good non-elite players.',
       },
     ],
-    why: 'This river is bad for your hand and good for many of the draws they could have. Their big bet is mostly straights, flushes, sets and better kings, and their small turn bet left few bluffs. You need about 31%, so you can exploit them by folding your bluff-catchers.',
   },
   {
     id: 'two-pair-big-river-value-bet-caller',
@@ -8488,7 +8311,6 @@ const HANDS: Hand[] = [
         text: 'The 5♣ and they check. This player focuses on what’s possible rather than probable, and is in more of an “I don’t believe you” mindset than a trapping one. They won’t fold much to a river bet.',
       },
     ],
-    why: 'They have an incentive to bet some of their strong hands themselves, so their check leans towards hands that call out of disbelief: a six, a five, a small pair or ace-high. Bet the largest amount they will call with that whole checking range: about 80% of the pot.',
   },
   {
     id: 'top-pair-call-river-donk-unknown',
@@ -8533,7 +8355,6 @@ const HANDS: Hand[] = [
         text: 'The 4♦ and they lead into you for 60% of the pot. With no raise anywhere you can’t put them mainly on two pair or better; they will occasionally have a slow-played set.',
       },
     ],
-    why: 'Their line rules out most strong hands, which would have raised somewhere. What leads here is mostly worse kings, tens and missed heart and straight draws, all hands you beat. You need about 27%; as a default against an unknown, call rather than raise.',
   },
   {
     id: 'ace-high-fold-river-shove-three-bet-pot',
@@ -8586,7 +8407,6 @@ const HANDS: Hand[] = [
         text: 'The T♥. They check, you bet half the pot as a bluff, and they shove. They are telling the story of K-K, T-T or 6-6, which seems odd, but straightforward players shove what they say they have.',
       },
     ],
-    why: 'Ace-high is not a bluff-catcher here: any pair, any king and any flush beats you, and a straightforward player’s shove is full of those. You beat only an ace-high bluff, and they rarely run one. You need about 31%, so fold.',
   },
   {
     id: 'set-overbet-river-range-full-of-kings',
@@ -8634,7 +8454,6 @@ const HANDS: Hand[] = [
         text: 'The 2♣ and they check. Calling twice on a king-high board, their range has a ton of kings, and players call down with a king.',
       },
     ],
-    why: 'Their range is full of kings that won’t fold, plus sevens and small sets. A few club flushes beat you, but not enough to stop you betting. When you have value and think they will call down, go big: an overbet wins the most.',
   },
   {
     id: 'jacks-call-river-shove-face-up-overpair',
@@ -8683,7 +8502,6 @@ const HANDS: Hand[] = [
         text: 'The 9♦ and they move all in for more than the pot. This player knows you look marginal and will try to push you off it: they would shove a hand like Q-J here, as well as when they have nothing.',
       },
     ],
-    why: 'Against a player who bluffs when they think you are marginal, their shove holds plenty of big cards and air alongside the overpairs, sets and straights. Your jacks beat every bluff. You need about 35%, so call. Most weak players won’t fire this bluff, so this works against this kind of opponent.',
   },
   {
     id: 'trips-fold-river-shove-tight-passive-check-raiser',
@@ -8729,7 +8547,6 @@ const HANDS: Hand[] = [
         text: 'The 8♠ improves Q-T and J-8, and they instantly move all in. If they had nothing they would have folded the turn; if they had a good hand, they would have called.',
       },
     ],
-    why: 'A tight, passive player who check-raises the turn and shoves the river has a jack or better every time. You lose to every value hand they can have: better kickers, full houses and the new straights, and beat only a vastly overplayed overpair. You need about 31%, so find the fold. Don’t level yourself into thinking they are bluffing your splashy bet.',
   },
   {
     id: 'ace-high-check-river-double-paired-board',
@@ -8777,7 +8594,6 @@ const HANDS: Hand[] = [
         text: 'The Q♥ pairs the board again; you have ace-high and act first. If they had a missed draw, you likely have the best hand. A bet would only get action from a queen, a jack or a straight.',
       },
     ],
-    why: 'Betting turns your hand into a bluff that only gets called by full houses and straights, while the hands that would fold, counterfeited pairs and missed draws, are ones you already beat. A tight player rarely has the ace-high your bet could fold. Check, and fold to a bet.',
   },
   {
     id: 'ace-high-fold-river-lead-paired-dry-board',
@@ -8825,7 +8641,6 @@ const HANDS: Hand[] = [
         text: 'The J♣ and they lead 60% of the pot. Their calling hands were trip fives, a ten, a pocket pair or two big cards like A-K or K-J, and K-Q and Q-8 have now overtaken you.',
       },
     ],
-    why: 'They called the flop on a board with no draws, so they arrived with a made hand or big cards, and few worthless hands. Nearly all of those beat ace-high now. You need about 27% and have far less, so fold.',
   },
   {
     id: 'top-pair-fold-river-shove-after-flop-raise',
@@ -8870,7 +8685,6 @@ const HANDS: Hand[] = [
         text: 'The 4♥ and they move all in for about half the pot. Almost nobody on the button bets this strongly with a hand that Q-J beats.',
       },
     ],
-    why: 'A raise on a dry flop followed by two more big bets is sets, a better queen or two pair. The only way top pair wins is a stone-cold bluff, and that is a long shot. You need about 24%, so calling is a bad call: fold.',
   },
   {
     id: 'top-pair-fold-small-turn-big-river-pattern',
@@ -8921,7 +8735,6 @@ const HANDS: Hand[] = [
         text: 'The 5♠ and they bet $250, more than two-thirds of the pot. A small bet followed by a large bet is a strong pattern: if they are betting big for value, they probably have you beat.',
       },
     ],
-    why: 'The big river bet, well over the size most live players bluff with, points to trips, a full house or a straight that just got there. The draws bricked, so a bluff is possible, but not often enough. You need about 29%, so fold.',
   },
   {
     id: 'top-pair-fold-river-bet-monotone-flop-low-stakes',
@@ -8969,7 +8782,6 @@ const HANDS: Hand[] = [
         text: 'The T♠ pairs every straight draw, and they bet about half the pot after you check. They are betting few if any hands worse than two pair here.',
       },
     ],
-    why: 'You hold the A♥, so they have no nut-flush-draw bluffs, and the straight draws all made a pair of tens. What’s left is flushes, straights, sets and two pair. The average $1-$2 player bluffs here less than 10% of the time; you need about 26%. Folding should be automatic.',
   },
   {
     id: 'top-pair-fold-pot-river-bet-flush-and-straight',
@@ -9019,7 +8831,6 @@ const HANDS: Hand[] = [
         text: 'The 7♦ completes J-9’s straight too, and they bet the pot. Would they play A-J this way? Almost certainly not.',
       },
     ],
-    why: 'Both the flush draw and the J-9 straight draw have come in. Few hands spend this much on the flop and turn and end up with nothing, so far more often they have the big hand they’re representing. You have a bluff catcher and need about 34%: fold.',
   },
   {
     id: 'trips-call-half-pot-river-bet-limped-pot',
@@ -9073,7 +8884,6 @@ const HANDS: Hand[] = [
         text: 'The J♣ and the cutoff bets about half the pot. When the first bettor checks, the second bet could be made on anything: often a straight or flush draw, and some value bets are 8-7, A-7 or 6-5, which you beat.',
       },
     ],
-    why: 'Their river bet holds plenty of missed spade and straight draws and value hands like 8-7, A-7 and 6-5, and you beat all of those. Eights full or a better six are possible but rare. Your hand will probably win more than half the time and you only need about 26%: folding would be horrendous.',
   },
   {
     id: 'ace-jack-check-back-no-bluff',
@@ -9115,7 +8925,6 @@ const HANDS: Hand[] = [
         text: 'The 8♦ misses you and they check. They have a king a good amount of the time, and a king won’t fold. The hands that would fold, like Q-J, you already beat with ace high.',
       },
     ],
-    why: 'A bluff only works if better hands fold. Their kings call, and Q-J is already behind your ace high, so a bet wins nothing that checking doesn’t. With no clear reason to bet, check back and take the showdown.',
   },
   {
     id: 'nines-eight-take-free-showdown',
@@ -9157,7 +8966,6 @@ const HANDS: Hand[] = [
         text: 'The A♦ and they check. They hold a king, a high pair, an ace they backed into, or a double barrel they’ve given up on. The first three call a bet; the last folds, and you beat it anyway.',
       },
     ],
-    why: 'Betting only gets called by the kings, high pairs and aces that beat you, and folds the busted hands your pair of eights already beats. Neither the king nor the ace helps the hands you could have. Take the free showdown.',
   },
   {
     id: 'king-ten-check-back-passive-big-blind',
@@ -9200,7 +9008,6 @@ const HANDS: Hand[] = [
         text: 'The 9♠ and they check. This player never check-raises as a bluff and doesn’t call with worse. What’s left is better kings, a pair of queens that stayed with its diamond draw, and 7♦6♦, which just made a straight.',
       },
     ],
-    why: 'A value bet needs worse hands to call. After two calls from a passive player, the hands that call a third bet are mostly A-K and K-Q, which beat you, and the straight raises. Only queens are worse, and not enough of them. Check back and take the showdown.',
   },
   {
     id: 'king-high-straight-check-back-vs-ace-jack',
@@ -9247,7 +9054,6 @@ const HANDS: Hand[] = [
         text: 'The K♠ gives you a king-high straight; only A-J beats it. They check. Without a jack they won’t call a bet, and with A-J or a bare jack they can check-raise you.',
       },
     ],
-    why: 'Betting is lose-lose. Two pairs and sets fold, so a bet wins nothing more from them, while A-J and the jacks that split can check-raise and push you off your share. Check back and take the showdown.',
   },
   {
     id: 'nine-high-flush-fold-turn-raise-recreational',
@@ -9299,7 +9105,6 @@ const HANDS: Hand[] = [
         text: 'The 3♣. You bet, the pro folds and the recreational player raises. The only lower flushes are 5-2 and 4-2 of diamonds, unlikely in a raised pot; straights and overpairs won’t raise. The bare A♦ could, but most players won’t raise it for fear of a shove.',
       },
     ],
-    why: 'Your flush only beats bluffs here, and this player hardly ever bluffs with a big raise. What raises is a higher flush. You don’t have the price to call and hope for a straight flush: fold, and it isn’t close.',
   },
   {
     id: 'top-pair-fold-river-jam-after-check-raise',
@@ -9343,7 +9148,6 @@ const HANDS: Hand[] = [
         text: 'The 2♠ and they jam. Check-raise, pot, jam is sets, two pair and 5-3 for value, with busted 7-5 and 8-7 as the bluffs; hands like K-7 and A-3 gave up earlier.',
       },
     ],
-    why: 'A straightforward player rarely jams this line as a bluff, and every value hand he jams beats top pair with an eight kicker. Against this player, fold.',
   },
   {
     id: 'middle-pair-fold-river-after-turn-pot-lead',
@@ -9390,7 +9194,6 @@ const HANDS: Hand[] = [
         text: 'The 4♠ and they bet 60% of the pot. Straightforward players don’t bluff this river after potting the turn: they give up their missed draws and bet with something.',
       },
     ],
-    why: 'Their value is straights, sets and two pair, and every one beats middle pair. The missed draws you beat mostly give up against a straightforward player. Even the solver folds Q-8 here; call only against a loose, splashy player who barrels every draw.',
   },
   {
     id: 'kings-check-river-paired-flush-board',
@@ -9445,7 +9248,6 @@ const HANDS: Hand[] = [
         text: 'The 9♣ pairs the board and puts three clubs out, and you act first. A nine, a backdoor flush, 5-4 or a set has you beat; T-T and J-J won’t call a bet into a pot this big.',
       },
     ],
-    why: 'No worse hand calls: T-T and J-J fold, and they won’t bet if you check. Every hand that pays you off beats you. Check, and fold if they bet.',
   },
   {
     id: 'aces-small-river-bet-flush-completes',
@@ -9484,7 +9286,6 @@ const HANDS: Hand[] = [
         text: 'The 7♣ fills the flush and you act first. If you check, K-Q and K-J just check back; a flush will raise if you bet.',
       },
     ],
-    why: 'Checking and calling is the worst option: their kings check behind and only flushes bet. A small bet gets called by K-Q and K-J at this level, and if they raise you can fold.',
   },
   {
     id: 'tens-check-back-nit-paired-flush-board',
@@ -9528,7 +9329,6 @@ const HANDS: Hand[] = [
         text: 'The 5♦ fills the flush and they check. You beat their 30 combos of A-K and A-Q, and lose to J-J and up and two flushes.',
       },
     ],
-    why: 'A nit never folds overpairs or a flush, and never calls with A-K or A-Q. So a bet only gets called when you’re beaten. Check back and take the showdown.',
   },
   {
     id: 'eights-fold-river-jam-after-turn-raise',
@@ -9577,7 +9377,6 @@ const HANDS: Hand[] = [
         text: 'The Q♥. You check and they jam for almost twice the pot. Their story is a five or a set, with the busted spade draws as the bluffs.',
       },
     ],
-    why: 'A jam this big after a turn raise is mostly the straight or a set, and an overpair beats neither. Most players don’t have enough busted draws here to make a call pay. The overpair folds.',
   },
   {
     id: 'top-pair-jam-paired-river-after-two-barrels',
@@ -9627,7 +9426,6 @@ const HANDS: Hand[] = [
         text: 'The 2♥ and they check. You have about a pot behind. They call with any nine, any eight and some underpairs; the busted draws fold whatever you bet. Only the odd set of eights or aces beats you.',
       },
     ],
-    why: 'Their calling hands are mostly nines and eights that a big bet still gets called by, and the draws give you nothing at any size. Very little beats you. Jam.',
   },
   {
     id: 'kings-small-river-bet-ace-river-check-raised',
@@ -9671,7 +9469,6 @@ const HANDS: Hand[] = [
         text: 'The A♣ and you act first. A-Q and the spade draws with an ace now beat you; sets and two pair would have played bigger earlier. Their biggest group is still worse queens.',
       },
     ],
-    why: 'Worse queens are most of their range, and they’ll pay a small bet but not a big one. Checking lets them check behind. Bet small, about a third of the pot.',
   },
   {
     id: 'top-set-fold-river-raise-monotone-flop',
@@ -9723,7 +9520,6 @@ const HANDS: Hand[] = [
         text: 'The T♦. You bet for value and the opener raises almost four times your bet. People rarely raise the river as a bluff, and a bluff here needs the ace of spades, which he would rarely if ever turn into one.',
       },
     ],
-    why: 'A big river raise from a strong player who checked a monotone flop and overcalled is the slow-played nut flush. The only bluffs hold the ace of spades, and he almost never makes them. Fold and lose the minimum.',
   },
   {
     id: 'bottom-set-call-river-three-barrels',
@@ -9772,7 +9568,6 @@ const HANDS: Hand[] = [
         text: 'The 2♥ and they bet a third barrel. They could be betting Q-J, T-9 or Q-T for value, or a missed 9♠8♠ or A-J trying to get you off one pair.',
       },
     ],
-    why: 'There are just too many hands you beat: two pair and top pair betting for value and missed draws bluffing. The straights that beat you are unlikely or too loose to be here. You can’t fold a set.',
   },
   {
     id: 'top-pair-gutshot-call-turn-lead-three-bet-pot',
@@ -9815,7 +9610,6 @@ const HANDS: Hand[] = [
         text: 'The 6♠ and they lead for less than half the pot. A-Q is the value hand to fear, with suited A-J, K-Q and J-T (which your ten blocks). They could also have peeled with K♣J♣ or K♣T♣, or be bluffing.',
       },
     ],
-    why: 'Not many hands beat A-T here: A-Q, suited A-J, K-Q and a J-T your ten blocks, and even against K-Q you have outs. Kings with a club draw and the odd bluff are behind. At this small price, call unless you have an ironclad read.',
   },
   {
     id: 'small-flush-check-back-river-flush-card',
@@ -9857,7 +9651,6 @@ const HANDS: Hand[] = [
         text: 'The A♦ gives you a flush too, and they check. Facing a bet they fold their sets and worse and check-raise every flush that beats yours. There are many more higher diamonds in their range than lower ones.',
       },
     ],
-    why: 'A bet only gets called or raised by flushes, and nearly all of them beat yours. Everything you beat folds. Check back and take the showdown.',
   },
   {
     id: 'missed-straight-draw-overbet-jam-paired-river',
@@ -9902,7 +9695,6 @@ const HANDS: Hand[] = [
         text: 'The 8♦ pairs the board and you missed. They don’t have an eight. 9-9 to J-J beat you but find a jam very hard to call, and a missed club draw can’t call at all.',
       },
     ],
-    why: 'Your ten-high wins almost nothing at showdown, and their range is 9-9 to J-J and missed draws: hands that can only beat a bluff. A jam bigger than the pot makes them fold most of the time.',
   },
   {
     id: 'aces-call-small-river-jam-after-check-raise',
@@ -9948,7 +9740,6 @@ const HANDS: Hand[] = [
         text: 'The 3♠ and he jams for a small part of the pot. Quad threes or a set of deuces beat you; everything else is a bluff.',
       },
     ],
-    why: 'Only quad threes and a set of deuces beat aces here, and you block none of his bluffs. At this price you never fold.',
   },
   {
     id: 'seven-ten-river-overbet',
@@ -9987,7 +9778,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 9♥ is no scare card for you. They call a second bet, so naked draws are unlikely: they mostly have a pair of fours or better, A-5 or A-3 at worst. Sets and 9-7 would usually have raised.' },
       { street: 'river', text: 'The K♣ changes nothing between you. A normal bet looks like J-J or A-9 for value, so their weaker sevens and small pairs fold to it. A big overbet looks like the nuts or air, which turns 7-6 into a bluff catcher as good as a big pair.' },
     ],
-    why: 'Second pair is too thin to bet normally: only better hands call two-thirds of the pot. An overbet makes your range look polarised, so 8-7, 7-6, small pairs and A-4 have to call it as bluff catchers, and you get paid by hands only a little worse than yours.',
   },
   {
     id: 'kings-fold-turn-check-raise-shove',
@@ -10031,7 +9821,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: '9♦5♥5♣: they check, you bet a little under half the pot, and they check-raise small. All six combos of aces are possible; worse pairs like Q-Q to T-T could be playing for value.' },
       { street: 'turn', text: 'The 3♠: you bet so A-K and A-Q don’t see a free card, and they shove for almost 300 big blinds more. They have basically no bluffs, and they’d almost never take this line with queens, let alone jacks or tens.' },
     ],
-    why: 'Kings aren’t enough to stack off 500 big blinds deep against a range you can read this clearly. With no bluffs and almost no worse pairs, the shove is aces, and against aces you have two outs.',
   },
   {
     id: 'king-ten-three-barrel-river-call',
@@ -10072,7 +9861,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 7♥ gives T-8 a straight and adds a flush draw. You check and call their bet of about three quarters of the pot.' },
       { street: 'river', text: 'The A♠ and they bet about three quarters of the pot again. They have Q-T and T-8 straights, K-J and the odd set of nines, and draws with a queen that missed.' },
     ],
-    why: 'Your ten matters: it makes Q-T and T-8 less likely, so their value is thinner than it looks, and their missed queen draws are enough bluffs to call against. With top pair you’re a good enough bluff catcher to pay this off.',
   },
   {
     id: 'bottom-set-call-turn-shove-wet-board',
@@ -10114,7 +9902,6 @@ const HANDS: Hand[] = [
       { street: 'flop', text: '9♦6♣5♦: you flop bottom set and bet; the cutoff calls and the small blind folds. Draws are everywhere on this board.' },
       { street: 'turn', text: 'The 3♥. You bet and the cutoff shoves. 6-6, 9-9 and 8-7 beat you, but so many draws are possible that a semi-bluff like A♦7♦ is very likely.' },
     ],
-    why: 'Only a few combos beat you: two bigger sets and the straight. With this many draws on the board, semi-bluffs are too likely to fold a set, and the price makes the call correct anyway.',
   },
   {
     id: 'king-jack-call-river-check-raise-jam',
@@ -10159,7 +9946,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The T♦ pairs the board and you both check.' },
       { street: 'river', text: 'The K♦ gives you two pair. You bet, and they check-raise all in. Slow-played K-K, T-T and A-A, A-T and A-K suited beat you, but count them: there are only about twelve combos. A-J and A-Q suited arrive here too, and some of them check-raise as a bluff.' },
     ],
-    why: 'You pay about 18 big blinds to win about 88, so you need to be good only about 20% of the time. Against twelve value combos, the seven suited A-J and A-Q bluffs make this an easy call on the price.',
   },
   {
     id: 'aces-full-call-river-shove',
@@ -10206,7 +9992,6 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 7♠ gives you aces full. You check, they bet, you check-raise and they call.' },
       { street: 'river', text: 'The 4♦. You bet and they shove. This player is too good to bluff here, so it’s a full house or better: 7-7, 5-5 or A-7. A-7 only makes sense suited in hearts, and fives are less likely. Only one 7-7 is left: 7♥7♦.' },
     ],
-    why: 'It’s down to about two hands: 7♥7♦ for quads and A♥7♥ for a smaller full house, with the odd pair of fives. They would shove with both, so you’re ahead most of the time and getting a big price. The call is correct even though it loses to quads.',
   },
   {
     id: 'top-pair-nut-flush-draw-call-turn-shove',
@@ -10250,11 +10035,11 @@ const HANDS: Hand[] = [
       { street: 'flop', text: '8♥7♠3♣: the straddle bets into four players and you call with top pair. Everyone else folds.' },
       { street: 'turn', text: 'The 7♣ gives you the nut flush draw, and the straddle, a player known for big bluffs, shoves. Only 8-8, 7-7 and 3-3 have you all but drawing dead, about five combos. Against J-J, T-T and 9-9 you have 14 outs, and A-Q and K-Q bluffs have six at most.' },
     ],
-    why: 'You need about 35%. Only five combos have you all but drawing dead; the overpairs leave you 14 outs, and the bluffs are drawing to six. Folding top pair with the nut flush draw here gives up a lot: call.',
   },
 ];
 
 export const SCENARIOS: Scenario[] = HANDS.map((h) => {
   const lesson = LESSONS[h.id];
-  return { ...h, why: lesson?.why ?? h.why ?? '', read: lesson?.read ?? [], takeaway: lesson?.takeaway ?? '' };
+  if (!lesson) throw new Error(`Range training: ${h.id} has no lesson (add it in lessons/)`);
+  return { ...h, ...lesson };
 });

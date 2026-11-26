@@ -40,7 +40,7 @@ export const L20: Record<string, Lesson> = {
     read: [
       { about: 'preflop', text: 'A tight, passive player raised the small blind and you called J♠T♣ with 50 big blinds.' },
       { about: 'opponent', text: 'A tight, passive player rarely raises without a strong hand. With nothing they’d fold the turn; with a medium hand they’d call.' },
-      { about: 'board', text: 'J♥J♦9♥ gave you trips with a heart draw out. The 6♣ is a blank, and the 8♠ makes straights for Q-T and T-7.' },
+      { about: 'board', text: 'J♥J♦9♥ gave you trips with a heart draw on the board. The 6♣ is a blank, and the 8♠ makes straights for Q-T and T-7.' },
       { about: 'sizing', text: 'A confident turn check-raise and an instant river shove. Two strong actions in a row from a passive player is the nuts or close.' },
       { about: 'range', text: 'For value: A-J, K-J and Q-J; J-9, J-8, J-6, 9-9, 8-8 and 6-6; Q-T and T-7. Rarely, an overpair overplayed.' },
     ],
@@ -70,7 +70,7 @@ export const L20: Record<string, Lesson> = {
     takeaway: 'On a dry board, a flop call means a real hand: ace high rarely wins when they lead the river.',
   },
   'top-pair-fold-river-shove-after-flop-raise': {
-    why: 'Fold: a raise on a dry flop followed by two more big bets is sets, a better queen or two pair. There are no draws on that flop to raise as a semi-bluff. Top pair wins only against a stone-cold bluff, and that’s a long shot. You need about 24%, and you’re far short.',
+    why: 'Fold: a raise on a dry flop followed by two more big bets is sets, a better queen or two pair. There are no draws on that flop to raise with. Top pair wins only against a stone-cold bluff, and that’s a long shot. You need about 24%, and you’re far short.',
     read: [
       { about: 'preflop', text: 'In a small live game, as a loose, aggressive player, you opened Q♥J♥ second to act; a tough player called on the button.' },
       { about: 'opponent', text: 'A tough player knows you open loose and bet a lot. They raise to get value from your top pairs.' },
@@ -85,7 +85,7 @@ export const L20: Record<string, Lesson> = {
     read: [
       { about: 'preflop', text: 'In a small live game with deep stacks, two players limped; you raised K♦Q♠ two off the button, and the big blind and a limper called.' },
       { about: 'players', text: 'Three saw the flop; only the big blind called your bet.' },
-      { about: 'board', text: 'K♣8♦7♦ gave you top pair with a diamond draw out. The 8♥ pairs the board, and the 5♠ makes straights for 9-6 and 6-4.' },
+      { about: 'board', text: 'K♣8♦7♦ gave you top pair with a diamond draw on the board. The 8♥ pairs the board, and the 5♠ makes straights for 9-6 and 6-4.' },
       { about: 'sizing', text: 'A small turn lead, then more than ⅔ pot on the river. The small bet keeps you in; the big one is the value bet.' },
       { about: 'range', text: 'For value: trip eights and full houses; 9-6 and 6-4; some A-K. For bluffs: bricked draws and weaker kings.' },
     ],

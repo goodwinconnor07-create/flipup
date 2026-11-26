@@ -40,7 +40,7 @@ export const L14: Record<string, Lesson> = {
     read: [
       { about: 'preflop', text: 'A loose player called your open on the button: a wide range of aces, broadways, suited hands and pairs.' },
       { about: 'opponent', text: 'A loose, weak player value-bets worse hands and bluffs missed draws. They don’t save big bets for big hands.' },
-      { about: 'board', text: 'A♥Q♥7♠ gives you top pair, top kicker with a heart draw out. The 8♦ and 2♦ miss the hearts.' },
+      { about: 'board', text: 'A♥Q♥7♠ gives you top pair, top kicker with a heart draw on the board. The 8♦ and 2♦ miss the hearts.' },
       { about: 'sizing', text: 'A half-pot bet after you checked the river: a good price, and a size loose players use with worse aces and missed draws.' },
       { about: 'range', text: 'Ahead of you: A-Q, Q-Q, 8-8, 7-7 and 2-2. Behind you: A-J, A-T and A-9 suited, missed heart draws and K-J.' },
     ],

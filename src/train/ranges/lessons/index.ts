@@ -23,5 +23,6 @@ import { L19 } from './19';
 import { L20 } from './20';
 import { L21 } from './21';
 import { L22 } from './22';
+import { L23 } from './23';
 
-export const LESSONS: Record<string, Lesson> = { ...L1, ...L2, ...L3, ...L4, ...L5, ...L6, ...L7, ...L8, ...L9, ...L10, ...L11, ...L12, ...L13, ...L14, ...L15, ...L16, ...L17, ...L18, ...L19, ...L20, ...L21, ...L22 };
+export const LESSONS: Record<string, Lesson> = { ...L1, ...L2, ...L3, ...L4, ...L5, ...L6, ...L7, ...L8, ...L9, ...L10, ...L11, ...L12, ...L13, ...L14, ...L15, ...L16, ...L17, ...L18, ...L19, ...L20, ...L21, ...L22, ...L23 };

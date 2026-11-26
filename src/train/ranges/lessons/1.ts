@@ -24,7 +24,7 @@ export const L1: Record<string, Lesson> = {
     takeaway: 'When a passive player check-calls, checks, then leads the river into your turn check, expect a made hand that beats yours.',
   },
   'kings-double-paired': {
-    why: 'Fold: the Q♣ turns every queen and jack in their range into trips or a full house, and those are the hands that called twice. Kings now only beat a few missed straight draws, and you hold two of the kings those draws need. You need to win 30% of the time against a ¾-pot bet, and you’re far short of that.',
+    why: 'Fold: the Q♣ turns every queen and jack in their range into trips or a full house, and those are the hands that called twice. Kings now only beat a few missed straight draws, and you hold two of the kings those draws need. A ¾-pot bet makes the price 30%, and you’re far short of that.',
     read: [
       { about: 'preflop', text: 'The hijack cold-called an early raise with six players behind. That range is pairs, suited aces and suited broadways: exactly the A-Q, K-Q, Q-J, A-J and K-J that love this board.' },
       { about: 'position', text: 'They’re in position and can check back for a free showdown. Medium hands like T-T or 9-9 would take it, so a bet means a strong hand or a bluff.' },

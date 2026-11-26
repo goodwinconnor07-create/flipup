@@ -108,7 +108,7 @@ export const L19: Record<string, Lesson> = {
     read: [
       { about: 'preflop', text: 'At a small online game you opened K♣Q♦ from the cutoff and an unknown player defended the big blind.' },
       { about: 'position', text: 'They’re out of position. They check-called the flop and turn, then led the river.' },
-      { about: 'board', text: 'K♥2♣T♥ gave you top pair with a heart draw out. The 7♦ and the 4♦ miss the hearts.' },
+      { about: 'board', text: 'K♥2♣T♥ gave you top pair with a heart draw on the board. The 7♦ and the 4♦ miss the hearts.' },
       { about: 'sizing', text: 'They never raised, then led 60% of the pot. Without a raise anywhere, two pair or better is a small part of their range.' },
       { about: 'range', text: 'Ahead of you: some slow-played sets and two pair, and some A-K. Behind you: worse kings, tens, and missed heart and straight draws.' },
     ],

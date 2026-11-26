@@ -40,7 +40,7 @@ export const L21: Record<string, Lesson> = {
     read: [
       { about: 'preflop', text: 'It folded to you on the button. You raised K♥T♥ and a passive big blind called.' },
       { about: 'opponent', text: 'A passive regular never check-raises as a bluff and doesn’t call with worse. Their calls are honest.' },
-      { about: 'board', text: '4♥5♦K♦ gave you top pair with a diamond draw out. The 8♠ adds straight draws, and the 9♠ makes 7-6 a straight.' },
+      { about: 'board', text: '4♥5♦K♦ gave you top pair with a diamond draw on the board. The 8♠ adds straight draws, and the 9♠ makes 7-6 a straight.' },
       { about: 'sizing', text: 'They called two bets of about ¾ pot. The weak pairs and most junk folded along the way.' },
       { about: 'range', text: 'Ahead of you: A-K and K-Q suited, and 7♦6♦, which raises. Behind you: queens with the Q♦.' },
     ],

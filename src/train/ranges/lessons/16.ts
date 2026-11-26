@@ -95,7 +95,7 @@ export const L16: Record<string, Lesson> = {
     read: [
       { about: 'preflop', text: 'A loose, splashy player with 300 big blinds raised the button, and you defended T♣7♦ from the big blind.' },
       { about: 'opponent', text: 'A splashy player bets big with all sorts of hands, value, thin value and junk, so their big bets aren’t always strong.' },
-      { about: 'board', text: 'A♠T♠3♦ gave you second pair with a spade draw out. The 7♠ gives you two pair and completes the flush.' },
+      { about: 'board', text: 'A♠T♠3♦ gave you second pair with a spade draw on the board. The 7♠ gives you two pair and completes the flush.' },
       { about: 'sizing', text: 'A small flop bet, then nearly the pot on the turn. A big bet is polarised: a flush or better, or thin value and bluffs.' },
       { about: 'range', text: 'For value: flushes; A-T, A-3, A-7 and 3-3. Thinner: aces going for value. Bluffs: junk and draws.' },
     ],

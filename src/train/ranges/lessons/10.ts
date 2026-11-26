@@ -7,7 +7,7 @@ export const L10: Record<string, Lesson> = {
       { about: 'preflop', text: 'You min-raised the cutoff with 33 big blinds and the button called: pairs, suited aces, broadways and connectors.' },
       { about: 'position', text: 'They’re in position. They raised the flop, then checked back the turn, which slows their range down.' },
       { about: 'board', text: '5♣4♣4♥ is paired with a club draw. The Q♦ is a blank, and the 6♦ makes straights for 7-3, 8-7 and 3-2.' },
-      { about: 'sizing', text: 'A flop raise means overpairs, trips and club draws. Checking the turn after raising usually means a made hand happy to see a showdown, or a draw that wanted a free card.' },
+      { about: 'sizing', text: 'A flop raise means overpairs, trips and club draws. Checking the turn after raising usually means a made hand happy to see a showdown, or a draw that checked to see the river cheaply.' },
       { about: 'range', text: 'Overpairs, trips, full houses and straights call any bet. Missed club draws fold, and the ones with an ace or a queen beat you anyway.' },
     ],
     takeaway: 'Don’t bluff into hands that never fold; with a little showdown value, check and let missed draws bluff.',
@@ -64,7 +64,7 @@ export const L10: Record<string, Lesson> = {
     read: [
       { about: 'preflop', text: 'You opened the hijack with a suited connector, and the button and the big blind called.' },
       { about: 'position', text: 'They’re in position and called two bets, then bet the pot when you checked the river.' },
-      { about: 'board', text: '8♥8♣5♥ gave you trips with a heart draw out. The 2♠ changed nothing, and the 4♣ missed the hearts but made 7-6 and A-3 straights.' },
+      { about: 'board', text: '8♥8♣5♥ gave you trips with a heart draw on the board. The 2♠ changed nothing, and the 4♣ missed the hearts but made 7-6 and A-3 straights.' },
       { about: 'sizing', text: 'A pot-size bet after you check is polarised: a strong hand or a missed draw that can only win by betting.' },
       { about: 'range', text: 'Ahead of you: A-8, T-8, 9-8, full houses with 5-5, 4-4 and 2-2, and the 7-6 and A-3 straights. Behind you or splitting: 8-6 and 8-7, rare overpairs, and missed heart draws.' },
     ],

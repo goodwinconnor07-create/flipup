@@ -17,7 +17,7 @@ export const L17: Record<string, Lesson> = {
     read: [
       { about: 'preflop', text: 'You opened A♠Q♠ on the button and a loose, passive player called from the big blind, with plenty of suited junk in their range.' },
       { about: 'opponent', text: 'A loose, passive player calls with everything but only bets when they’re strong. Even they can see three diamonds.' },
-      { about: 'board', text: 'A♦3♦Q♥ gave you top two pair with a diamond draw out. The 8♣ is a blank, and the J♦ completes the flush and K-T’s straight.' },
+      { about: 'board', text: 'A♦3♦Q♥ gave you top two pair with a diamond draw on the board. The 8♣ is a blank, and the J♦ completes the flush and K-T’s straight.' },
       { about: 'sizing', text: 'They called two bets, then led for most of the pot on the card that completed the draws. Changing from calling to leading is the read.' },
       { about: 'range', text: 'For value: diamond flushes, K-T and sets 3-3, 8-8 and J-J. Sometimes a worse two pair.' },
     ],
@@ -106,7 +106,7 @@ export const L17: Record<string, Lesson> = {
     read: [
       { about: 'preflop', text: 'You 3-bet A♥4♥ from the small blind against a button open, and they called.' },
       { about: 'position', text: 'You’re out of position and check-called every street. They kept the lead.' },
-      { about: 'board', text: 'A♠6♦3♠ gave you top pair with a spade draw out. The Q♥ adds broadway draws, and the 3♦ pairs the board, so your kicker no longer plays.' },
+      { about: 'board', text: 'A♠6♦3♠ gave you top pair with a spade draw on the board. The Q♥ adds broadway draws, and the 3♦ pairs the board, so your kicker no longer plays.' },
       { about: 'sizing', text: 'A small flop bet, a big turn bet, then a shove for about 60% of the pot. A third barrel is often strong, but it also comes from draws that missed.' },
       { about: 'range', text: 'Ahead of you: A-K, A-Q, A-6, Q-Q and 6-6. Split: weaker aces. Behind you: busted spade draws, and K-J, K-T and 5-4.' },
     ],

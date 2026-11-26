@@ -6,7 +6,7 @@ export const L13: Record<string, Lesson> = {
     read: [
       { about: 'preflop', text: 'You opened the button and the big blind defended with a wide range, including lots of suited hands.' },
       { about: 'position', text: 'They’re out of position. They check-called the flop and your turn overbet, then led the river.' },
-      { about: 'board', text: 'K♣4♣3♥ gave you a set with a club draw out. The 9♦ is a blank, and the 6♣ completes the clubs and makes straights for 5-2 and 7-5.' },
+      { about: 'board', text: 'K♣4♣3♥ gave you a set with a club draw on the board. The 9♦ is a blank, and the 6♣ completes the clubs and makes straights for 5-2 and 7-5.' },
       { about: 'sizing', text: 'A lead of over half the pot after calling an overbet. Changing from calling to leading on the card that completes the draw is the classic sign of a made flush.' },
       { about: 'range', text: 'For value: club flushes and 5-2 and 7-5 straights. Bluffs: kings turned into a bluff, almost never.' },
     ],

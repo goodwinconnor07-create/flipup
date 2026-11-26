@@ -107,7 +107,7 @@ export const L22: Record<string, Lesson> = {
       { about: 'preflop', text: 'Late in a big online tournament you opened A♣A♥ under the gun, and one of the best players defended the big blind, as he does light.' },
       { about: 'opponent', text: 'One of the best online players check-raises with suited connectors as bluffs, as well as with sets.' },
       { about: 'board', text: 'Q♣3♥2♠ is dry. The 8♣ adds a club draw, and the 3♠ pairs the board, giving 3-3 quads and 2-2 a full house.' },
-      { about: 'sizing', text: 'A flop check-raise, a turn bet and a small river jam. The jam is a small part of the pot, so you need to win only 18% of the time.' },
+      { about: 'sizing', text: 'A flop check-raise, a turn bet and a small river jam. The jam is a small part of the pot, so the price is only 18%.' },
       { about: 'range', text: 'For value: quad threes and deuces full, and very rarely eights. For bluffs: suited connectors that check-raised.' },
     ],
     takeaway: 'When only a couple of hands beat you and the price is tiny, never fold.',

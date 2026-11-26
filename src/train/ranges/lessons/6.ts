@@ -84,7 +84,7 @@ export const L6: Record<string, Lesson> = {
       { about: 'preflop', text: 'Five players saw the flop. The big blind is a calling station who defends wide.' },
       { about: 'opponent', text: 'A calling station hates to fold a pair. Against them, bet bigger with strong hands and bluff less.' },
       { about: 'players', text: 'Five players took the flop, but only the big blind called your bet. Calling into a multiway pot shows a pair or a draw.' },
-      { about: 'board', text: 'T♠7♠2♦ gives you middle set with a spade draw out. The K♣ adds kings, and the 3♣ misses the spades.' },
+      { about: 'board', text: 'T♠7♠2♦ gives you middle set with a spade draw on the board. The K♣ adds kings, and the 3♣ misses the spades.' },
       { about: 'sizing', text: 'They check-called two big bets: pairs and draws that wanted to see the river. Now the draws have missed.' },
       { about: 'range', text: 'Tens, kings and underpairs call. Missed spade draws fold. Sets that beat you sometimes raise.' },
     ],

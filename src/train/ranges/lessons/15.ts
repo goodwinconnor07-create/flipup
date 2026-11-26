@@ -75,7 +75,7 @@ export const L15: Record<string, Lesson> = {
       { about: 'preflop', text: 'A straightforward recreational player opened first in, a loose cutoff called, and you 3-bet ace-king. Both called.' },
       { about: 'opponent', text: 'A straightforward recreational player usually has what they represent. They don’t shove top pair or air on the turn.' },
       { about: 'players', text: 'Three saw the flop; only the opener called your bet. They then took the lead on the turn.' },
-      { about: 'board', text: 'A♦8♥5♥ gives you top pair, top kicker with a heart draw out. The 9♣ makes 7-6 a straight and gives A-9 and 9-8 two pair.' },
+      { about: 'board', text: 'A♦8♥5♥ gives you top pair, top kicker with a heart draw on the board. The 9♣ makes 7-6 a straight and gives A-9 and 9-8 two pair.' },
       { about: 'sizing', text: 'A shove for about half the pot after check-calling the flop. Changing gear on the card that completes their hands is a strong signal.' },
       { about: 'range', text: 'For value: 7-6 suited, A-9 and 9-8. Sometimes a heart draw.' },
     ],

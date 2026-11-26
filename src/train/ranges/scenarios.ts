@@ -2938,7 +2938,7 @@ const HANDS: Hand[] = [
       { street: 'turn', text: 'The 7♥ goes check, check.' },
       {
         street: 'river',
-        text: 'The 8♠ gives you a small flush and they bet three quarters of the pot. They have a spade only about 40% of the time, and with a spade they bet only strong ones, the 9♠ or better. Without one, this is a bluff.',
+        text: 'The 8♠ gives you a small flush and they bet three quarters of the pot. Most of the time they don’t hold a spade at all, and with one they bet only strong ones, the 9♠ or better. Without one, this is a bluff.',
       },
     ],
     why: 'They only bet the 9♠ or better here, and most of the time they don’t have a spade at all, so a lot of this is bluffs. You need about 30% and you’re good about 45% of the time. Folding would be a blunder.',
@@ -7824,7 +7824,7 @@ const HANDS: Hand[] = [
     clues: [
       { street: 'preflop', text: 'Deep in the WSOP Main Event you open A♦6♦ from early position with 100bb; the button and the big blind call.' },
       { street: 'flop', text: 'A♠8♠8♦: it checks round.' },
-      { street: 'turn', text: 'The 5♦: the big blind bets a quarter of the pot; you call and the button folds. Your range is about 90% top pair with a mediocre kicker.' },
+      { street: 'turn', text: 'The 5♦: the big blind bets about 60% of the pot; you call and the button folds. Your range here is mostly top pair with a mediocre kicker.' },
       {
         street: 'river',
         text: 'The 4♣ and they bet more than one and a half times the pot. Their range is polarized, but the big blind may well have an eight or even a full house.',
@@ -7871,7 +7871,7 @@ const HANDS: Hand[] = [
     clues: [
       { street: 'preflop', text: 'At the Poker Masters you open 5♠3♠ on the button, 178bb deep; a short-stacked big blind 3-bets and you call.' },
       { street: 'flop', text: '8♦5♣2♣: they check and you check behind with middle pair.' },
-      { street: 'turn', text: 'The 9♦: they bet over a quarter of the pot and you call.' },
+      { street: 'turn', text: 'The 9♦: they bet over half the pot and you call.' },
       {
         street: 'river',
         text: 'The 4♦ and they bet 40% of the pot, leaving themselves 10bb. Their play has been inconsistent: only a runner-runner flush connects all the dots, and A-K and A-Q are still in their range.',
@@ -8106,7 +8106,7 @@ const HANDS: Hand[] = [
       { street: 'flop', text: '9♦4♣2♥: you c-bet and they call.' },
       {
         street: 'turn',
-        text: 'The 3♦ brings straights and a flush draw. You bet and they check-raise all in. In theory they shove only about 9% of their range here: sets, straights and a share of draws.',
+        text: 'The 3♦ brings straights and a flush draw. You bet and they check-raise all in. In theory they shove only a small part of their range here: sets, straights and some draws.',
       },
     ],
     why: 'Their all-in range has sets and straights, but also diamond draws and pairs with straight draws, and you are well ahead of all of those. You need about 34%. The solver calls aces every time, and even against a tighter, value-heavy range aces are still a profitable call.',

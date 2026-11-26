@@ -13,7 +13,7 @@ import type { MenuGroup } from './native-menu.types';
  * appearance, sound, animations, the bots' talk and fast bot games, then saved hands, share cards, card packs, the
  * table theme and hand rankings, then Premium's Gold name. Returned as groups for `NativeMenu`.
  */
-export function useYouGroups({ header, online = false }: { header?: string; online?: boolean }): MenuGroup[] {
+export function useYouGroups({ header, online = false, atTable = false }: { header?: string; online?: boolean; atTable?: boolean }): MenuGroup[] {
   const muted = useMuted();
   const haptics = useHaptics();
   const talk = useTalkLevel();
@@ -25,6 +25,31 @@ export function useYouGroups({ header, online = false }: { header?: string; onli
   const pack = CARD_PACKS.find((p) => p.id === worn.cardPack)?.name ?? 'Classic';
   const gold = useGoldName();
   const bank = useReplays().length;
+  const sound = { kind: 'toggle', id: 'sound', title: 'Sound', symbol: 'speaker.wave.2.fill', value: !muted, onChange: (on: boolean) => setMuted(!on) } as const;
+  const feel = { kind: 'toggle', id: 'haptics', title: 'Haptics', symbol: 'iphone.radiowaves.left.and.right', value: haptics, onChange: setHaptics } as const;
+  const talkRow = {
+    kind: 'segmented',
+    id: 'talk',
+    title: 'Bot talk',
+    symbol: 'bubble.left.fill',
+    value: talk,
+    options: [
+      { value: 'off', label: 'Off' },
+      { value: 'some', label: 'Some' },
+      { value: 'chatty', label: 'Chatty' },
+    ],
+    onChange: (v: string) => setTalkLevel(v as TalkLevel),
+  } as const;
+  // At the table (23 Nov 2026): only what matters mid-hand. Looks, Saved hands, Share cards and the rest are in the You tab.
+  if (atTable) {
+    return [
+      {
+        id: 'you',
+        header: 'Sound and feel',
+        items: [sound, feel, { kind: 'toggle', id: 'animations', title: 'Animations', symbol: 'bolt.fill', value: !calm, onChange: (on) => setCalm(!on) }, talkRow],
+      },
+    ];
+  }
   return [
     {
       id: 'you',
@@ -35,6 +60,7 @@ export function useYouGroups({ header, online = false }: { header?: string; onli
           kind: 'segmented',
           id: 'appearance',
           title: 'Appearance',
+          symbol: 'circle.lefthalf.filled',
           value: appearance,
           options: [
             { value: 'auto', label: 'Auto' },
@@ -43,32 +69,21 @@ export function useYouGroups({ header, online = false }: { header?: string; onli
           ],
           onChange: (v) => setAppearance(v as AppearancePref),
         },
-        { kind: 'toggle', id: 'sound', title: 'Sound', value: !muted, onChange: (on) => setMuted(!on) },
-        { kind: 'toggle', id: 'haptics', title: 'Haptics', value: haptics, onChange: setHaptics },
-        { kind: 'toggle', id: 'animations', title: 'Animations', value: !calm, onChange: (on) => setCalm(!on) },
-        {
-          kind: 'segmented',
-          id: 'talk',
-          title: 'Bot talk',
-          value: talk,
-          options: [
-            { value: 'off', label: 'Off' },
-            { value: 'some', label: 'Some' },
-            { value: 'chatty', label: 'Chatty' },
-          ],
-          onChange: (v) => setTalkLevel(v as TalkLevel),
-        },
-        { kind: 'toggle', id: 'fast', title: 'Fast bot games', value: fast, onChange: setFast },
+        sound,
+        feel,
+        { kind: 'toggle', id: 'animations', title: 'Animations', symbol: 'bolt.fill', value: !calm, onChange: (on) => setCalm(!on) },
+        talkRow,
+        { kind: 'toggle', id: 'fast', title: 'Fast bot games', symbol: 'gauge.with.needle.fill', value: fast, onChange: setFast },
       ],
     },
     {
       id: 'looks',
       items: [
-        { kind: 'link', id: 'saved', title: 'Saved hands', detail: bank ? String(bank) : undefined, onPress: () => router.push('/replays') },
-        !online && { kind: 'link', id: 'share', title: 'Share cards', onPress: () => router.push('/share') },
-        { kind: 'link', id: 'packs', title: 'Card packs', detail: pack, onPress: () => router.push('/card-packs') },
-        { kind: 'link', id: 'theme', title: 'Table theme', onPress: () => router.push('/table-theme') },
-        { kind: 'link', id: 'rankings', title: 'Hand rankings', onPress: () => router.push('/hand-rankings') },
+        { kind: 'link', id: 'saved', title: 'Saved hands', symbol: 'bookmark.fill', detail: bank ? String(bank) : undefined, onPress: () => router.push('/replays') },
+        !online && { kind: 'link', id: 'share', title: 'Share cards', symbol: 'photo.fill', onPress: () => router.push('/share') },
+        { kind: 'link', id: 'packs', title: 'Card packs', symbol: 'rectangle.portrait.on.rectangle.portrait.fill', detail: pack, onPress: () => router.push('/card-packs') },
+        { kind: 'link', id: 'theme', title: 'Table theme', symbol: 'paintpalette.fill', onPress: () => router.push('/table-theme') },
+        { kind: 'link', id: 'rankings', title: 'Hand rankings', symbol: 'trophy.fill', onPress: () => router.push('/hand-rankings') },
       ],
     },
     {
@@ -76,8 +91,8 @@ export function useYouGroups({ header, online = false }: { header?: string; onli
       header: 'Premium',
       items: [
         premium
-          ? { kind: 'toggle', id: 'gold', title: 'Gold name', value: gold, onChange: setGoldName }
-          : { kind: 'link', id: 'gold', title: 'Gold name', trailingCrown: true, onPress: () => router.push({ pathname: '/premium', params: { reason: 'gold' } }) },
+          ? { kind: 'toggle', id: 'gold', title: 'Gold name', symbol: 'signature', value: gold, onChange: setGoldName }
+          : { kind: 'link', id: 'gold', title: 'Gold name', symbol: 'signature', trailingCrown: true, onPress: () => router.push({ pathname: '/premium', params: { reason: 'gold' } }) },
       ],
     },
   ];

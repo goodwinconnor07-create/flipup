@@ -14,7 +14,7 @@ export function Switch({ value, onValueChange, label }: { value: boolean; onValu
   // A page that forces its scheme (the dark grain pages) gets a control drawn to match.
   const forced = useForcedScheme();
   return (
-    <Host colorScheme={forced ?? undefined} matchContents>
+    <Host colorScheme={forced ?? undefined} matchContents ignoreSafeArea="all">
       <NativeSwitch
         value={value}
         onValueChange={(on) => {

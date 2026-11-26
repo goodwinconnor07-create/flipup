@@ -1,11 +1,11 @@
-// Play with bots: who's at the table as a small cluster of faces floating softly together, in place of a list (the
+// Play with bots: who's at the table as a small cluster of faces, in place of a list (the
 // owner's ask, 12 Nov 2026: not a big drawn table, a compact section, so the game card under it stays in view without
 // scrolling; if it works it goes on the online lobby too). Each face sits in a filled circle with its name under it,
-// and the two drift together. A new bot pops into the space; a tap or a long press on a bot opens its menu (Remove,
+// and they sit still (23 Nov 2026, the owner: they drifted until then, one moving thing too many on a lobby whose page
+// light already moves). A new bot pops into the space; a tap or a long press on a bot opens its menu (Remove,
 // and Swap where the page can), and Remove pops it back out. Faces sit in up to two loose, staggered rows, you first.
 //
-// Motion (docs/MOTION.md): the drift is transform only on the UI thread, stopped off screen, in the background and
-// under Reduce Motion (useDrift). The pop in is ease-out from 50% and never from nothing (rule 10), the pop out is a
+// Motion (docs/MOTION.md): the pop in is ease-out from 50% and never from nothing (rule 10), the pop out is a
 // short ease-out swell then away, quicker than the arrival (rule 15), and nothing overshoots (rule 13). A face that
 // changes seat glides there with SETTLE. Under Reduce Motion faces only fade.
 //
@@ -17,7 +17,6 @@ import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { EASE_OUT, SETTLE } from '@/motion/presets';
-import { useDrift } from '@/motion/use-drift';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { brand, motion, useLobbyTint } from '@/theme';
 
@@ -125,12 +124,11 @@ export function FloatTable({
       style={{ height: clusterHeight(staying.length) }}
     >
       {width > 0 &&
-        seats.map((s, i) => (
+        seats.map((s) => (
           <Floater
             key={s.key}
             seat={s}
             spot={spotOf.get(s.key) ?? spots[0] ?? { x: width / 2, y: PAD + FACE / 2 }}
-            phase={i}
             canRemove={canRemove && !s.you && !s.add && s.removable !== false}
             onAdd={s.add ? openAdd : undefined}
             onHold={() => onHold(s.key)}
@@ -151,11 +149,10 @@ export function FloatTable({
   );
 }
 
-/** One face and its name, drifting together round their seat. */
+/** One face and its name, at their seat. */
 function Floater({
   seat,
   spot,
-  phase,
   canRemove,
   onAdd,
   onHold,
@@ -164,7 +161,6 @@ function Floater({
 }: {
   seat: FloatSeat;
   spot: { x: number; y: number };
-  phase: number;
   canRemove: boolean;
   /** The Add button's tap, with where the button is on screen so a menu can open from it. */
   onAdd?: (anchor?: Anchor) => void;
@@ -175,9 +171,6 @@ function Floater({
   const reduce = useReduceMotion();
   const addRef = useRef<ComponentRef<typeof View>>(null);
   const tint = useLobbyTint();
-  // Each face keeps its own slow clock (4.2 to 6.6s a leg), so they never move in step.
-  const { t } = useDrift(4200 + ((phase * 937) % 2400));
-  const lean = (phase * 1.7) % (Math.PI * 2);
   const x = useSharedValue(spot.x);
   const y = useSharedValue(spot.y);
   const scale = useSharedValue(reduce ? 1 : POP_FROM);
@@ -204,14 +197,9 @@ function Floater({
   }, [seat.leaving]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const style = useAnimatedStyle(() => {
-    const d = t.get();
     return {
       opacity: opacity.get(),
-      transform: [
-        { translateX: x.get() - FACE / 2 + (d - 0.5) * 2 * 5 * Math.cos(lean) },
-        { translateY: y.get() - FACE / 2 + Math.sin(d * Math.PI * 2 + lean) * 2.5 },
-        { scale: scale.get() },
-      ],
+      transform: [{ translateX: x.get() - FACE / 2 }, { translateY: y.get() - FACE / 2 }, { scale: scale.get() }],
     };
   });
 

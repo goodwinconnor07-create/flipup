@@ -95,9 +95,9 @@ export default function SettingsScreen() {
       footer: premium ? planLine(store) : 'Bought Premium before, or on another iPhone? Restore brings it back.',
       items: ON_SALE
         ? [
-            { kind: 'button', id: 'restore', title: store.busy ? 'Restoring' : 'Restore Purchases', busy: store.busy, onPress: () => void restore() },
+            { kind: 'button', id: 'restore', symbol: 'arrow.clockwise', title: store.busy ? 'Restoring' : 'Restore Purchases', busy: store.busy, onPress: () => void restore() },
             // Apple's own page for changing or cancelling the plan (App Store Review 3.1.2: easy to find).
-            premium && (store.owned === 'monthly' || store.owned === 'yearly') && { kind: 'link', id: 'manage', title: 'Manage subscription', onPress: () => void manageSubscription() },
+            premium && (store.owned === 'monthly' || store.owned === 'yearly') && { kind: 'link', id: 'manage', title: 'Manage subscription', symbol: 'creditcard.fill', onPress: () => void manageSubscription() },
           ]
         : [],
     },
@@ -124,29 +124,29 @@ export default function SettingsScreen() {
     {
       id: 'blocked',
       footer: 'To report or block someone, tap their seat at a table or their row on a party board.',
-      items: [{ kind: 'link', id: 'blocked', title: 'Blocked players', detail: blocked.length ? String(blocked.length) : undefined, onPress: () => router.push('/blocked') }],
+      items: [{ kind: 'link', id: 'blocked', title: 'Blocked players', symbol: 'hand.raised.slash.fill', detail: blocked.length ? String(blocked.length) : undefined, onPress: () => router.push('/blocked') }],
     },
     {
       id: 'new',
-      items: [{ kind: 'link', id: 'new', title: 'What’s New', detail: `Version ${version}${build ? ` (${build})` : ''}`, onPress: () => router.push('/whats-new') }],
+      items: [{ kind: 'link', id: 'new', title: 'What’s New', symbol: 'sparkles', detail: `Version ${version}${build ? ` (${build})` : ''}`, onPress: () => router.push('/whats-new') }],
     },
     {
       id: 'help',
       header: 'Help and privacy',
       footer: "Play chips only. They have no cash value and can't be bought or won.",
       items: [
-        { kind: 'link', id: 'privacy', title: 'Privacy policy', onPress: () => open(APP_INFO.privacyUrl) },
-        { kind: 'link', id: 'help', title: 'Help', onPress: () => router.push('/help') },
+        { kind: 'link', id: 'privacy', title: 'Privacy policy', symbol: 'hand.raised.fill', onPress: () => open(APP_INFO.privacyUrl) },
+        { kind: 'link', id: 'help', title: 'Help', symbol: 'questionmark.circle.fill', onPress: () => router.push('/help') },
         { kind: 'button', id: 'share', title: 'Share FlipUp', symbol: 'square.and.arrow.up', onPress: share },
-        { kind: 'link', id: 'rate', title: 'Rate FlipUp', onPress: rate },
-        { kind: 'link', id: 'support', title: 'Support', onPress: () => open(APP_INFO.supportUrl) },
-        { kind: 'link', id: 'email', title: 'Email us', subtitle: APP_INFO.supportEmail, onPress: () => void Linking.openURL(`mailto:${APP_INFO.supportEmail}?subject=${encodeURIComponent('FlipUp')}`) },
+        { kind: 'link', id: 'rate', title: 'Rate FlipUp', symbol: 'star.fill', onPress: rate },
+        { kind: 'link', id: 'support', title: 'Support', symbol: 'lifepreserver.fill', onPress: () => open(APP_INFO.supportUrl) },
+        { kind: 'link', id: 'email', title: 'Email us', symbol: 'envelope.fill', subtitle: APP_INFO.supportEmail, onPress: () => void Linking.openURL(`mailto:${APP_INFO.supportEmail}?subject=${encodeURIComponent('FlipUp')}`) },
       ],
     },
     {
       id: 'delete',
       footer: `Deletes what FlipUp's server keeps about this phone and everything the app keeps on it.\n\nFlipUp ${version}${build ? ` (${build})` : ''}${store.storefront ? ` · App Store ${store.storefront}` : ''}`,
-      items: [{ kind: 'button', id: 'delete', title: deleting ? 'Deleting' : 'Delete my data', destructive: true, busy: deleting, onPress: confirmDelete }],
+      items: [{ kind: 'button', id: 'delete', symbol: 'trash.fill', title: deleting ? 'Deleting' : 'Delete my data', destructive: true, busy: deleting, onPress: confirmDelete }],
     },
   ];
 

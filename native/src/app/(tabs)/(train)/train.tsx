@@ -2,7 +2,6 @@ import { Stack } from 'expo-router';
 import { useRef, type ComponentRef } from 'react';
 import type { ScrollView } from 'react-native';
 
-import { ProfileMenu } from '@/components/profile-menu';
 import { TrainBackground } from '@/components/range/train-background';
 import { TrainHome } from '@/components/range/train-home';
 import { TabScreen } from '@/components/tab-screen';
@@ -24,9 +23,9 @@ export default function TrainTab() {
   return (
     <ForceScheme scheme="dark">
       <TrainBackground mood={daily.finished ? 'done' : 'idle'}>
-        {/* Always dark, so the clock and battery are white whatever the phone's own look. */}
-        <Stack.Screen options={{ title: 'Train', headerShown: false, statusBarStyle: 'light' }} />
-        <TabScreen title="Train" accessory={<ProfileMenu />} scrollRef={scroll}>
+        {/* Always dark: the status bar is white here (`barStyleFor()`), whatever the phone's own look. */}
+        <Stack.Screen options={{ title: 'Train', headerShown: false }} />
+        <TabScreen title="Train" scrollRef={scroll}>
           <TrainHome history={history} grades={grades} />
         </TabScreen>
       </TrainBackground>

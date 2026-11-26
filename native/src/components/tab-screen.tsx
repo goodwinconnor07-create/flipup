@@ -61,7 +61,7 @@ export function TabScreen({ title, accessory, children, contentStyle, scrollRef,
         contentContainerStyle={[{ paddingTop: top + spacing.xs, paddingHorizontal: spacing.md, paddingBottom: spacing.xxxl + (footer ? footerH : 0), gap: spacing.xl, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center' }, contentStyle]}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 52 }}>
-          <ThemedText variant="largeTitle" accessibilityRole="header" numberOfLines={1} style={{ flex: 1 }}>
+          <ThemedText variant="largeTitle" accessibilityRole="header" numberOfLines={1} style={{ flex: 1, fontWeight: '800' }}>
             {title}
           </ThemedText>
           {accessory}

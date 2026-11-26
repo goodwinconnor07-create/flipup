@@ -7,6 +7,19 @@
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
+> **23 Nov 2026 (owner): lessons from EasyPoker, in our own look** (mock-ups on the owner's canvas, then built). The
+> table menu opens with a gold **Your turn** bar while it's your move (the seconds left and a draining line; a tap goes
+> back to the table) and is cut to what matters mid-hand: the action tiles, This hand (Hand rankings with your hand as
+> its detail, Hand log, Standings), Table (invite, settings, theme, add a bot) and Sound and feel; every row has a
+> glyph. **Hand rankings** open on "You have now" (your hand's name and five cards on a blue card, what beats it) and
+> light your row with a gold YOU tag. The lobby's **code card** makes the code its hero: GAME CODE, the code centred at
+> 64pt, how friends join, then a white Share invite capsule with Copy and QR as round icons. **House rules** give every
+> number a short line on what it does, as the switches already had. **Welcome** has a three-step strip (Host a table,
+> Send the code, Friends sit down on their phones) and a name counter. The **You tab** has Your look (card backs, gold
+> name, table felt as tiles showing what you wear). **Card packs** open on the pack you wear, fanned big, and a crowned
+> pack is tried on there with Unlock with Premium before the offer. **Premium**'s buttons say the deal ("Subscribe
+> for $50.00 a year", or the intro offer) and yearly says what it works out to a month.
+
 > **21 Nov 2026 (owner): the Demo replaces How to Play.** Every game's Demo button (Home under the game's name, the
 > game sheet's picture, the lobby's game card, the games shelf, the profile's Demos, the Premium games list) opens one
 > hand of that game on the real table, against Luna and Max, with a coach over it (`docs/DEMO.md`). One step at a
@@ -51,13 +64,56 @@
 
 > **Home (owner, 2026-11-19, from a mock-up).** Two tabs: Play and Train (a Hands tab came and went the same day: once
 > Home had its shortcuts the owner had it removed). Home is the game
-> swiper a little bigger, the game's name, hook and a Demo button (it was a quiet "How it plays ›" link until 21 Nov 2026), then Play with friends on the big
-> white button (it was Host <game> until the same day: the name was said twice), with Play bots and Join a game under
+> swiper a little bigger, the game's name, hook and a "Try a demo hand" text link (a "How it plays ›" link until 21 Nov 2026, a Demo button until 23 Nov, when
+> the owner agreed it read as a fourth button), then Play with friends on the big white button (near-black ink, not
+> navy, and never the game's colour: one steady thing to press while the games flick past; 23 Nov 2026) (it was Host <game> until the same day: the name was said twice), with Play bots and Join a game under
 > it. No "Tap me" hint pill and no page dots. Later the same day the owner brought back a row of round shortcuts over
 > the big button: Stats, Saved hands and Share cards (the game card a touch smaller to make room; the big name and
 > buttons stay). The spare height goes mostly above the game, so the buttons sit a little above the tab bar instead
 > of leaving a gap under the link. The profile keeps Settings, Premium and Demos.
 
+> **24 Nov 2026 (owner): the full-page colour stays.** The earlier Home's layout below is kept, but on the game's
+> own colour over the whole page (`GameBackdrop` as in "the full-page colour is back"), not the night blue with a glow.
+> Lobbies follow it too.
+>
+> **23 Nov 2026, night (owner): the earlier Home is back.** After trying a full-page game colour, words-only buttons
+> and a demo link, the owner picked a screenshot of the morning's Home: night blue with the game's colour as a glow
+> (`GameBackdrop`), the game card, its name and hook, a Demo capsule, the round shortcuts (Stats, Saved hands, Share
+> cards), then Play with friends, and Play bots and Join a game with their icons. The You tab stays, so top right is
+> a round glass button with a gold crown that opens Premium, not your face. Lobbies follow the same night-blue page.
+>
+> **Same day (owner, from screenshots): You and Settings tightened.** On the You tab the face is smaller (108pt) and
+> the Your poker card is compact (three numbers in one row; games and table wins sit in its All stats bar), so the
+> card and Your look fit on the first screen. Every row on the You tab and in Settings has an SF Symbol in one fixed
+> column, like the table menu. The table menu's Your turn bar sits under the sheet's title, not behind it.
+>
+> **23 Nov 2026 (owner): a You tab and a four-button Home.** The tab bar is Play, Train and You. You is the old
+> profile as a tab: your face and name, the Your poker card (All stats), Saved hands and Share cards, then Premium,
+> Demos and Settings. Home loses your face in the corner and the three round shortcuts, so it holds Demo, Play with
+> friends, Play bots and Join a game, and the game card takes the room (up to 290pt). Train loses the face too.
+>
+> **23 Nov 2026, later (owner): the full-page colour is back, without the blue.** *(Back again on 24 Nov: see the first note above.)* The night-blue base below was
+> tried and dropped the same day: `GameBackdrop` is the game's own colour over the whole page again (lighter behind
+> the picture, deepest at the foot), with no blue base and no blue light, but it keeps the calm: two faint white
+> lights on 22s and 31s clocks, a few percent of breathing, and the colour following the swiper. Home's buttons (Play
+> with friends, Play bots, Join a game) are words only, no icons.
+>
+> **23 Nov 2026 (owner): a game's page is night blue with the game's colour as a glow.** *(Replaced on 24 Nov 2026.)* Mixing each game's colour
+> towards black turned the warm games brown (Die on the River's orange became a chocolate page) and the lights moved
+> too much. Now `GameBackdrop` is the same night blue for every game (`brand.backdropTop` to `brand.backdropBottom`),
+> with the game's colour as a glow centred on its picture (`focus`) that fades out before the buttons, and a faint
+> wash from the top, so the shortcuts, buttons and tab bar look the same whichever game is chosen. Two soft lights
+> (brand blue, a little white) drift on 22s and 31s clocks over a short distance, and the glow breathes a few percent
+> on a 27s one: noticed only when looked for. On Home the colour follows the swiper (`progress`), blending between
+> two games as the finger drags, rather than fading in after the card lands. Home and the lobbies stay dark in light
+> mode too (the game art is drawn for dark), and the status bar is set for the whole app from one place
+> (`StatusBarFollower`, `barStyleFor()` in `state/status-bar.ts`): white on the always-dark pages, the phone's own
+> look elsewhere, unchanged under a sheet.
+>
+> **23 Nov 2026 (owner): one moving thing per page.** On the lobbies the page's slow glow is the only motion. The
+> game card (`GameBanner`) is the same scene standing still (its bobbing parts and drifting particles are gone), and
+> the faces in the players group (`FloatTable`) sit still. Pops, settles and fades on a change stay.
+>
 > **19 Nov 2026 (owner, from a mock-up): lobbies in the game's colour.** Play with bots, Play with friends and the
 > table lobby use Home's `GameBackdrop` (`LobbyBackdrop` in `components/lobby/lobby-backdrop.tsx`): a dark shade of
 > the chosen game's colour with its lights, fading to the next game's when Change picks another. The lobby's blue

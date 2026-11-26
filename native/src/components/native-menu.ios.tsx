@@ -4,6 +4,7 @@ import { buttonStyle, contentShape, controlSize, fixedSize, font, frame, foregro
 import { Color } from 'expo-router';
 import { Fragment } from 'react';
 import { View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { brand } from '@/theme';
 
@@ -27,7 +28,10 @@ export function NativeMenu({ groups, top, transparent }: NativeMenuProps) {
   // or lobby behind showed through the rows as a coloured smear. Solid grouped grey unless the page asks to show through.
   return (
     <View style={{ flex: 1, backgroundColor: transparent ? undefined : Color.ios.systemGroupedBackground }}>
-      {top}
+      {/* The sheet's title bar is drawn over the top of the page, so the list's own SwiftUI insets keep its rows clear of it
+          but a React Native view up here sat under the title (the table menu's Your turn bar, 23 Nov 2026). The native
+          safe area view pads it by exactly the bar's height. */}
+      {top && <SafeAreaView edges={['top']}>{top}</SafeAreaView>}
       <Host style={{ flex: 1 }}>
         <Form modifiers={[tint(brand.violet), scrollContentBackground('hidden')]}>
           {groups.map((g) => {
@@ -47,6 +51,16 @@ export function NativeMenu({ groups, top, transparent }: NativeMenuProps) {
   );
 }
 
+/** The fixed icon column every row shares, so titles line up down a group whatever the glyph's shape. */
+function Glyph({ symbol, colour = PRIMARY }: { symbol?: string; colour?: ReturnType<typeof foregroundStyle> }) {
+  if (!symbol) return null;
+  return (
+    <HStack modifiers={[frame({ width: 28, alignment: 'center' })]}>
+      <Image systemName={sf(symbol)} size={20} modifiers={[colour]} />
+    </HStack>
+  );
+}
+
 function row(item: MenuItem) {
   switch (item.kind) {
     case 'link':
@@ -58,8 +72,8 @@ function row(item: MenuItem) {
           }}
           modifiers={[buttonStyle('plain')]}
         >
-          <HStack spacing={8} modifiers={[contentShape(shapes.rectangle())]}>
-            {item.symbol && <Image systemName={sf(item.symbol)} size={20} modifiers={[PRIMARY]} />}
+          <HStack spacing={12} modifiers={[contentShape(shapes.rectangle())]}>
+            <Glyph symbol={item.symbol} />
             <VStack alignment="leading" spacing={2}>
               <Text modifiers={[PRIMARY]}>{item.title}</Text>
               {item.subtitle && <Text modifiers={[SECONDARY, font({ textStyle: 'footnote' })]}>{item.subtitle}</Text>}
@@ -88,11 +102,7 @@ function row(item: MenuItem) {
           modifiers={[buttonStyle('plain')]}
         >
           <HStack spacing={12} modifiers={[contentShape(shapes.rectangle())]}>
-            {item.symbol && (
-              <HStack modifiers={[frame({ width: 28, alignment: 'center' })]}>
-                <Image systemName={sf(item.symbol)} size={20} modifiers={[colour]} />
-              </HStack>
-            )}
+            <Glyph symbol={item.symbol} colour={colour} />
             <Text modifiers={[colour]}>{item.busy ? `${item.title}…` : item.title}</Text>
             <Spacer />
           </HStack>
@@ -103,18 +113,20 @@ function row(item: MenuItem) {
       return (
         <Toggle
           isOn={item.value}
-          label={item.subtitle ? undefined : item.title}
-          systemImage={item.symbol && !item.subtitle ? sf(item.symbol) : undefined}
+          label={item.subtitle || item.symbol ? undefined : item.title}
           onIsOnChange={(on) => {
             haptic.select();
             item.onChange(on);
           }}
         >
-          {item.subtitle ? (
-            <VStack alignment="leading" spacing={2}>
-              <Text modifiers={[PRIMARY]}>{item.title}</Text>
-              <Text modifiers={[SECONDARY, font({ textStyle: 'footnote' })]}>{item.subtitle}</Text>
-            </VStack>
+          {item.subtitle || item.symbol ? (
+            <HStack spacing={12}>
+              <Glyph symbol={item.symbol} />
+              <VStack alignment="leading" spacing={2}>
+                <Text modifiers={[PRIMARY]}>{item.title}</Text>
+                {item.subtitle && <Text modifiers={[SECONDARY, font({ textStyle: 'footnote' })]}>{item.subtitle}</Text>}
+              </VStack>
+            </HStack>
           ) : undefined}
         </Toggle>
       );
@@ -139,7 +151,10 @@ function row(item: MenuItem) {
       if (item.stacked) {
         return (
           <VStack alignment="leading" spacing={10} modifiers={[padding({ vertical: 4 })]}>
-            <Text modifiers={[PRIMARY]}>{item.title}</Text>
+            <HStack spacing={12}>
+              <Glyph symbol={item.symbol} />
+              <Text modifiers={[PRIMARY]}>{item.title}</Text>
+            </HStack>
             {picker}
             {item.note && <Text modifiers={[SECONDARY, font({ textStyle: 'footnote' })]}>{item.note}</Text>}
           </VStack>
@@ -147,6 +162,7 @@ function row(item: MenuItem) {
       }
       return (
         <HStack spacing={12}>
+          <Glyph symbol={item.symbol} />
           <Text modifiers={[PRIMARY]}>{item.title}</Text>
           <Spacer />
           {picker}
@@ -174,6 +190,7 @@ function row(item: MenuItem) {
     case 'stepper':
       return (
         <HStack spacing={12}>
+          <Glyph symbol={item.symbol} />
           <Text modifiers={[PRIMARY]}>{item.title}</Text>
           <Spacer />
           <Text modifiers={[SECONDARY]}>{item.detail}</Text>
@@ -194,6 +211,7 @@ function row(item: MenuItem) {
     case 'value':
       return (
         <HStack spacing={12}>
+          <Glyph symbol={item.symbol} />
           <Text modifiers={[PRIMARY]}>{item.title}</Text>
           <Spacer />
           <Text modifiers={[SECONDARY]}>{item.detail}</Text>

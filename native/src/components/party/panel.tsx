@@ -245,7 +245,7 @@ function UpNext({ variant, eyebrow, line }: { variant: Variant; eyebrow: string;
   return (
     <Animated.View key={variant} entering={enter(reduce)} style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', boxShadow: '0 10px 28px rgba(0, 0, 0, 0.3)' }}>
       <ForceScheme scheme="dark">
-        <GameBackdrop variant={variant} style={{ flex: 0, borderRadius: PANEL_RADIUS, borderCurve: 'continuous' }}>
+        <GameBackdrop variant={variant} focus="40%" style={{ flex: 0, borderRadius: PANEL_RADIUS, borderCurve: 'continuous' }}>
           <View accessible accessibilityRole="header" accessibilityLabel={`${eyebrow}. ${info.name}. ${look.hook}. ${line}`} style={{ padding: spacing.lg, alignItems: 'center', gap: spacing.xs }}>
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.8)' }}>
               {eyebrow}

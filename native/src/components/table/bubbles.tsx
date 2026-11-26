@@ -176,6 +176,7 @@ function Ticker({ text, room, pauses, who }: { text: string; room?: number; paus
   );
 }
 
+// Semibold (23 Nov 2026, the owner: regular read too thin over the felt); a move bubble (Bet 40) stays bold.
 const FONT = { fontSize: 13, lineHeight: 16, fontWeight: '600' as const };
 
 /** One word on the conveyor: slides in from 6pt right; once it's gone, it fades as its width closes to nothing. */

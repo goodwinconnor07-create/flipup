@@ -375,6 +375,20 @@ export function manageSubscription(): Promise<void> {
 }
 
 /** How much a year saves against twelve months, as a whole percentage, from the App Store's prices. */
+/**
+ * What a yearly plan works out to each month, in the App Store's own price format ("$50.00" → "$4.16"), rounded down
+ * so it never claims more than it is. A price written without cents ("¥6,800") stays whole. Null without a number.
+ */
+export function perMonth(p: PlanPrice | null | undefined): string | null {
+  if (!p?.amount) return null;
+  const num = /\d[\d.,\s\u00a0\u202f]*\d|\d/.exec(p.price);
+  if (!num) return null;
+  const decimals = /[.,]\d{2}$/.exec(num[0]);
+  if (!decimals) return p.price.replace(num[0], String(Math.floor(p.amount / 12)));
+  const value = (Math.floor((p.amount / 12) * 100) / 100).toFixed(2);
+  return p.price.replace(num[0], decimals[0][0] === ',' ? value.replace('.', ',') : value);
+}
+
 export function yearlySaving(plans: StoreState['plans']): number | null {
   const m = plans.monthly?.amount;
   const y = plans.yearly?.amount;

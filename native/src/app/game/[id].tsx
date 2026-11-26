@@ -44,7 +44,7 @@ export default function GameSheet() {
     <SheetScroll contentContainerStyle={{ flexGrow: 1, padding: spacing.md, paddingTop: spacing.xl, gap: spacing.lg }}>
       <Stack.Screen options={{ title: info.name, headerShown: false }} />
       {/* Reaches well past the top and bottom so a pull past either end still shows the game's colour. */}
-      <GameBackdrop variant={variant} style={{ position: 'absolute', top: -600, bottom: -600, left: 0, right: 0, flex: 0 }} />
+      <GameBackdrop variant={variant} focus={730} style={{ position: 'absolute', top: -600, bottom: -600, left: 0, right: 0, flex: 0 }} />
       {/* The game's picture, with its Demo on it: a hand of this game on the real table, with a coach. */}
       <DemoPicture variant={variant} name={info.name} width={width - spacing.md * 2} />
       <View style={{ gap: spacing.xxs }}>
@@ -68,7 +68,7 @@ export default function GameSheet() {
       {!rules && (
         <View style={{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.08)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
           <View style={{ padding: spacing.md, gap: spacing.sm }}>
-            <PlayButton label="Play with friends" line="Host a table · share the code" onPress={() => go('friends')} />
+            <PlayButton label="Play with friends" icon="person.2.fill" line="Host a table · share the code" onPress={() => go('friends')} />
             <View style={{ flexDirection: 'row' }}>
               <SmallButton icon="cpu.fill" label="Play bots" onPress={() => go('bots')} />
             </View>

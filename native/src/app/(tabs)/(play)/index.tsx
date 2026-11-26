@@ -1,27 +1,26 @@
 import { router, Stack, useIsFocused } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { gameLook } from '@design/gameArt';
 import { showDemo } from '@/components/demo/show';
-import { Avatar } from '@/components/avatar';
 import { haptic } from '@/components/haptics';
 import { GameBackdrop } from '@/components/home/game-backdrop';
 import { GameSwiper } from '@/components/home/game-swiper';
 import { LiveButton } from '@/components/home/live-button';
-import { PlayButton } from '@/components/home/play-button';
+import { BUTTON_RADIUS, PlayButton } from '@/components/home/play-button';
 import { LockVeil } from '@/components/premium/lock-veil';
 import { SmallButton } from '@/components/home/small-button';
 import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
-import { AVATAR } from '@/components/profile-menu';
 import { Swap } from '@/components/swap';
+import { RoundButton } from '@/components/tab-screen';
 import { useTabPush } from '@/components/use-tab-push';
 import { detail } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { variantNeedsPremium, isVariant, variantInfo, type Variant } from '@/engine';
+import { variantNeedsPremium, isVariant, variantInfo, VARIANTS, type Variant } from '@/engine';
 import { askForName } from '@/state/ask-name';
 import { usePartyView } from '@/components/party/panel';
 import { forgetParty, usePartyRef } from '@/state/party';
@@ -33,7 +32,7 @@ import { usePokerRecord } from '@/state/record';
 import { maybeAskForReview } from '@/state/review';
 import { me as myDevice, useTable } from '@/state/session';
 import { save, useStored } from '@/state/storage';
-import { ForceScheme, radius, ROUNDED, spacing } from '@/theme';
+import { brand, ForceScheme, radius, ROUNDED, spacing } from '@/theme';
 
 /** The tab bar's height over the bottom safe area. */
 const TAB_BAR = 49;
@@ -46,8 +45,9 @@ const EDGE = 'rgba(255, 255, 255, 0.14)';
 const PICK = 'flipup.homegame';
 
 /**
- * Home as a game lobby. The page takes the colour of the chosen game (`GameBackdrop`). "Play" top left and your face
- * top right (a tap opens your profile, which holds Premium, Demos and Settings); the games as a line of cards
+ * Home as a game lobby (brought back on 23 Nov 2026, the owner's pick from a screenshot, after a day of a full-page
+ * colour and words-only buttons): night blue with the chosen game's colour as a glow (`GameBackdrop`). "Play" top left
+ * and a gold crown top right that opens Premium (you, Premium, Demos and Settings are the You tab); the games as a line of cards
  * across the whole screen, locked on one at a time (`GameSwiper`), a little bigger than before; the chosen one's
  * name, hook and a Demo button under it (an interactive hand of the game, `showDemo()`); a row of three round shortcuts (Stats, Saved hands, Share
  * cards; the owner brought them back on 19 Nov 2026 and kept the big game and buttons); then Play with friends
@@ -86,6 +86,8 @@ export default function Home() {
   const variant: Variant = isVariant(stored) ? stored : isVariant(last) ? last : 'holdem';
   const info = variantInfo(variant);
   const look = gameLook(variant);
+  // The swiper's position in games, so the page's colour blends between two games as the finger drags.
+  const progress = useSharedValue(Math.max(0, VARIANTS.findIndex((v) => v.id === variant)));
   // The parts arrive one after another, 30ms apart, when the app opens (phone only: the web build's layout animations misplace rows).
   const arrive = (i: number) => (Platform.OS === 'ios' ? detail(i, reduce) : undefined);
   // At 320pt wide (an SE with Display Zoom) there's no room for the hook line and a full-size card: the card shrinks
@@ -113,28 +115,19 @@ export default function Home() {
     haptic.tap();
     push(path);
   };
-  const named = profile.name.trim().length > 0;
   const pad = { paddingHorizontal: spacing.md };
   return (
     <ForceScheme scheme="dark">
-      {/* Always dark, so the clock and battery are white whatever the phone's own look. */}
-      <Stack.Screen options={{ title: 'Play', headerShown: false, statusBarStyle: 'light' }} />
-      <GameBackdrop variant={variant} style={{ flex: 1 }}>
+      {/* Always dark: the status bar is white here (`barStyleFor()`), whatever the phone's own look. */}
+      <Stack.Screen options={{ title: 'Play', headerShown: false }} />
+      <GameBackdrop variant={variant} progress={progress} style={{ flex: 1 }}>
         <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.sm }}>
-          {/* Top bar: the page's name on the left, you on the right. */}
+          {/* Top bar: the page's name on the left, Premium (a gold crown) on the right; you are the You tab. */}
           <Animated.View entering={arrive(0)} style={[pad, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
             <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '800', letterSpacing: -0.4, color: '#ffffff' }}>
               Play
             </Text>
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel={named ? `${profile.name}. Open your profile` : 'Set up your profile'}
-              onPress={go('/profile')}
-              haptics={false}
-              style={{ borderRadius: 999, boxShadow: '0 6px 16px -4px rgba(0, 0, 0, 0.5)' }}
-            >
-              <Avatar emoji={named ? profile.emoji : undefined} size={AVATAR} />
-            </PressableScale>
+            <RoundButton icon="crown.fill" tint={brand.gold} label={premium ? 'FlipUp Premium, unlocked' : 'FlipUp Premium'} onPress={go('/premium')} />
           </Animated.View>
 
           {/* Most of the spare height goes above the game, a little under the buttons. */}
@@ -142,7 +135,7 @@ export default function Home() {
 
           {/* The middle: the games in a line across the whole screen, the chosen one's name, hook and its Demo. */}
           <Animated.View entering={arrive(1)} style={{ alignItems: 'center', gap: spacing.xs }}>
-            <GameSwiper variant={variant} onChange={(v) => save(PICK, v)} size={card} width={Math.min(width, 560 + spacing.md * 2)} />
+            <GameSwiper variant={variant} onChange={(v) => save(PICK, v)} size={card} width={Math.min(width, 560 + spacing.md * 2)} progress={progress} />
             <View style={[pad, { alignItems: 'center', gap: 2 }]}>
               {/* The name and hook change with the game. Both boxes run the full width, so a longer old name isn't cut
                   to the new one's width as it leaves, and the name rolls by half its line so the two never print over
@@ -182,7 +175,7 @@ export default function Home() {
               <Shortcut icon="square.and.arrow.up" label="Share cards" onPress={go('/share')} />
             </View>
             {/* A Premium game without Premium: the game sheet's lock (blur, lock, its words) over Host <game>; a tap opens the offer for this game. */}
-            <View style={{ borderRadius: 26, borderCurve: 'continuous', overflow: 'hidden' }}>
+            <View style={{ borderRadius: BUTTON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
               <View accessibilityElementsHidden={locked} importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}>
                 <PlayButton label="Play with friends" line="Host a table · share the code" onPress={start(`/play-friends?variant=${variant}`)} />
               </View>

@@ -8915,7 +8915,7 @@ const HANDS: Hand[] = [
     clues: [
       { street: 'preflop', text: 'In a $2-$5 game with $1,000 stacks, two players limp; you raise K♦Q♠ two off the button and the big blind and one limper call.' },
       { street: 'flop', text: 'K♣8♦7♦: you bet top pair and only the big blind calls.' },
-      { street: 'turn', text: 'The 8♥ and they lead small, about a fifth of the pot. That could be an eight, or a weak hand like K-T or a draw trying to bet cheaply. You call.' },
+      { street: 'turn', text: 'The 8♥ and they lead small, under half the pot. That could be an eight, or a weak hand like K-T or a draw trying to bet cheaply. You call.' },
       {
         street: 'river',
         text: 'The 5♠ and they bet $250, more than two-thirds of the pot. A small bet followed by a large bet is a strong pattern: if they are betting big for value, they probably have you beat.',

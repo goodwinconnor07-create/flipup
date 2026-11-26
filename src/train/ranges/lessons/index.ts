@@ -15,5 +15,7 @@ import { L11 } from './11';
 import { L12 } from './12';
 import { L13 } from './13';
 import { L14 } from './14';
+import { L15 } from './15';
+import { L16 } from './16';
 
-export const LESSONS: Record<string, Lesson> = { ...L1, ...L2, ...L3, ...L4, ...L5, ...L6, ...L7, ...L8, ...L9, ...L10, ...L11, ...L12, ...L13, ...L14 };
+export const LESSONS: Record<string, Lesson> = { ...L1, ...L2, ...L3, ...L4, ...L5, ...L6, ...L7, ...L8, ...L9, ...L10, ...L11, ...L12, ...L13, ...L14, ...L15, ...L16 };

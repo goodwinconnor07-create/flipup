@@ -5,7 +5,7 @@ import { analyse, combosOf, comboKey, expandHand, expandRange, optionsFor, repla
 import { SCENARIOS } from './scenarios';
 
 /** Words that would name an author, a site or a source. */
-const NAMES_A_SOURCE = /\b(the article|the video|the expert|the author|Marc|Goone|Hungry Horse|LearnWPT|Upswing|PokerNews|CardPlayer|Card Player|Torelli|Jonathan Little|Finstein|Meulders|GTO Wizard|YouTube)\b/i;
+const NAMES_A_SOURCE = /\b(the article|the video|the expert|the author|Marc|Goone|Hungry Horse|LearnWPT|Upswing|PokerNews|CardPlayer|Card Player|Torelli|Jonathan Little|Charlie|Finstein|Meulders|GTO Wizard|YouTube)\b/i;
 
 describe('hands', () => {
   it('reads pairs, suited, offsuit, exact combos and one-suit hands', () => {

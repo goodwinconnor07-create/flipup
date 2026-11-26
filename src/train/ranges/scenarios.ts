@@ -6754,7 +6754,7 @@ const HANDS: Hand[] = [
     clues: [
       { street: 'preflop', text: 'In a $1-$3 game you limp K♠J♥ behind one limper; an unknown player raises the button to $15 and you both call.' },
       { street: 'flop', text: 'Q♣9♦2♣: the button bets $25 and you call; the limper folds.' },
-      { street: 'turn', text: 'The 3♣ puts three clubs out. You lead $40 and they call. With a flush possible and stacks deep, Little would rather check and fold.' },
+      { street: 'turn', text: 'The 3♣ puts three clubs out. You lead $40 and they call. With a flush possible and stacks deep, checking and folding to a big bet is the safer plan.' },
       {
         street: 'river',
         text: 'The T♥ gives you a straight. You bet $75 and they raise all in for $370. Very few players in a $1-$3 game shove a bluff here anywhere near 30% of the time.',

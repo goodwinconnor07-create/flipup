@@ -9241,7 +9241,7 @@ const HANDS: Hand[] = [
     clues: [
       { street: 'preflop', text: 'A live $5-$10 game with a $20 straddle. A strong, slightly aggressive pro opens from the hijack, you call J♥T♥ on the button and the straddle calls.' },
       { street: 'flop', text: 'T♣9♦4♥: they bet, you call with top pair and a straight draw, and the straddle folds.' },
-      { street: 'turn', text: 'The Q♦ gives you a straight. They check, and you check behind.' },
+      { street: 'turn', text: 'The Q♦ gives you an open-ended straight draw: a king or an eight makes it. They check, and you check behind.' },
       {
         street: 'river',
         text: 'The K♠ gives you a king-high straight; only A-J beats it. They check. Without a jack they won’t call a bet, and with A-J or a bare jack they can check-raise you.',

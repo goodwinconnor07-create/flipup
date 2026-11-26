@@ -8193,7 +8193,7 @@ const HANDS: Hand[] = [
     clues: [
       { street: 'preflop', text: 'In a $5-$10 game, the player one off the button opens and you defend T♠9♠, 100bb deep.' },
       { street: 'flop', text: '7♣5♣4♦: it checks through. When they check here, you can be fairly sure they don’t have two pair or better.' },
-      { street: 'turn', text: 'The A♠: they bet small and you check-raise with a gutshot and a flush draw; they call.' },
+      { street: 'turn', text: 'The A♠: they bet small and you check-raise as a bluff with a backdoor spade draw; they call.' },
       {
         street: 'river',
         text: 'The K♠ misses you; you have ten-high and act first. Their range will very rarely have anything stronger than one pair.',
@@ -8432,7 +8432,7 @@ const HANDS: Hand[] = [
     clues: [
       { street: 'preflop', text: 'In a $5-$10 game a splashy player limps, the best player at the table raises the hijack and you call K♠J♦ from the big blind; the limper calls.' },
       { street: 'flop', text: 'K♣7♠6♦: you check and call a small c-bet with top pair.' },
-      { street: 'turn', text: 'The 2♠ brings a flush draw: they bet a quarter of the pot and you call. A small turn bet limits their bluffs.' },
+      { street: 'turn', text: 'The 2♠ brings a flush draw: they bet half the pot and you call. A good player bets the turn with value and with draws.' },
       {
         street: 'river',
         text: 'The T♠ completes the flush and gives 9-8 a straight. They bet 80% of the pot. A large bet means they are weighted towards value, a common tendency even among good non-elite players.',

@@ -19,5 +19,6 @@ import { L15 } from './15';
 import { L16 } from './16';
 import { L17 } from './17';
 import { L18 } from './18';
+import { L19 } from './19';
 
-export const LESSONS: Record<string, Lesson> = { ...L1, ...L2, ...L3, ...L4, ...L5, ...L6, ...L7, ...L8, ...L9, ...L10, ...L11, ...L12, ...L13, ...L14, ...L15, ...L16, ...L17, ...L18 };
+export const LESSONS: Record<string, Lesson> = { ...L1, ...L2, ...L3, ...L4, ...L5, ...L6, ...L7, ...L8, ...L9, ...L10, ...L11, ...L12, ...L13, ...L14, ...L15, ...L16, ...L17, ...L18, ...L19 };

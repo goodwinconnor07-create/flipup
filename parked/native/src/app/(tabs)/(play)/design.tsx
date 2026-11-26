@@ -37,7 +37,7 @@ export default function DesignSystem() {
         <PlayTile title="Play with bots" subtitle="On this phone" emoji="🦊" tint="green" onPress={() => {}} style={{ flex: 1 }} />
       </View>
 
-      <InviteTicket code="TZZWJ" link="https://gtoduel.online/party/TZZWJ" kind="party" share="Join my FlipUp party." />
+      <InviteTicket code="TZZWJ" link="https://playflipup.com/party/TZZWJ" kind="party" share="Join my FlipUp party." />
       {/* The picture Your poker shares (1080 × 1350 when saved). */}
       <View style={{ width: 360, height: 450, alignSelf: 'center' }}>
         <StatsPicture />

@@ -7,13 +7,11 @@
   "main": "./worker/index.ts",
   "workers_dev": true,
   "preview_urls": false,
-  // The app's own domain (playflipup.com, the main one) and the old one, kept so links and builds that still use it
-  // keep working. Wrangler adds the DNS records and the certificate on deploy.
+  // The app's own domain, playflipup.com (the old gtoduel.online was dropped on 25 Nov 2026, the owner's call: the app
+  // is only FlipUp). Wrangler adds the DNS records and the certificate on deploy.
   "routes": [
     { "pattern": "playflipup.com", "custom_domain": true },
     { "pattern": "www.playflipup.com", "custom_domain": true },
-    { "pattern": "gtoduel.online", "custom_domain": true },
-    { "pattern": "www.gtoduel.online", "custom_domain": true },
   ],
   "compatibility_date": "2026-10-01",
   "assets": {

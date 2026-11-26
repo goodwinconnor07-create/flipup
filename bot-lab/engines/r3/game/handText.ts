@@ -9,7 +9,7 @@ export function plainCards(line: string): string {
 
 /** The hand's log as a message: a title, your cards if you were dealt in, then each move. */
 export function handLogText(number: number, lines: string[], mine?: string[]): string {
-  const out = [`GTODuel · Hand #${number}`];
+  const out = [`FlipUp · Hand #${number}`];
   if (mine && mine.length === 2) out.push(plainCards(`Your hand: ${mine.map((c) => `[${c}]`).join(' ')}`));
   // The first line is the hand's title ("Hand #7"); the rest is what happened.
   for (const line of lines.slice(1)) out.push(plainCards(line));

@@ -170,7 +170,7 @@ Built (all typechecked; unit tests for the Apple signature check and the gate):
 
 Left for the owner (nothing here can be done from the code):
 1. In App Store Connect, set the Server Notifications V2 URL (production and sandbox) to
-   `https://gtoduel.online/api/apple/notifications`.
+   `https://playflipup.com/api/apple/notifications`.
 2. Deploy, then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy again. Do this only when the iPhone app is
    live, because the web app has no payment and would lose Premium games and looks.
 3. Test on a real phone with a sandbox account: buy, cancel, Ask to Buy, restore on a second phone, refund, and

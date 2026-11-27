@@ -34,10 +34,10 @@ export const L9: Record<string, Lesson> = {
   'flush-river-all-in-vs-checked-turn': {
     why: 'Shove: after they checked the turn, a bluff from them is unlikely, so checking won’t win more. Their jacks and aces call even a shove, and you beat both. Full houses beat you, but most of them would have bet the turn. With so little behind, any big bet is all in anyway.',
     streets: [
-      { street: 'preflop', text: 'The chip leader opens early and you defend your big blind with K♣2♣ and 19 big blinds.', range: 'Pairs, broadways, suited aces and suited connectors.' },
+      { street: 'preflop', text: 'The chip leader opens to 2 under the gun +1, and you defend your big blind with K♣2♣ and 19 big blinds. A chip leader opens wide from early position, and suited king-deuce gets a good price to defend.', range: 'Pairs, broadways, suited aces and suited connectors.' },
       { street: 'flop', text: 'The flop is J♠J♣7♣, and you have a flush draw. You check-raise and they 3-bet; with a big stack they may be bullying you. You call.', range: 'Jacks, sevens, overpairs, club draws, and bullying bluffs.' },
       { street: 'turn', text: 'The A♣ gives you the nut flush. You check, wanting them to bet a worse hand or bluff, but they check back. Strong hands would bet the turn; a check says marginal.', range: 'A jack, an ace, an underpair, or junk; few full houses.' },
-      { street: 'river', text: 'The 6♠. Most of their range would check behind, but their jacks and aces will still call a bet.', range: 'A jack and an ace (call even a shove), A-J, 7-7 and 6-6 (full houses), underpairs and junk (fold).' },
+      { street: 'river', text: 'The 6♠ is a blank. You act first. Most of their range would check behind: underpairs and junk that gave up after the turn. But their jacks, aces and full houses will still call a bet, and with 19 big blinds a bet of most of your stack gets the most from them.', range: 'A jack and an ace (call even a shove), A-J, 7-7 and 6-6 (full houses), underpairs and junk (fold).' },
     ],
     takeaway: 'When their check means they won’t bluff, bet for value yourself: their trips and top pairs call even a shove.',
   },
@@ -47,7 +47,7 @@ export const L9: Record<string, Lesson> = {
       { street: 'preflop', text: 'Under the gun opens in a tournament, the hijack calls, and you call in the cutoff with A♠Q♣. The opener’s range is strong: big pairs, big aces and suited broadways.', range: 'Big pairs, big aces and suited broadways.' },
       { street: 'flop', text: 'You flop top pair on A♣6♦4♠. Both check to you; you bet and only under the gun calls: an ace, a six, a four or an underpair.', range: 'Aces, underpairs, and sets 6-6 and 4-4.' },
       { street: 'turn', text: 'The Q♠ gives you top two. You bet about ¾ pot: worse aces call that, and a bigger bet would fold them.', range: 'Worse aces like A-J, A-T and suited aces; A-Q; sets; and underpairs.' },
-      { street: 'river', text: 'The 9♣ and they check. Underpairs fold to any bet; the hands that pay you are worse aces.', range: 'Worse aces (call a normal bet, fold to a shove), A-Q (a split), sets 6-6, 4-4 and 9-9 (beat you), underpairs (fold).' },
+      { street: 'river', text: 'The 9♣ changes nothing, and they check. Their range is worse aces, A-Q, sets and underpairs. Underpairs fold to any bet; the worse aces are the hands that pay you, and they call a ¾-pot bet but fold to more.', range: 'Worse aces (call a normal bet, fold to a shove), A-Q (a split), sets 6-6, 4-4 and 9-9 (beat you), underpairs (fold).' },
     ],
     takeaway: 'Find the hands that will pay, here worse aces, and bet the most they’ll call.',
   },
@@ -56,7 +56,7 @@ export const L9: Record<string, Lesson> = {
     streets: [
       { street: 'preflop', text: 'Under the gun opens in a tournament and calls your button 3-bet with A♦A♥. Their range: pairs, big aces and suited broadways.', range: 'Pairs, big aces and suited broadways.' },
       { street: 'flop', text: 'The flop is Q♦9♦2♣. You bet and they call with queens, nines and draws; your A♦ blocks the best diamond draws.', range: 'Queens, nines, pairs, diamond draws, and straight draws.' },
-      { street: 'turn', text: 'The 4♣ adds a second flush draw. You bet a medium size that a queen or a nine can’t fold.', range: 'Queens, nines, K-K to T-T, sets, and club and diamond draws.' },
+      { street: 'turn', text: 'The 4♣ adds a second flush draw. You bet 22 into about 37.5, a medium size that a queen or a nine can’t fold. They call again, keeping queens, nines, pairs like K-K and J-J, sets and both flush draws.', range: 'Queens, nines, K-K to T-T, sets, and club and diamond draws.' },
       { street: 'river', text: 'The 5♥ misses both flush draws, and they check. Busted draws will fold to anything; one-pair hands like a queen or a nine will call, and you crush them.', range: 'A queen or a nine and K-K, J-J and T-T (call), sets (beat you), busted draws (fold).' },
     ],
     takeaway: 'With about a pot left, one-pair hands that call a big bet usually call a shove: go all in.',
@@ -74,8 +74,8 @@ export const L9: Record<string, Lesson> = {
   'nut-flush-river-big-bet-paired-board': {
     why: 'Overbet: you have the effective nuts. Their second-best hands, two pair, straights and smaller flushes, call whatever you bet, so make it big. Only the one-pair hands care about size, and you’re not betting for them. Full houses are possible, but that’s no reason to check.',
     streets: [
-      { street: 'preflop', text: 'You open A♥5♥ on the button in a tournament and the big blind defends.', range: 'Wide: suited hands, connectors, pairs and broadways.' },
-      { street: 'flop', text: 'The flop is J♥9♥2♦ and you have the nut flush draw. You bet small and they call.', range: 'Jacks, nines, two pairs, straight draws and heart draws.' },
+      { street: 'preflop', text: 'You open A♥5♥ on the button to 2.3 in a tournament, 50 big blinds deep, and the big blind defends. Against a button open the big blind defends wide: pairs, suited hands, broadways and connectors.', range: 'Wide: suited hands, connectors, pairs and broadways.' },
+      { street: 'flop', text: 'The flop is J♥9♥2♦, and you have the nut flush draw. You bet small, 1.5, and they call with jacks, nines, heart draws, straight draws like K-Q, Q-T and T-8, and pairs.', range: 'Jacks, nines, two pairs, straight draws and heart draws.' },
       { street: 'turn', text: 'The 2♥ gives you the nut flush and pairs the board. You bet nearly the pot: you’re thrilled to build it, but a huge bet would fold the nines and one-heart hands you want in.', range: 'Two pairs, straight draws, smaller hearts, trips, and jacks.' },
       { street: 'river', text: 'The T♦ makes straights for K-Q, Q-8 and 8-7, and they check. Two pair, straights and flushes call any bet you make.', range: 'Smaller flushes, K-Q, Q-8 and 8-7, two pairs J-9, J-T and T-9, trips and full houses (call), one pair (calls only small).' },
     ],
@@ -96,7 +96,7 @@ export const L9: Record<string, Lesson> = {
     streets: [
       { street: 'preflop', text: 'You open Q♦Q♣ from the lojack and a loose-aggressive player defends the big blind: suited hands and connectors, including many fives.', range: 'Wide: suited hands, connectors, pairs and broadways.' },
       { street: 'flop', text: 'The flop is 7♦6♦4♠, low and connected. You check back your overpair: it’s a board where you don’t want a big pot.', range: 'Pairs, straight and flush draws, two pairs and sets.' },
-      { street: 'turn', text: 'The Q♠ gives you top set. You bet and they call with pairs, draws and two pair.', range: 'Pairs, two pairs, sets, straight draws like 8-5 and 5-3, and flush draws.' },
+      { street: 'turn', text: 'The Q♠ gives you top set. They check, you bet 3.33, and they call. A loose player calls with pairs, two pair and sets, the 8-5 and 5-3 straights they already have, and draws like T-9, 9-8 and diamonds that want to see the river.', range: 'Pairs, two pairs, sets, straight draws like 8-5 and 5-3, and flush draws.' },
       { street: 'river', text: 'The 8♥ completes straights for any five and T-9. They lead more than half the pot. A loose player leads straights, but also sets and two pair for thin value.', range: 'Ahead of you: any five and T-9. Behind you: smaller sets and two pairs leading for value.' },
     ],
     takeaway: 'When a loose player leads a scary river, remember they lead thinner hands too: a set can call.',

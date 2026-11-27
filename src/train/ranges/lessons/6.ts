@@ -34,7 +34,7 @@ export const L6: Record<string, Lesson> = {
   'nines-full-small-river-bet': {
     why: 'Bet small: a big bet only gets called by kings, which beat you. The hands you beat are ace high, Q-J, Q-T and pairs above nine, and they only call something small. A bet of a quarter to a third of the pot gets value from them. Sevens full calls any size too, so you lose nothing there.',
     streets: [
-      { street: 'preflop', text: 'You open T♠9♠ from second position in a tournament, and the big blind defends with a wide range.', range: 'Wide: suited hands, broadways, pairs and connectors.' },
+      { street: 'preflop', text: 'You open T♠9♠ from second position in a tournament with about 30 big blinds, and the big blind defends. Getting a good price against a min-raise, the big blind defends wide: pairs, any ace, broadways, suited and connected hands.', range: 'Wide: suited hands, broadways, pairs and connectors.' },
       { street: 'flop', text: 'The flop is K♣K♠9♦. You have plenty of trips in your range, so you bet small with everything. They call.', range: 'Kings, nines, pocket pairs, ace high, and broadway draws like Q-J and Q-T.' },
       { street: 'turn', text: 'The 7♦ adds a diamond draw. You check behind: few worse hands call a second bet, and mostly better hands stick around.', range: 'Kings, nines, sevens, pairs, ace high and draws.' },
       { street: 'river', text: 'The 9♣ gives you nines full, and they check. A king never folds, and it beats you now. Underpairs always fold. What’s left to pay you is ace high, Q-J and Q-T, and pairs above nine.', range: 'Kings (call, beat you), nines (split), sevens full (calls, loses), ace high, Q-J, Q-T and pairs above nine (call only small), pairs below nine (fold).' },
@@ -44,8 +44,8 @@ export const L6: Record<string, Lesson> = {
   'aces-crying-call-vs-min-raise': {
     why: 'Call: the min-raise gives you a great price, so you need to be good only about one time in five. A loose-aggressive player bluffs more often than that, with paired tens and nines and pocket pairs that block your calls. Full houses and trips beat you, but you don’t need many bluffs at this price. Fold only if they see you as a player who never folds.',
     streets: [
-      { street: 'preflop', text: 'You open A♥A♦ under the gun in a tournament and a loose-aggressive big blind defends.', range: 'Wide: suited hands, pairs, connectors and broadways.' },
-      { street: 'flop', text: 'The flop is 9♣7♠3♦. You c-bet and they call with pairs, draws and some sevens.', range: 'Pairs, nines and sevens, straight draws like T-8 and 8-6, and sets.' },
+      { street: 'preflop', text: 'You open A♥A♦ under the gun to 2 in a tournament, and a loose-aggressive big blind defends. A loose player defends very wide against a min-raise: any pair, suited and connected hands, broadways and weak aces.', range: 'Wide: suited hands, pairs, connectors and broadways.' },
+      { street: 'flop', text: 'The flop is 9♣7♠3♦. You c-bet small, 2.67, and they call. A loose big blind calls a small bet here with pairs, straight draws like T-8, 8-6 and 6-5, some sevens and nines, and the odd set that wants to trap.', range: 'Pairs, nines and sevens, straight draws like T-8 and 8-6, and sets.' },
       { street: 'turn', text: 'The 7♦ pairs the board, and they lead small. That’s a premium hand like trips, or a draw taking a cheap shot. Aces are well ahead of draws, so you just call.', range: 'Trips with a seven, full houses, draws and pairs.' },
       { street: 'river', text: 'The T♥ arrives and they check. A ten or a nine would check here, so you bet big for value. They min-raise. That’s full houses and trips, or a bluff from paired tens and nines, which block the full houses.', range: 'Value: full houses and trips. Bluffs: paired tens and nines, and pocket pairs turned into bluffs.' },
     ],

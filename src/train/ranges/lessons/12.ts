@@ -25,8 +25,8 @@ export const L12: Record<string, Lesson> = {
     why: 'Call: even though the bet is small, their range is polarised. When a king lands after you 3-bet and checked the turn, they put you on A-K and won’t bet tens or jacks thinly. So they bet a king or better, or a Q-J, A-Q or A-J that floated the flop and missed. You beat all of those bluffs at a good price.',
     streets: [
       { street: 'preflop', text: 'You 3-bet 7♣7♠ on the button against a cutoff open, and they call. Their range: pairs, broadways and suited aces.', range: 'Pairs, broadways like K-Q, Q-J and K-J, A-Q, A-J, and suited aces.' },
-      { street: 'flop', text: 'The flop is T♣8♥8♦. You c-bet small and they call with tens, pairs, Q-J and ace-high floats.', range: 'Tens, pairs, Q-J and J-9 drawing, and ace-high floats like A-Q and A-J.' },
-      { street: 'turn', text: 'The 4♠. Your sevens beat their Q-J and ace highs, so you check back to get to a showdown.', range: 'Tens, pairs, Q-J and ace-high floats.' },
+      { street: 'flop', text: 'The flop is T♣8♥8♦. They check, you c-bet small, 12 into about 33.5, and they call with tens, pairs like 9-9 and J-J, Q-J and J-9 with straight draws, and ace-high floats like A-Q and A-J.', range: 'Tens, pairs, Q-J and J-9 drawing, and ace-high floats like A-Q and A-J.' },
+      { street: 'turn', text: 'The 4♠ is a blank. They check again, and you check back. Your sevens beat their Q-J and ace highs but not their tens, so you take the free card and aim for a showdown.', range: 'Tens, pairs, Q-J and ace-high floats.' },
       { street: 'river', text: 'The K♦. When a king lands after you 3-bet and checked the turn, they read you for A-K, so they won’t bet tens or jacks thinly. They bet a king or better, or nothing.', range: 'Value: A-K, K-Q, K-J and K-T, and T-T (full house). Bluffs: Q-J, A-Q and A-J that floated.' },
     ],
     takeaway: 'When their medium hands would check, even a small bet is polarised: call if you beat the bluffs.',
@@ -34,8 +34,8 @@ export const L12: Record<string, Lesson> = {
   'second-pair-check-river-out-of-position': {
     why: 'Check: your nines have real showdown value. Wide against wide, after a small c-bet and a checked turn, you beat lots of ace highs, smaller pairs and worse nines. A bet folds those and gets called by queens, kings, flushes and better nines. Take the showdown.',
     streets: [
-      { street: 'preflop', text: 'You defend J♦9♦ from the big blind against a button open. Both ranges are wide.', range: 'Wide: most suited hands, broadways, pairs and connectors.' },
-      { street: 'flop', text: 'You flop second pair on Q♣9♥4♠. They c-bet small and you call.', range: 'Their whole range: queens, nines, draws, pairs and air.' },
+      { street: 'preflop', text: 'A typical live player opens the button to 5, and you defend J♦9♦ from the big blind. Both ranges are wide: suited hands, broadways, pairs and connectors.', range: 'Wide: most suited hands, broadways, pairs and connectors.' },
+      { street: 'flop', text: 'You flop second pair on Q♣9♥4♠. They c-bet small, 5 into about 10.5, and you call. A button c-bets this board with almost everything, so their range stays wide: queens, kings and aces with draws, pairs and air.', range: 'Their whole range: queens, nines, draws, pairs and air.' },
       { street: 'turn', text: 'The K♣ adds a club draw and straight draws. It goes check, check, so they rarely have a strong hand they wanted to bet.', range: 'Weak queens, nines, pairs, ace high, and draws.' },
       { street: 'river', text: 'The 2♣ completes the clubs. You beat their ace highs, smaller pairs and worse nines; a bet only gets called by queens, kings, flushes and better nines.', range: 'Ahead of you: queens, kings, club flushes, A-9, K-9 and J-T. Behind you: worse nines, smaller pairs and ace high (fold to a bet).' },
     ],
@@ -63,9 +63,9 @@ export const L12: Record<string, Lesson> = {
   'top-two-fold-big-river-bet-after-check-raise': {
     why: 'Fold: the worst hand they bet this big is A-Q or 4-4, and both beat you. You check-raised and made the pot huge, so a live player rarely bluffs here, and they have hardly any missed hands left. You need 29%, and against an under-bluffed range even two pair is a fold.',
     streets: [
-      { street: 'preflop', text: 'You open K♦Q♦ and the button calls: pairs, suited aces, broadways and connectors.', range: 'Pairs, suited aces, broadways and suited connectors.' },
+      { street: 'preflop', text: 'You open K♦Q♦ from the hijack to 4, 300 big blinds deep, and the button calls. A button calls with pairs, suited aces, broadways and connectors.', range: 'Pairs, suited aces, broadways and suited connectors.' },
       { street: 'flop', text: 'You flop top pair on Q♠7♣4♦. They bet, you check-raise big, and they call. Weak queens and A-J fold here, so they continue with strong queens, sets and the odd draw.', range: 'Strong queens like A-Q, sets, and a few draws.' },
-      { street: 'turn', text: 'The A♦. They bet big and you call. Betting big into a player who check-raised is a strong hand.', range: 'A-Q, A-K, sets, two pairs, and J-T drawing to broadway.' },
+      { street: 'turn', text: 'The A♦ adds a diamond draw for you. You check, they bet 50 into about 81.5, and you call. Betting big into a player who check-raised the flop is a strong hand: aces up, sets, or the J-T straight.', range: 'A-Q, A-K, sets, two pairs, and J-T drawing to broadway.' },
       { street: 'river', text: 'The K♣ gives you two pair, and they bet over 100 big blinds. You’ve looked strong all hand, and they have almost no hands with nothing left.', range: 'Value: A-Q, A-K, A-7 and A-4, sets, J-T. K-Q splits. A rare bluff: 6-5 suited.' },
     ],
     takeaway: 'When you’ve looked strong all hand and they still bet huge, they rarely bluff: fold even two pair.',
@@ -73,7 +73,7 @@ export const L12: Record<string, Lesson> = {
   'queens-overbet-blank-turn-capped-range': {
     why: 'Overbet: they’re capped, because their sets and two pair would have raised the flop. Their best hands are jacks like A-J and K-J, and those won’t fold to any size, nor will their draws. So put the money in while you can and bet big.',
     streets: [
-      { street: 'preflop', text: 'You open Q♥Q♦ on the button and the big blind defends.', range: 'Wide: suited hands, connectors, pairs and broadways.' },
+      { street: 'preflop', text: 'You open Q♥Q♦ on the button to 4, and a typical live player defends the big blind. A big blind would 3-bet many of their best hands, like K-K, A-A and A-K, so their range is wide but capped.', range: 'Wide: suited hands, connectors, pairs and broadways.' },
       { street: 'flop', text: 'The flop is J♠9♠2♣. A half-pot c-bet gets their sets and two pair to raise, while weaker jacks, nines and draws just call.', range: 'Jacks, nines, straight draws like K-T, Q-T, T-8 and 8-7, and spade draws.' },
       { street: 'turn', text: 'The 3♦ changes nothing, and they check. Their best hand is usually A-J or K-J, and they won’t fold that, or their draws, to any size.', range: 'Jacks (call any size), straight and flush draws (call any size), nines (fold to an overbet), smaller pairs and ace high (call only small), and 3-3 (a set).' },
     ],
@@ -82,7 +82,7 @@ export const L12: Record<string, Lesson> = {
   'nut-flush-overbet-turn-vs-check-raiser': {
     why: 'Overbet: their sets and two pair can still make a full house, so they won’t fold to any size this turn. That means the bigger you bet, the more you win. A player who check-raises a flush draw would keep betting it, so they rarely have a flush themselves.',
     streets: [
-      { street: 'preflop', text: 'You open A♠7♠ on the button and the big blind defends.', range: 'Wide: suited hands, connectors, pairs and broadways.' },
+      { street: 'preflop', text: 'You open A♠7♠ on the button to 4, and a typical live player defends the big blind with a wide range of pairs, suited hands, broadways and connectors.', range: 'Wide: suited hands, connectors, pairs and broadways.' },
       { street: 'flop', text: 'The flop is J♠9♠2♣, and they check-raise your bet. Live players rarely check-raise flush draws here, so it’s mostly sets and J-9. You call with the nut flush draw.', range: 'Sets (J-J, 9-9, 2-2) and J-9.' },
       { street: 'turn', text: 'The 3♠ gives you the nut flush, and they check. A player who check-raised with a flush draw would keep betting, so they rarely have a flush. Their sets and J-9 have outs to a full house and won’t fold.', range: 'Sets and J-9, both drawing to a full house.' },
     ],
@@ -91,8 +91,8 @@ export const L12: Record<string, Lesson> = {
   'aces-fold-turn-check-raise': {
     why: 'Fold: you’ve done all the betting, and a typical live player answers with a turn check-raise. That isn’t a bluff; it’s K-J, two pair and sets. Your aces are almost drawing dead against that range. You need 25%, and you have far less.',
     streets: [
-      { street: 'preflop', text: 'You open A♠A♣ on the button and the big blind defends.', range: 'Wide: suited hands, connectors, pairs and broadways.' },
-      { street: 'flop', text: 'The flop is K♥7♣4♦. You c-bet small and they call with kings, pairs and draws.', range: 'Kings, sevens, fours, pairs, and straight draws.' },
+      { street: 'preflop', text: 'You open A♠A♣ on the button to 5, and a typical live player defends the big blind. They defend wide against a button open: pairs, suited and offsuit broadways, suited connectors and weak aces.', range: 'Wide: suited hands, connectors, pairs and broadways.' },
+      { street: 'flop', text: 'The flop is K♥7♣4♦. You c-bet small, 5 into about 10.5, and they call with kings, sevens, fours, pairs and gutshots. Two pair and sets would often check-raise, but some wait for the turn.', range: 'Kings, sevens, fours, pairs, and straight draws.' },
       { street: 'turn', text: 'The J♠. You bet big to get value from kings, and they check-raise. You’ve done nothing but bet, and live players almost never check-raise the turn as a bluff into that. It’s K-J, two pair and sets.', range: 'Two pairs (K-J, K-7, K-4, J-7, J-4, 7-4) and sets.' },
     ],
     takeaway: 'When you’ve done all the betting and a typical player check-raises the turn, fold even aces.',

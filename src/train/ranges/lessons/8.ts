@@ -15,7 +15,7 @@ export const L8: Record<string, Lesson> = {
     why: 'Call: you have the second nuts. Their kings full and sixes full both lose to aces full, and only the two hands holding the 6♥ make quads. You need about 30%, and you win nearly every time. This is the easiest call there is.',
     streets: [
       { street: 'preflop', text: 'You open A♠A♥ from the cutoff, the small blind 3-bets, you 4-bet and they call. Calling a 4-bet: pairs, A-K, A-Q and some suited hands.', range: 'Pairs, A-K, A-Q, K-Q and suited connectors.' },
-      { street: 'flop', text: 'You flop top set on A♣K♠6♦. You bet small and they call. A small bet keeps their kings and pairs in.', range: 'Kings like A-K and K-Q, pairs, and 6-x.' },
+      { street: 'flop', text: 'You flop top set on A♣K♠6♦. They check, you bet small, 4.9, and they call. A small bet keeps their kings and pairs in: in a 4-bet pot they rarely fold top pair, and A-K, A-Q and K-Q all call.', range: 'Kings like A-K and K-Q, pairs, and 6-x.' },
       { street: 'turn', text: 'The 6♣ gives you aces full. They lead small. Their range is close to drawing dead, so you just call to let them keep betting.', range: 'A-K, K-K, sixes and pairs.' },
       { street: 'river', text: 'The 6♠ puts trip sixes on the board, and they shove. Every hand they have is now a full house, and you beat them all; only the 6♥ makes quads.', range: 'Quads: 7-6 and 6-5 with the 6♥. Behind you: K-K (kings full) and A-K and A-Q (sixes full).' },
     ],
@@ -65,7 +65,7 @@ export const L8: Record<string, Lesson> = {
     why: 'Bet about ⅔ pot as a bluff: their checks say they have less than top pair. A-K, 8-8 and 7-7 beat your ace high at a showdown but fold to a real bet, and a small bet lets them call. Only tens and K-Q got there. Against a tight player, this bluff works most of the time.',
     streets: [
       { street: 'preflop', text: 'You open A♦Q♣ from the lojack in a tournament and a very tight player 3-bets from the cutoff; you call. Their range is big pairs and big aces.', range: 'Big pairs, A-K, A-Q, A-T and some suited broadways.' },
-      { street: 'flop', text: 'The flop is 9♥6♣6♦. They bet small and you call with two overcards.', range: 'Overpairs, A-K, A-Q, 8-8, 7-7, and big cards.' },
+      { street: 'flop', text: 'The flop is 9♥6♣6♦. You check, they bet small, 3.4, and you call with two overcards. A very tight 3-bettor c-bets this board with their whole range: overpairs, A-K, A-T and A-J, so the call keeps you in against many hands that also missed.', range: 'Overpairs, A-K, A-Q, 8-8, 7-7, and big cards.' },
       { street: 'turn', text: 'The J♥ and they check back. A very tight player bets top pair or better here, so a check says they don’t have it.', range: 'A-K, 8-8, 7-7, A-T and weaker aces; few overpairs.' },
       { street: 'river', text: 'The T♠ completes K-Q’s straight and gives T-T a full house. Their range is worse than top pair: A-K, 8-8 and 7-7 beat your ace high but can’t stand a real bet.', range: 'A-K, 8-8 and 7-7 (fold to ⅔ pot, call small), A-T (folds), A-Q (a split), weaker aces (fold), T-T and K-Q (call).' },
     ],
@@ -75,7 +75,7 @@ export const L8: Record<string, Lesson> = {
     why: 'Overbet: their marginal hands fold to any bet, so don’t size for them. The hands that call, flushes, full houses and aces with a spade, call a big bet as readily as a small one. You don’t hold a spade, so they can have every flush. Go for it all: bet as big as you can.',
     streets: [
       { street: 'preflop', text: 'You open A♥A♦ from the hijack, 200 big blinds deep, and a good, tight-aggressive player defends the big blind.', range: 'Wide: suited hands, pairs, broadways and connectors.' },
-      { street: 'flop', text: 'You flop top set on A♠Q♠8♣. You bet and they call with aces, queens and spade draws.', range: 'Aces, queens, spade draws, and some sets and two pairs.' },
+      { street: 'flop', text: 'You flop top set on A♠Q♠8♣. You bet small, 3.33, and they call. A good player defends the big blind wide and calls here with aces, queens, eights, and spade draws like K♠J♠ and J♠T♠.', range: 'Aces, queens, spade draws, and some sets and two pairs.' },
       { street: 'turn', text: 'The 2♠ puts three spades out. Don’t bet too big here: the aces and queens without a spade are drawing thin, and you want to keep them in. If they raise, call it off.', range: 'Flushes, aces and queens, sets, and spade draws.' },
       { street: 'river', text: 'The 2♣ gives you aces full. Their marginal hands fold to almost any bet. What calls is flushes, full houses, and the odd hero call with an ace and a spade.', range: 'Flushes and full houses (call any size), aces with a spade (a hero call), marginal hands (fold).' },
     ],
@@ -85,7 +85,7 @@ export const L8: Record<string, Lesson> = {
     why: 'Shove: you have less than the pot left, and with flushes, straights, sets and two pair around, someone will pay. Two loose players with wide ranges both called the turn. A small bet to keep them in rarely makes sense when a shove gets called this often.',
     streets: [
       { street: 'preflop', text: 'A splashy player limps, a loose, aggressive player raises, and you both call, you on the button with 9♥7♥. Wide ranges all round.', range: 'Both: very wide, lots of suited hands and connectors.' },
-      { street: 'flop', text: 'You flop top pair with a backdoor draw on 7♠6♥3♠. The raiser bets and both of you call.', range: 'Pairs, straight draws, spade draws, and the odd set.' },
+      { street: 'flop', text: 'You flop top pair with a backdoor flush draw on 7♠6♥3♠. The raiser bets 8, you call, and so does the splashy limper. Both ranges are wide: sevens, sixes, spade draws, straight draws like 8-5, 5-4 and 9-8, and pairs.', range: 'Pairs, straight draws, spade draws, and the odd set.' },
       { street: 'turn', text: 'The 8♥ gives you an open-ended straight draw and a flush draw. They check to you; you bet and both call. Calls here are made hands and draws.', range: 'Straights, sets, two pairs, pairs, and heart and straight draws.' },
       { street: 'river', text: 'The 5♥ gives you a straight flush, 5-6-7-8-9 of hearts. Both check to you. You have less than the pot behind, and both opponents call a shove with flushes, straights, sets and even two pair.', range: 'Both: heart flushes, straights, sets and two pair (call a shove); one pair (calls only small bets); missed hands (fold).' },
     ],

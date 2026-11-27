@@ -14,8 +14,8 @@ export const L7: Record<string, Lesson> = {
     why: 'Raise all in: they bet every ace here, and you beat nearly all of them. Only A-K, the last pair of aces, A-5 and A-3 have you. With under 5 big blinds left behind, any ace will call the rest. Just calling leaves chips they would have paid.',
     streets: [
       { street: 'preflop', text: 'A 17-big-blind stack opens under the gun in a tournament, and you call on the button with K♣K♦. A short stack opening first in is strong: big pairs, big aces and suited broadways.', range: 'Big pairs, A-K to A-T, and suited broadways.' },
-      { street: 'flop', text: 'You flop kings full on A♥A♠K♠. Both check: you let them catch up and keep their whole range in.', range: 'Every ace, big pairs, and broadways with nothing.' },
-      { street: 'turn', text: 'The 5♥ and they bet small. Trip aces, pairs and draws all bet here. You just call to keep them in.', range: 'Trip aces, pairs, 5-5, and spade draws.' },
+      { street: 'flop', text: 'You flop kings full on A♥A♠K♠. They check, and you check behind. With a hand this strong you let them catch up: a bet folds out everything but an ace, while a check keeps their whole range in and lets them bluff or bet a pair on the turn.', range: 'Every ace, big pairs, and broadways with nothing.' },
+      { street: 'turn', text: 'The 5♥ and they bet small, 2.94. A short stack bets here with trip aces, with pairs that think your check means weakness, and with draws. You just call: a raise would only get called by aces, and you want them to keep betting.', range: 'Trip aces, pairs, 5-5, and spade draws.' },
       { street: 'river', text: 'The 3♦ fills only A-3 and 3-3. They bet more than half the pot, leaving under 5 big blinds. A short stack betting this much is committed, and they do it with every ace.', range: 'Behind you: trip aces like A-Q and A-J, and 5-5 and 3-3. Ahead of you: A-K, A-A, A-5 and A-3.' },
     ],
     takeaway: 'When a short stack bets most of what’s left, raise all in with any hand that beats most of their bets.',
@@ -44,7 +44,7 @@ export const L7: Record<string, Lesson> = {
     streets: [
       { street: 'preflop', text: 'You open K♠9♥ from the cutoff; the button and the big blind call. The button’s range is wide: pairs, suited aces, broadways and connectors.', range: 'Wide: pairs, suited aces, broadways and connectors.' },
       { street: 'flop', text: 'You flop top pair on K♥J♣3♦ and check to the preflop caller. The button bets and you call; the big blind folds. Kings, jacks and straight draws all bet here.', range: 'Kings, jacks, straight draws like Q-T, and some floats.' },
-      { street: 'turn', text: 'The 2♠ is a blank. They bet again, and you call: their range is still kings, jacks and draws.', range: 'Kings, jacks, two pairs, sets, and straight draws.' },
+      { street: 'turn', text: 'The 2♠ is a blank. You check, they bet again, 12.67, and you call. A second bet keeps kings, jacks and straight draws like Q-T, A-Q and T-9. A live player bets a pair of jacks again here too, hoping you have a weaker pair.', range: 'Kings, jacks, two pairs, sets, and straight draws.' },
       { street: 'river', text: 'The K♣ gives you trips, and they bet two thirds of the pot. A better king or a full house beats you, but they bet a pair of jacks for value and keep firing missed straight draws. Your king makes their kings rarer.', range: 'Ahead of you: A-K, K-Q and K-T; K-J, J-J, 3-3 and 2-2 (full houses). K-9 splits. Behind you: a pair of jacks and missed straight draws.' },
     ],
     takeaway: 'Holding a card from their value hands makes a call better.',
@@ -54,7 +54,7 @@ export const L7: Record<string, Lesson> = {
     streets: [
       { street: 'preflop', text: 'At a final table you open A♠7♥ from the cutoff and a straightforward, tight-aggressive big stack calls from the small blind.', range: 'Pairs, broadways, suited aces and suited connectors.' },
       { street: 'flop', text: 'The flop is J♥J♠7♦ and it checks through; you check back your pair of sevens. A straightforward player checks most hands here, even some jacks.', range: 'Jacks slow-playing, sevens, pairs, broadways and draws.' },
-      { street: 'turn', text: 'The 4♥ adds a heart draw. They check again; you bet small and they call.', range: 'Jacks, sevens, pairs, straight draws like T-9 and 6-5, and heart draws.' },
+      { street: 'turn', text: 'The 4♥ adds a heart draw. They check again, you bet small, 2.19, and they call. A straightforward player calls a small bet with a jack that is slow-playing, a seven, an eight, a heart draw, or straight draws like T-9 and 6-5.', range: 'Jacks, sevens, pairs, straight draws like T-9 and 6-5, and heart draws.' },
       { street: 'river', text: 'The 8♣ completes T-9 and 6-5 straights and pairs every eight. They lead for more than half the pot. From a straightforward player, a change from checking to leading on the card that helps their draws is value.', range: 'Value: a jack, T-9 and 6-5, a paired eight, and full houses. Bluffs: rare.' },
     ],
     takeaway: 'When a straightforward player leads the river, believe them and fold a weak two pair.',
@@ -72,7 +72,7 @@ export const L7: Record<string, Lesson> = {
     why: 'Call: their bet is two pair or a missed seven about as often as it’s 8-7 or 7-3. You need about 28%, and you’re ahead well over half the time. Don’t raise: the hands that would call a raise are the ones that beat you.',
     streets: [
       { street: 'preflop', text: 'Five players limp in a tournament, you with 3♠3♦, and the big blind checks. With a free look, the big blind can have any two cards.', range: 'The big blind: any two cards.' },
-      { street: 'flop', text: 'The flop is 6♠4♦2♥ and everyone checks. Nobody had enough to bet into five players.', range: 'Anything without a strong hand: small pairs, draws and air.' },
+      { street: 'flop', text: 'The flop is 6♠4♦2♥, and it checks round five ways. Nobody had enough to bet into a big field. That keeps every range wide: sets and straights would often bet, so a five-way check takes some of the strongest hands out, but every draw is still there.', range: 'Anything without a strong hand: small pairs, draws and air.' },
       { street: 'turn', text: 'The 5♥ gives you a six-high straight, and also 7-3 a seven-high one and 8-7 an eight-high one. The big blind bets the pot into four players, and you call; the others fold. A pot-size bet into a big field is strong, but also comes from two pair and sevens drawing.', range: 'Value: 8-7, 7-3 and other threes. Two pair, and sevens drawing to a straight.' },
       { street: 'river', text: 'The 9♠ changes little. They bet about 60% of the pot. They bet 8-7 and 7-3, but also two pair for value and missed sevens as a bluff.', range: 'Ahead of you: 8-7 and some 7-3. Other threes split. Behind you: two pair and missed sevens.' },
     ],
@@ -92,7 +92,7 @@ export const L7: Record<string, Lesson> = {
     why: 'Call: they shove straights and full houses, but also some overpairs and plenty of missed spade and straight draws. You need about 29%, and you’re ahead about half the time. Online regulars give up on some missed draws, but they still shove enough of them to make this a call.',
     streets: [
       { street: 'preflop', text: 'You open Q♠J♠ on the button and the big blind 3-bets light; you call in position. Their range: pairs, suited aces and suited connectors.', range: 'Pairs, suited aces, suited broadways and suited connectors.' },
-      { street: 'flop', text: 'You flop top pair on J♥8♠2♣. They bet half the pot and you call.', range: 'Overpairs, jacks, straight draws like T-9 and Q-T, and air.' },
+      { street: 'flop', text: 'You flop top pair on J♥8♠2♣. They bet half the pot, 10.75, and you call. A light 3-bettor c-bets most of their range here: overpairs, jacks, straight draws like T-9 and Q-T, and air. Top pair with a queen kicker is well ahead of that.', range: 'Overpairs, jacks, straight draws like T-9 and Q-T, and air.' },
       { street: 'turn', text: 'The 7♠ gives T-9 a straight and adds a spade draw. They bet half the pot again, and you call: spade and straight draws keep firing.', range: 'T-9 (a straight), overpairs, jacks, sets, and spade and straight draws.' },
       { street: 'river', text: 'The J♦ gives you trips with a queen kicker. They shove for about ⅔ pot, which is polarised: strong hands and missed draws, with fewer of the medium hands.', range: 'Ahead of you: T-9, full houses, A-J and K-J. Behind you: J-T, some overpairs, and missed spade and straight draws.' },
     ],

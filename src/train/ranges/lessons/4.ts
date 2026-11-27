@@ -92,7 +92,7 @@ export const L4: Record<string, Lesson> = {
     streets: [
       { street: 'preflop', text: 'You open A♣7♣ from the hijack, a strong cutoff 3-bets, and you 4-bet; they call. Calling a 4-bet, they hold big pairs and big aces; A-A and K-K mostly 5-bet. Folding A-7 suited to the 3-bet was best; the 4-bet put you in a tough spot.', range: 'Pairs 9-9 to Q-Q, A-K, A-Q and A-J suited, and some A-A and K-K that just called.' },
       { street: 'flop', text: 'The flop is 5♦5♠3♦ and it checks through. Out of position with no real draw against a strong range, giving up is the plan.', range: 'Unchanged: big pairs and big aces.' },
-      { street: 'turn', text: 'The 5♣ puts trips on board, the worst card for you: it can’t represent anything. Both check.', range: 'Unchanged: 9-9 to Q-Q (now full houses), and big aces.' },
+      { street: 'turn', text: 'The 5♣ puts trips on the board, the worst card for you. You check, and they check behind. A third five can’t change who is ahead: they still have their pairs and big aces, and you still have ace high. It also gives you nothing to represent, since they know you rarely hold the last five.', range: 'Unchanged: 9-9 to Q-Q (now full houses), and big aces.' },
       { street: 'river', text: 'The 6♠ and you’re first to act. Every hand they hold beats ace-seven: pairs make full houses and big aces outkick you. And this player doesn’t fold good hands.', range: 'All better than you: 9-9 to Q-Q, some A-A and K-K, and A-K, A-Q and A-J.' },
     ],
     takeaway: 'Bluff only when better hands fold; against a range of overpairs that never folds, give up.',

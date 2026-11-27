@@ -148,15 +148,13 @@ export function Breakdown({ scenario, pick }: { scenario: Scenario; pick: Option
       </Animated.View>
 
       {/* How the hand played out: street by street, their range narrowing. */}
-      {scenario.streets.length > 0 && (
-        <Animated.View entering={step()}>
-          <Section title="How the hand played out">
-            <Panel>
-              <Story scenario={scenario} />
-            </Panel>
-          </Section>
-        </Animated.View>
-      )}
+      <Animated.View entering={step()}>
+        <Section title="How the hand played out">
+          <Panel>
+            <Story scenario={scenario} />
+          </Panel>
+        </Section>
+      </Animated.View>
 
       {/* What they could have: examples against your hand, then every kind of hand, sorted by what it means for you. */}
       {views.length > 0 && (

@@ -68,12 +68,12 @@ export interface StreetRead {
 export interface Lesson {
   /** Why the best play is best: the reasoning in full. Its first sentence is the result card's line. */
   why: string;
-  /** The hand street by street, from preflop to the decision, one entry a street. */
-  streets?: StreetRead[];
+  /** The hand street by street, from preflop to the decision, one entry a street: what happened, what it
+   *  tells you, and their range narrowed in words. Position, sizing, board and player type come in where they
+   *  matter for this hand, not as a list. */
+  streets: StreetRead[];
   /** The one thing to remember, as a rule you can use at the table. */
   takeaway: string;
-  /** The first version's factor-by-factor read, until every hand has its streets. */
-  read?: { about: string; text: string }[];
 }
 
 export type OptionId = 'fold' | 'call' | 'raise' | 'check' | 'bet33' | 'bet75' | 'bet125';

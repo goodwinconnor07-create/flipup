@@ -221,7 +221,7 @@ describe('facing an all-in', () => {
       best: 'call',
       clues: [],
       why: '',
-      read: [],
+      streets: [],
       takeaway: '',
     };
     const r = replay(s);

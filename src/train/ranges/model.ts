@@ -53,23 +53,27 @@ export interface Clue {
 }
 
 /**
- * One thing to read in a hand, shown with the answer: what the preflop action, the seats, the number of players, the
- * kind of player, the board, the bet sizes and their likely hands say. Hand types are named in words, never as a share of the range.
+ * One street of the hand told as it played out, after the answer: what happened, what it says about their hands, and
+ * the ideas that matter on that street (position, players, board texture, bet size, the player) only where they do.
+ * `range` is what's left of their range once the street is over, in words, so the streets read as a range narrowing
+ * down. Hand types are named in words, never as a share of the range.
  */
-export type ReadAbout = 'preflop' | 'position' | 'players' | 'opponent' | 'board' | 'sizing' | 'range';
-export interface Read {
-  about: ReadAbout;
+export interface StreetRead {
+  street: Street;
   text: string;
+  range: string;
 }
 
 /** The explanation shown with the answer (kept in lessons/, apart from the hand itself). */
 export interface Lesson {
-  /** Why the best play is best: the reasoning, in a short paragraph. Its first sentence is the result card's line. */
+  /** Why the best play is best: the reasoning in full. Its first sentence is the result card's line. */
   why: string;
-  /** How to read the hand, factor by factor. */
-  read: Read[];
+  /** The hand street by street, from preflop to the decision, one entry a street. */
+  streets?: StreetRead[];
   /** The one thing to remember, as a rule you can use at the table. */
   takeaway: string;
+  /** The first version's factor-by-factor read, until every hand has its streets. */
+  read?: { about: string; text: string }[];
 }
 
 export type OptionId = 'fold' | 'call' | 'raise' | 'check' | 'bet33' | 'bet75' | 'bet125';
@@ -115,8 +119,8 @@ export interface Scenario {
   clues: Clue[];
   /** Why the best play is best (from its lesson, `lessons/`). */
   why: string;
-  /** How to read the hand, factor by factor (from its lesson). */
-  read: Read[];
+  /** The hand street by street (from its lesson). */
+  streets: StreetRead[];
   /** The rule to remember (from its lesson). */
   takeaway: string;
 }

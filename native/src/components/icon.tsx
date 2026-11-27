@@ -11,7 +11,6 @@ const WEB = {
   'speaker.wave.2.fill': 'volume_up',
   'arrow.clockwise': 'refresh',
   'person.2.fill': 'group',
-  'location.fill': 'location_on',
   'suit.spade.fill': 'playing_cards',
   'suit.heart.fill': 'favorite',
   'suit.diamond.fill': 'diamond',

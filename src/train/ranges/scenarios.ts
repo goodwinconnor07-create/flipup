@@ -17,7 +17,7 @@ import { LESSONS } from './lessons';
 import type { Scenario } from './model';
 
 /** A hand without its explanation, which lives in lessons/ (keyed by the hand's id). */
-type Hand = Omit<Scenario, 'why' | 'read' | 'takeaway'>;
+type Hand = Omit<Scenario, 'why' | 'streets' | 'takeaway'>;
 
 const HANDS: Hand[] = [
   {
@@ -10041,5 +10041,5 @@ const HANDS: Hand[] = [
 export const SCENARIOS: Scenario[] = HANDS.map((h) => {
   const lesson = LESSONS[h.id];
   if (!lesson) throw new Error(`Range training: ${h.id} has no lesson (add it in lessons/)`);
-  return { ...h, ...lesson };
+  return { ...h, why: lesson.why, streets: lesson.streets ?? [], takeaway: lesson.takeaway };
 });

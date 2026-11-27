@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { isCard } from '../../game/cards';
 import { CHARTS, inChart } from './charts';
 import { analyse, combosOf, comboKey, expandHand, expandRange, optionsFor, replay, spotOf, streetOfBoard, type OptionId, type Scenario } from './model';
-import { CONCEPTS } from './concepts';
 import { SCENARIOS } from './scenarios';
 
 /** Words that would name an author, a site or a source. */
@@ -51,6 +50,8 @@ const RANGE_SHARE = /\d+\s*%\s+of\s+(their|his|her|the)\s+(hands|range|combos)|(
 const MARGIN = 0.03;
 
 /** The numbers each answer has to agree with. */
+const lessonText = (s: Scenario) => [s.why, s.takeaway, ...s.streets.flatMap((r) => [r.text, r.range])].join(' | ');
+
 function check(s: Scenario) {
   const r = replay(s);
   const spot = spotOf(s, r);
@@ -135,31 +136,32 @@ describe('every scenario', () => {
         expect(streetOfBoard(s.board)).not.toBe('flop');
       });
 
-      it('has a lesson that reads the hand factor by factor', () => {
-        expect(s.why.length, s.id).toBeGreaterThan(120);
+      it('tells the hand street by street, narrowing their range', () => {
+        // The owner (27 Nov 2026): the lesson goes street by street, tightening their range as the hand plays out.
+        expect(s.why.length, s.id).toBeGreaterThan(150);
         expect(s.takeaway.length, s.id).toBeGreaterThan(30);
-        const about = s.read.map((r) => r.about);
-        for (const need of ['preflop', 'board', 'sizing', 'range'] as const) expect(about, `${s.id}: no ${need} read`).toContain(need);
-        expect(new Set(about).size, `${s.id}: a factor read twice`).toBe(about.length);
-        for (const r of s.read) expect(r.text.length, `${s.id} ${r.about}`).toBeGreaterThan(40);
-        expect(CONCEPTS[s.concept], `${s.id}: no theory for "${s.concept}" in concepts.ts`).toBeTruthy();
+        const want = ['preflop', 'flop', 'turn', 'river'].slice(0, s.board.length - 1);
+        expect(s.streets.map((r) => r.street), `${s.id}: one story line a street, in order`).toEqual(want);
+        for (const r of s.streets) {
+          expect(r.text.length, `${s.id} ${r.street}`).toBeGreaterThan(100);
+          expect(r.range.length, `${s.id} ${r.street} range`).toBeGreaterThan(20);
+        }
       });
 
       it('names their hands in words, never as a share of their range', () => {
         // The owner (26 Nov 2026): "get rid of the percentages in which they have a certain type of hand".
-        const lesson = [s.why, s.takeaway, ...s.read.map((r) => r.text)].join(' | ');
-        expect(lesson, s.id).not.toMatch(RANGE_SHARE);
+        expect(lessonText(s), s.id).not.toMatch(RANGE_SHARE);
       });
 
       it('never says where the hand came from', () => {
         // The owner's call (17 Nov 2026): no author, site or "the article" in anything a player reads.
-        const shown = [s.title, s.concept, s.why, s.takeaway, ...s.read.map((r) => r.text), ...s.clues.map((c) => c.text)].join(' | ');
+        const shown = [s.title, s.concept, lessonText(s), ...s.clues.map((c) => c.text)].join(' | ');
         expect(shown, s.id).not.toMatch(NAMES_A_SOURCE);
       });
 
       it('never talks about cards to come once the river is out', () => {
         if (s.board.length !== 5) return;
-        const river = [s.why, s.takeaway, ...s.read.map((r) => r.text), ...s.clues.filter((c) => c.street === 'river').map((c) => c.text)].join(' ');
+        const river = [s.why, s.takeaway, ...s.streets.filter((r) => r.street === 'river').flatMap((r) => [r.text, r.range]), ...s.clues.filter((c) => c.street === 'river').map((c) => c.text)].join(' ');
         expect(river, s.id).not.toMatch(RIVER_WORDS);
       });
 

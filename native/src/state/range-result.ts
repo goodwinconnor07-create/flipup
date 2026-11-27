@@ -1,6 +1,6 @@
 // What the result card under a Range training answer shows, worked out without drawing anything: the verdict's
-// words, and every opponent's range folded into three piles you can take in at a glance. The full breakdown (every
-// group, every number) is the `range-breakdown` sheet; this is the short version.
+// words, and every opponent's range folded into three piles you can take in at a glance, each named by the kinds of
+// hand in it. The full breakdown is the `range-breakdown` sheet; this is the short version.
 import { callShare, type Grade, type OptionId, type RangeGroup, type Scenario } from '@train/ranges/model';
 
 export const VERDICT: Record<Grade, string> = { best: 'Best play', ok: 'Also good', mistake: 'Missed it' };
@@ -17,8 +17,13 @@ export type PileKey = 'beats' | 'beaten' | 'bluffs' | 'folds' | 'ahead' | 'behin
 export interface Pile {
   key: PileKey;
   label: string;
-  /** Share of their range, 0 to 1 (the piles add up to 1). */
+  /**
+   * Share of their range, 0 to 1 (the piles add up to 1). Only for ordering and tests: the trainer never shows how
+   * much of a range is one kind of hand (the owner, 26 Nov 2026: those numbers read as more exact than they are).
+   */
   share: number;
+  /** The kinds of hand in this pile, in words, the most common first. */
+  hands: string[];
   /** Whether this pile is good news for you (drawn in the brand colour, the rest grey). */
   good: boolean;
 }
@@ -47,24 +52,34 @@ export const BET_WORDS: Partial<Record<OptionId, string>> = { bet33: 'a ⅓-pot 
  */
 export function pilesOf(opponents: PileGroup[][], facing: boolean, dead: string[], bet: OptionId): Pile[] {
   const sum: Partial<Record<PileKey, number>> = {};
-  const add = (k: PileKey, n: number) => (sum[k] = (sum[k] ?? 0) + n);
+  const kinds: Partial<Record<PileKey, Map<string, number>>> = {};
+  const add = (k: PileKey, n: number, label: string) => {
+    sum[k] = (sum[k] ?? 0) + n;
+    const m = (kinds[k] ??= new Map());
+    m.set(label, (m.get(label) ?? 0) + n);
+  };
   const live = opponents.filter((gs) => gs.some((g) => g.weight > 0));
   for (const groups of live) {
     const total = groups.reduce((n, g) => n + g.weight, 0);
     for (const g of groups) {
       const w = g.weight / total / live.length;
       if (!w) continue;
-      if (facing) add(g.group.role === 'bluff' ? 'bluffs' : g.equity < 0.5 ? 'beats' : 'beaten', w);
+      const label = g.group.label;
+      if (facing) add(g.group.role === 'bluff' ? 'bluffs' : g.equity < 0.5 ? 'beats' : 'beaten', w, label);
       else {
         const calls = callShare(g.group, dead, bet);
-        add('folds', w * (1 - calls));
-        add(g.equity < 0.5 ? 'behind' : 'ahead', w * calls);
+        if (calls < 0.9995) add('folds', w * (1 - calls), label);
+        if (calls > 0.0005) add(g.equity < 0.5 ? 'behind' : 'ahead', w * calls, label);
       }
     }
   }
   const order: PileKey[] = facing ? ['beats', 'beaten', 'bluffs'] : ['folds', 'ahead', 'behind'];
   const good = new Set<PileKey>(['beaten', 'bluffs', 'folds', 'ahead']);
-  return order.filter((k) => (sum[k] ?? 0) > 0.0005).map((k) => ({ key: k, label: LABEL[k], share: sum[k]!, good: good.has(k) }));
+  const hands = (k: PileKey) =>
+    [...(kinds[k] ?? new Map<string, number>())].filter(([, n]) => n > 0.0005).sort((a, b) => b[1] - a[1]).map(([label]) => label);
+  return order
+    .filter((k) => (sum[k] ?? 0) > 0.0005)
+    .map((k) => ({ key: k, label: LABEL[k], share: sum[k]!, hands: hands(k), good: good.has(k) }));
 }
 
 /** Confetti only for runs worth marking: 3, 5, 10, then every 10. A single best play just pops its verdict. */

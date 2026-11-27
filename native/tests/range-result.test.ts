@@ -20,6 +20,10 @@ describe('Range training result', () => {
       const piles = pilesOf(views, facing, [...s.hero.cards, ...s.board], pileBet(s));
       expect(piles.length, s.id).toBeGreaterThan(0);
       expect(piles.reduce((n, p) => n + p.share, 0), s.id).toBeCloseTo(1, 3);
+      // Each pile names its kinds of hand in words (no shares are shown), and every kind of hand is in some pile.
+      for (const p of piles) expect(p.hands.length, `${s.id} ${p.key}`).toBeGreaterThan(0);
+      const named = new Set(piles.flatMap((p) => p.hands));
+      for (const g of views.flat()) if (g.weight > 0) expect(named.has(g.group.label), `${s.id}: ${g.group.label}`).toBe(true);
       const keys = piles.map((p) => p.key);
       if (facing) expect(keys.every((k) => ['beats', 'beaten', 'bluffs'].includes(k)), s.id).toBe(true);
       else expect(keys.every((k) => ['folds', 'ahead', 'behind'].includes(k)), s.id).toBe(true);

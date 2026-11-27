@@ -29,7 +29,7 @@ export const RELEASES: Release[] = [
       { icon: 'play.fill', title: 'Demos', text: 'Tap Demo on any game for a quick hand against two bots, with a guide that lights up what to look at and what to tap. Free for every game, Premium ones too.' },
       { icon: 'flask.fill', title: 'Bot Lab', text: 'Make up to 25 bots of your own in Settings: a name, a face and dials for how they play and talk. Seat them from + Add Bot in any lobby you host. Part of Premium.' },
       { icon: 'party.popper.fill', title: 'Party nights', text: 'Line up 4 to 12 games, play a short table of each, and see who tops the board at the end.' },
-      { icon: 'graduationcap.fill', title: 'Range training', text: 'A free hand every day. Pick your play, then see the full breakdown: what the preflop action, position, board and bet sizes say, the hands they could have, and the theory behind it.' },
+      { icon: 'graduationcap.fill', title: 'Range training', text: 'A free hand every day. Pick your play, then see the hand told street by street, their range narrowing with each move, and the hands they could have.' },
       { icon: 'person.fill', title: 'The You tab', text: 'Your name and face, your stats, Saved hands, Share cards and Settings, all in one tab.' },
       { icon: 'film.stack.fill', title: 'Saved hands', text: 'Save any hand from the table (up to 50) and watch it back move by move. Tap the bookmark again to un-save it, or delete hands from the list. Once it’s over, you see what every bot had.' },
       { icon: 'house.fill', title: 'Home game rules', text: 'Antes, a straddle and a bomb pot every few hands, in the house rules of any table you host.' },

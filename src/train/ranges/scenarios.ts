@@ -9,15 +9,15 @@
 // They're the hints before you answer, so they never give the answer away. On the river nothing is left to come:
 // never talk about protection, charging draws or outs there.
 //
-// The explanation shown with the answer (why, the factor-by-factor read, the rule to remember) is the hand's lesson
-// in lessons/, keyed by its id: a new hand needs one. Hand types are named in words there, never as a share of
-// anyone's range (the owner, 26 Nov 2026).
+// The explanation shown with the answer (why, the hand street by street as their range narrows, the rule to remember)
+// is the hand's lesson in lessons/, keyed by its id: a new hand needs one. Hand types are named in words there,
+// never as a share of anyone's range (the owner, 26 Nov 2026).
 
 import { LESSONS } from './lessons';
 import type { Scenario } from './model';
 
 /** A hand without its explanation, which lives in lessons/ (keyed by the hand's id). */
-type Hand = Omit<Scenario, 'why' | 'read' | 'takeaway'>;
+type Hand = Omit<Scenario, 'why' | 'streets' | 'takeaway'>;
 
 const HANDS: Hand[] = [
   {
@@ -10041,5 +10041,5 @@ const HANDS: Hand[] = [
 export const SCENARIOS: Scenario[] = HANDS.map((h) => {
   const lesson = LESSONS[h.id];
   if (!lesson) throw new Error(`Range training: ${h.id} has no lesson (add it in lessons/)`);
-  return { ...h, ...lesson };
+  return { ...h, why: lesson.why, streets: lesson.streets, takeaway: lesson.takeaway };
 });

@@ -55,7 +55,7 @@ export const L10: Record<string, Lesson> = {
     why: 'Call: most of what you beat is missed heart draws, and there are a lot of them. You need about a third, and you’re ahead more often. Don’t raise: the missed draws fold to a raise, and the hands that call it mostly beat you.',
     streets: [
       { street: 'preflop', text: 'You open 8♦7♦ from the hijack with 50 big blinds; the button and the big blind call.', range: 'Pairs, suited hands, broadways and connectors.' },
-      { street: 'flop', text: 'You flop trips on 8♥8♣5♥ and the button calls your c-bet.', range: 'Heart draws, straight draws, pairs, eights like A-8, T-8 and 9-8.' },
+      { street: 'flop', text: 'You flop trips on 8♥8♣5♥ and the button calls your c-bet. With a heart draw out, plenty of their calls are draws.', range: 'Heart draws, straight draws, pairs, eights like A-8, T-8 and 9-8.' },
       { street: 'turn', text: 'The 2♠ changes nothing. You bet 9 into 14 and they call again; heart draws are still a big part of their range.', range: 'Heart draws, eights, pairs, 5-5, straight draws like 7-6 and A-3.' },
       { street: 'river', text: 'The 4♣ misses the hearts but makes 7-6 and A-3 straights. You check and they bet the pot: a strong hand, or a missed draw that can only win by betting.', range: 'Ahead: A-8, T-8, 9-8, 5-5, 4-4, 2-2, 7-6, A-3. Behind or split: 8-6, 8-7, rare overpairs, missed heart draws.' },
     ],

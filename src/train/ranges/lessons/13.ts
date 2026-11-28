@@ -45,7 +45,7 @@ export const L13: Record<string, Lesson> = {
     why: 'Shove: only a handful of ace-high flushes beat you. Lower flushes, straights and sets all lose to you, they’re already half in, and some of their raises are bluffs aimed at your small bet. You’re far ahead of what they raise with, so put the rest in.',
     streets: [
       { street: 'preflop', text: 'The cutoff opens and you defend K♠2♠ from the big blind, about 66 big blinds deep. A late opener has plenty of small suited hands.', range: 'Suited hands, broadways, pairs and connectors.' },
-      { street: 'flop', text: 'You flop top pair on K♥Q♥J♠ and check-call a c-bet.', range: 'Straights like A-T and T-9, big pairs, kings, queens, heart draws.' },
+      { street: 'flop', text: 'You flop top pair on K♥Q♥J♠ and check-call a c-bet. This board hits a late opener’s broadways hard.', range: 'Straights like A-T and T-9, big pairs, kings, queens, heart draws.' },
       { street: 'turn', text: 'The 9♠ gives you a flush draw, and it checks through. A straight or a set would often bet here to charge the draws, so the check is medium hands and draws.', range: 'Straights, sets, pairs that slowed down, heart and spade draws.' },
       { street: 'river', text: 'The 4♠ gives you a king-high flush. You bet small and they raise to half their stack. Lower flushes and straights raise here, and only a few A♠x flushes beat you.', range: 'Ahead: a few ace-high flushes. Behind: lower flushes, A-T and T-8, sets, missed heart draws raising.' },
     ],

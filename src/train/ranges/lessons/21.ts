@@ -16,7 +16,7 @@ export const L21: Record<string, Lesson> = {
     streets: [
       { street: 'preflop', text: 'A tight-aggressive regular opens middle position and you call A♣J♣ in the cutoff.', range: 'Pairs, A-K to A-T, K-Q, K-J, suited broadways.' },
       { street: 'flop', text: 'On K♦T♣3♥ you have a gutshot to the nuts. They bet 4 into 7.5 and you raise to 12 as a semi-bluff; they call with a king or Q-J’s open-ender.', range: 'Kings (A-K, K-Q, K-J, K-T), Q-J, the odd slow set.' },
-      { street: 'turn', text: 'The 5♣ adds a club draw for you. They check, you bet 21 into 31.5, and they call: a king almost every time, plus Q-J.', range: 'Kings and Q-J.' },
+      { street: 'turn', text: 'The 5♣ adds a club draw for you. They check, you bet 21 into 31.5, and they call: a king almost every time, plus Q-J.', range: 'Kings (A-K, K-Q, K-J, K-T) and Q-J drawing.' },
       { street: 'river', text: 'The 8♦ misses everything and they check. Their kings call any bet; Q-J folds, but your ace high beats it anyway.', range: 'Call any bet: A-K, K-Q, K-J, K-T. Fold: missed Q-J, which you beat.' },
     ],
     takeaway: 'Bluff only when better hands can fold: if only worse hands fold, check and take the showdown.',

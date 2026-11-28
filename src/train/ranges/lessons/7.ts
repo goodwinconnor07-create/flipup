@@ -33,7 +33,7 @@ export const L7: Record<string, Lesson> = {
     why: 'Raise: you beat almost everything that bets this small. Every weaker ace, pocket pair and bluff loses to aces up; only a full house beats you. Their aces find it hard to fold even to a big raise, so calling leaves chips behind.',
     streets: [
       { street: 'preflop', text: 'Under the gun limps, the next player raises, and you call on the button with A♦T♦, 200 big blinds deep. Raising over a limper takes a strong range.', range: 'Big pairs, A-K to A-J, suited aces and suited broadways.' },
-      { street: 'flop', text: 'On a dry 5♦2♥2♠ they bet and you call.', range: 'Overpairs, big cards that missed, fives, a deuce now and then.' },
+      { street: 'flop', text: 'On a dry 5♦2♥2♠ they c-bet and you call with two overcards. A raiser bets this board with almost everything.', range: 'Overpairs, big cards that missed, fives, a deuce now and then.' },
       { street: 'turn', text: 'The T♠ gives you a pair, and it checks through. Big hands usually keep betting a dry board, so their check looks weak.', range: 'Big cards, medium pairs, some slow overpairs.' },
       { street: 'river', text: 'The A♣ gives you aces up, and they bet a third of the pot. A small bet after a turn check is thin value or a cheap bluff.', range: 'Behind: A-K, A-Q, A-J, suited aces, A-5, pocket pairs, bluffs. Split: A-T. Ahead: full houses.' },
     ],

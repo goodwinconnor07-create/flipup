@@ -1,7 +1,8 @@
 // The full breakdown of a Range training hand, for the `range-breakdown` sheet (the result card has the short
-// version). In reading order: the decision and why; how the hand played out, street by street, with the cards each
-// street brought and what was left of their range after it (so the range visibly narrows down); what they could have
-// against what you held; the rule to remember; and the numbers (pot odds and what each play wins). Their range is said
+// version). In reading order: the verdict in one line; then one explanation in the order the hand was played, street
+// by street with the cards each street brought and what was left of their range after it (so the range visibly
+// narrows down), ending on your decision, its reasoning and the rule to remember; what they could have against what
+// you held; and the numbers (pot odds and what each play wins). Their range is said
 // in words, never as shares of it (the owner, 26 Nov 2026). The numbers come from range-numbers.json (worked out
 // ahead, see state/ranges.ts).
 import type { ReactNode } from 'react';
@@ -16,6 +17,7 @@ import { ThemedText } from '@/components/themed-text';
 import { detail } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { pileBet, pilesOf } from '@/state/range-result';
+import { firstSentence } from '@/state/range-view';
 import { numbersFor } from '@/state/ranges';
 import { brand, radius, spacing, useColors } from '@/theme';
 import { bb, optionsFor, replay, type OptionId, type Scenario, type Street } from '@train/ranges/model';
@@ -33,50 +35,77 @@ function cardsOf(s: Scenario, street: Street): string[] {
   return [];
 }
 
-/**
- * The hand as it played out: one step a street down a thin line, the street's name and the cards it brought, what
- * happened and what it meant, then what's left of their range in a tinted box, so the range narrows step by step.
- */
-function Story({ scenario }: { scenario: Scenario }) {
+/** One step down the story's line: a dot (gold for your decision), then the step's heading and its body. */
+function Step({ gold, last, children }: { gold?: boolean; last?: boolean; children: ReactNode }) {
   const colors = useColors();
-  const last = scenario.streets.length - 1;
+  return (
+    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+      <View style={{ width: 14, alignItems: 'center' }}>
+        <View style={{ width: 12, height: 12, borderRadius: 6, marginTop: 4, backgroundColor: gold ? brand.gold : (colors.blueInk as string) }} />
+        {last ? null : <View style={{ flex: 1, width: 2, marginVertical: 4, borderRadius: 1, backgroundColor: colors.separator as string }} />}
+      </View>
+      <View style={{ flex: 1, gap: spacing.xs, paddingBottom: last ? 0 : spacing.lg }}>{children}</View>
+    </View>
+  );
+}
+
+/**
+ * The whole explanation, in the order the hand was played: one step a street down a thin line (the street's name and
+ * the cards it brought, what happened and what it tells you, then what's left of their range in a tinted box, so the
+ * range narrows step by step), and last your decision: the best play, the reasoning, and the rule to remember.
+ */
+function Story({ scenario, best }: { scenario: Scenario; best: string }) {
+  const colors = useColors();
+  const several = scenario.opponents.filter((o) => o.range.length).length > 1;
+  const reasoning = scenario.why.slice(firstSentence(scenario.why).length).trim();
   return (
     <View>
-      {scenario.streets.map((st, i) => {
+      {scenario.streets.map((st) => {
         const cards = st.street === 'preflop' ? scenario.hero.cards : cardsOf(scenario, st.street);
         return (
-          <View key={st.street} style={{ flexDirection: 'row', gap: spacing.sm }}>
-            {/* The line and its dot; the dot is gold on the street you decide on. */}
-            <View style={{ width: 14, alignItems: 'center' }}>
-              <View style={{ width: 12, height: 12, borderRadius: 6, marginTop: 4, backgroundColor: i === last ? brand.gold : (colors.blueInk as string) }} />
-              {i < last ? <View style={{ flex: 1, width: 2, marginVertical: 4, borderRadius: 1, backgroundColor: colors.separator as string }} /> : null}
-            </View>
-            <View style={{ flex: 1, gap: spacing.xs, paddingBottom: i < last ? spacing.lg : 0 }}>
-              <View accessible accessibilityLabel={`${STREET_NAME[st.street]}${st.street === 'preflop' ? ', you held' : ''} ${cards.join(' ')}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                <ThemedText variant="caption1" style={{ fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', color: i === last ? (colors.goldInk as string) : (colors.secondaryLabel as string) }}>
-                  {STREET_NAME[st.street]}
-                  {i === last ? ' · your decision' : ''}
-                </ThemedText>
-                <View style={{ flexDirection: 'row', gap: 3 }}>
-                  {cards.map((c) => (
-                    <MiniCard key={c} card={c} w={20} />
-                  ))}
-                </View>
-              </View>
-              <ThemedText variant="subhead">{st.text}</ThemedText>
-              <View style={{ flexDirection: 'row', gap: spacing.xs, padding: spacing.sm, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.blueBg as string }}>
-                <View style={{ marginTop: 2 }}><Icon name="eye.fill" size={14} color={colors.blueInk as string} /></View>
-                <ThemedText variant="footnote" style={{ flex: 1, color: colors.blueInk as string }}>
-                  <ThemedText variant="footnote" style={{ fontWeight: '800', color: colors.blueInk as string }}>
-                    {scenario.opponents.filter((o) => o.range.length).length > 1 ? 'Their ranges: ' : 'Their range: '}
-                  </ThemedText>
-                  {st.range}
-                </ThemedText>
+          <Step key={st.street}>
+            <View accessible accessibilityLabel={`${STREET_NAME[st.street]}${st.street === 'preflop' ? ', you held' : ''} ${cards.join(' ')}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <ThemedText variant="caption1" style={{ fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.secondaryLabel as string }}>
+                {STREET_NAME[st.street]}
+              </ThemedText>
+              <View style={{ flexDirection: 'row', gap: 3 }}>
+                {cards.map((c) => (
+                  <MiniCard key={c} card={c} w={20} />
+                ))}
               </View>
             </View>
-          </View>
+            <ThemedText variant="subhead">{st.text}</ThemedText>
+            <View style={{ flexDirection: 'row', gap: spacing.xs, padding: spacing.sm, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.blueBg as string }}>
+              <View style={{ marginTop: 2 }}>
+                <Icon name="eye.fill" size={14} color={colors.blueInk as string} />
+              </View>
+              <ThemedText variant="footnote" style={{ flex: 1, color: colors.blueInk as string }}>
+                <ThemedText variant="footnote" style={{ fontWeight: '800', color: colors.blueInk as string }}>
+                  {several ? 'Their ranges: ' : 'Their range: '}
+                </ThemedText>
+                {st.range}
+              </ThemedText>
+            </View>
+          </Step>
         );
       })}
+      <Step gold last>
+        <ThemedText variant="caption1" style={{ fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.goldInk as string }}>
+          Your decision · {best}
+        </ThemedText>
+        {reasoning ? <ThemedText variant="subhead">{reasoning}</ThemedText> : null}
+        <View style={{ flexDirection: 'row', gap: spacing.xs, padding: spacing.sm, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.goldBg as string }}>
+          <View style={{ marginTop: 2 }}>
+            <Icon name="lightbulb.fill" size={14} color={colors.goldInk as string} />
+          </View>
+          <ThemedText variant="footnote" style={{ flex: 1, color: colors.goldInk as string }}>
+            <ThemedText variant="footnote" style={{ fontWeight: '800', color: colors.goldInk as string }}>
+              Remember:{' '}
+            </ThemedText>
+            {scenario.takeaway}
+          </ThemedText>
+        </View>
+      </Step>
     </View>
   );
 }
@@ -131,7 +160,7 @@ export function Breakdown({ scenario, pick }: { scenario: Scenario; pick: Option
 
   return (
     <View style={{ gap: spacing.xl }}>
-      {/* The decision: the best play, and why. */}
+      {/* The verdict in one line, then the hand in the order it was played, ending on your decision. */}
       <Animated.View entering={step()}>
         <Panel tint={colors.goldBg as string}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
@@ -143,15 +172,14 @@ export function Breakdown({ scenario, pick }: { scenario: Scenario; pick: Option
           <ThemedText variant="title2" accessibilityRole="header" style={NUM}>
             {label(scenario.best)}
           </ThemedText>
-          <ThemedText variant="body">{scenario.why}</ThemedText>
+          <ThemedText variant="body">{firstSentence(scenario.why)}</ThemedText>
         </Panel>
       </Animated.View>
 
-      {/* How the hand played out: street by street, their range narrowing. */}
       <Animated.View entering={step()}>
-        <Section title="How the hand played out">
+        <Section title="The hand, street by street">
           <Panel>
-            <Story scenario={scenario} />
+            <Story scenario={scenario} best={label(scenario.best)} />
           </Panel>
         </Section>
       </Animated.View>
@@ -174,21 +202,6 @@ export function Breakdown({ scenario, pick }: { scenario: Scenario; pick: Option
           ))}
         </Animated.View>
       )}
-
-      {/* The rule to take to the table. */}
-      {scenario.takeaway ? (
-        <Animated.View entering={step()}>
-          <View style={{ flexDirection: 'row', gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.blueBg as string }}>
-            <Icon name="lightbulb.fill" size={18} color={colors.blueInk as string} />
-            <ThemedText variant="subhead" style={{ flex: 1, color: colors.blueInk as string }}>
-              <ThemedText variant="subhead" style={{ fontWeight: '800', color: colors.blueInk as string }}>
-                Remember:{' '}
-              </ThemedText>
-              {scenario.takeaway}
-            </ThemedText>
-          </View>
-        </Animated.View>
-      ) : null}
 
       {/* The numbers: pot odds against your chance, and what each play wins on average. */}
       <Animated.View entering={step()}>

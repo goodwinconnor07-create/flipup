@@ -67,7 +67,7 @@ export const L20: Record<string, Lesson> = {
       { street: 'preflop', text: 'In a small live game, as a loose, aggressive player, you open Q♥J♥ second to act and a tough player calls on the button.', range: 'Pairs, broadways, suited aces, suited connectors.' },
       { street: 'flop', text: 'You flop top pair on a dry Q♦6♣3♠. You bet 8 into 9.5 and they raise to 18; you call. With no draws to play hard, a raise is value.', range: 'Q-Q, 6-6, 3-3, A-Q, K-Q, Q-6, a few bluffs.' },
       { street: 'turn', text: 'The T♦. You check, they bet 30 into 45.5, and you call. A second big bet after a flop raise keeps the strong hands and adds T-T and Q-T.', range: 'Sets, A-Q, K-Q, Q-T, 6-4 and 7-5 drawing, a few bluffs.' },
-      { street: 'river', text: 'The 4♥ makes 7-5 a straight, and they shove 48 into 105.5.', range: 'Value: Q-Q, 6-6, 3-3, T-T, 4-4, A-Q, K-Q, Q-T, 6-4, 7-5. Bluffs: a few.' },
+      { street: 'river', text: 'The 4♥ makes 7-5 a straight, and they shove 48 into 105.5: the third strong action on a board with no draws to bluff.', range: 'Value: Q-Q, 6-6, 3-3, T-T, 4-4, A-Q, K-Q, Q-T, 6-4, 7-5. Bluffs: a few.' },
     ],
     takeaway: 'Three strong actions on a dry board are almost always value: fold top pair.',
   },

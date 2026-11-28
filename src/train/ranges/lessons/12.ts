@@ -25,7 +25,7 @@ export const L12: Record<string, Lesson> = {
     why: 'Call: even though the bet is small, it’s polarised. With a king landing after you 3-bet and checked the turn, they put you on A-K and won’t bet tens or jacks thinly. So they bet a king or better, or a missed Q-J, A-Q or A-J, and you beat all of those bluffs at a good price.',
     streets: [
       { street: 'preflop', text: 'You 3-bet 7♣7♠ on the button over a cutoff open, and they call.', range: 'Pairs, broadways like K-Q, Q-J and K-J, A-Q, A-J, suited aces.' },
-      { street: 'flop', text: 'On T♣8♥8♦ they check, you c-bet 12 into 33.5, and they call.', range: 'Tens, pairs like 9-9 and J-J, Q-J and J-9 drawing, floats like A-Q and A-J.' },
+      { street: 'flop', text: 'On T♣8♥8♦ they check, you c-bet 12 into 33.5, and they call with anything that hit or floats.', range: 'Tens, pairs like 9-9 and J-J, Q-J and J-9 drawing, floats like A-Q and A-J.' },
       { street: 'turn', text: 'The 4♠ checks through. Your sevens beat their Q-J and ace highs but not their tens, so you take the free card.', range: 'Tens, pairs, Q-J, ace-high floats.' },
       { street: 'river', text: 'The K♦ and they bet 25 into 57.5. After you 3-bet and checked the turn, they read you for A-K, so their tens and jacks check; they bet a king or better, or a missed float.', range: 'Value: A-K, K-Q, K-J, K-T, T-T. Bluffs: Q-J, A-Q and A-J that floated.' },
     ],
@@ -44,7 +44,7 @@ export const L12: Record<string, Lesson> = {
   'ace-ten-fold-utg-triple-barrel': {
     why: 'Fold: an ace-high board gives an early opener very few natural bluffs, only J-T and K-T, and live players rarely invent others while betting their better aces for value. Your A-T is a bluff catcher against a range that’s nearly all value. You need 30%, and you’re well short.',
     streets: [
-      { street: 'preflop', text: 'Under the gun opens and you defend A♦T♦ from the big blind.', range: 'Big pairs, A-K to A-T, suited broadways like K-T and J-T.' },
+      { street: 'preflop', text: 'Under the gun opens and you defend A♦T♦ from the big blind against the tightest range at the table.', range: 'Big pairs, A-K to A-T, suited broadways like K-T and J-T.' },
       { street: 'flop', text: 'You flop top pair on A♣9♠2♦ and check-call a small c-bet. An ace-high flop is great for the opener, who holds far more strong aces than you.', range: 'Aces, big pairs, big cards like K-Q and J-T.' },
       { street: 'turn', text: 'The Q♦ and they bet again: their better aces for value, and J-T and K-T with fresh draws.', range: 'Better aces, two pairs, sets, J-T and K-T drawing.' },
       { street: 'river', text: 'The 6♥ and a third bet. Live players don’t turn K-8 or small pairs into triple barrels, so the bluffs are only the missed J-T and K-T.', range: 'Value: better aces, two pair, sets. Split: A-T. Bluffs: J-T and K-T.' },
@@ -54,7 +54,7 @@ export const L12: Record<string, Lesson> = {
   'top-pair-fold-turn-raise-after-checked-flop': {
     why: 'Fold: live players hardly ever raise this turn as a bluff after checking the flop. A player who checked with nothing doesn’t start raising a gutshot, and top pair doesn’t play this fast. Against sets, K-J and slow-played aces you’re nearly drawing dead, and you need 26%.',
     streets: [
-      { street: 'preflop', text: 'Under the gun opens and you defend K♥Q♣ from the big blind.', range: 'Big pairs, big aces, suited broadways.' },
+      { street: 'preflop', text: 'Under the gun opens and you defend K♥Q♣ from the big blind against the tightest range at the table.', range: 'Big pairs, big aces, suited broadways.' },
       { street: 'flop', text: 'K♣7♠2♦ checks through. They’d bet most top pairs here, so the check is weaker hands or a big hand slow-playing.', range: 'Pairs below kings, unpaired big aces, slow-played sets and aces.' },
       { street: 'turn', text: 'The J♦. You bet half the pot and they raise three times your bet. After a flop check, a raise this big on this card is a hand that was waiting.', range: 'Sets, K-J, aces that slowed down on the flop.' },
     ],

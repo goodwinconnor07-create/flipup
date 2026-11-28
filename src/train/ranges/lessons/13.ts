@@ -12,7 +12,7 @@ export const L13: Record<string, Lesson> = {
     takeaway: 'When you’ve done all the betting and they lead big as a draw completes, believe the draw.',
   },
   'second-pair-call-small-river-after-stab': {
-    why: 'Call: after you check back the flop, many players over-bluff with small bets on the turn and river, often with small pairs and missed straight draws, and their stronger hands usually bet bigger. You need a quarter, and your nines beat all those bluffs.',
+    why: 'Call: after you check back the flop, many players over-bluff with small bets on the turn and river. Those bluffs are often small pairs and missed straight draws, while their stronger hands usually bet bigger. You need a quarter, and your nines beat every one of those bluffs.',
     streets: [
       { street: 'preflop', text: 'You open T♥9♥ on the button and a typical live player defends the big blind wide.', range: 'Suited hands, connectors, pairs and broadways.' },
       { street: 'flop', text: 'You flop second pair on A♠9♠7♦. On ace-high boards you bet big or check, and second pair is a showdown hand, so you check back.', range: 'Their whole range: aces, nines, sevens, draws and air.' },
@@ -62,7 +62,7 @@ export const L13: Record<string, Lesson> = {
     takeaway: 'When your big bet already folded the hands you beat, a small river bet is value: fold.',
   },
   'queens-check-river-four-bet-pot': {
-    why: 'Check: an all in only gets called by hands that beat you, flushes, jacks full, aces and kings, and the one worse hand left, a missed 5-4, folds to it. Betting only loses more when you’re beaten.',
+    why: 'Check: an all in only gets called by hands that beat you. Flushes, jacks full, aces and kings all call, and the one worse hand left in their range, a missed 5-4, folds. Betting only loses more when you’re beaten.',
     streets: [
       { street: 'preflop', text: 'A strong small blind 3-bets your cutoff open and calls your 4-bet with Q♦Q♥.', range: 'Big pairs, A-K, A-Q, suited hands like 5-4.' },
       { street: 'flop', text: 'On 6♥6♦2♦ you bet small, 9.375 into 37, and they call. In a 4-bet pot almost nothing folds to a small bet here.', range: 'Big pairs, diamond draws, some sixes.' },

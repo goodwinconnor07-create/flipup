@@ -21,7 +21,7 @@ export const L7: Record<string, Lesson> = {
     takeaway: 'When a short stack bets most of what’s left, raise all in with any hand that beats most of their bets.',
   },
   'kings-call-multiway-lead-shove': {
-    why: 'Call: a set might lead to protect itself, but there are only nine set combos and far more combos of the two flush draws, which a weak player shoves all the time. You need about 30%, and kings win far more often.',
+    why: 'Call: count the combos. A set might lead to protect itself, but there are only nine set combos, against far more combos of the two flush draws, which a weak player shoves all the time. You need about 30%, and kings win far more often.',
     streets: [
       { street: 'preflop', text: 'A weak player limps, you raise K♣K♦, and three of them call, including the limper.', range: 'The limper: pairs, suited cards and connectors.' },
       { street: 'flop', text: 'On 9♦7♣3♣ you bet and only the limper calls. Calling a raiser with two players behind is usually a pair or a draw, sometimes a set.', range: 'Pairs, nines and sevens, club and straight draws, sets.' },
@@ -40,7 +40,7 @@ export const L7: Record<string, Lesson> = {
     takeaway: 'When a small bet comes from a range you beat almost entirely, raise: their aces won’t fold.',
   },
   'trips-weak-kicker-river-call': {
-    why: 'Call: better kings and full houses beat you, but you hold a king, so they have fewer of them, and they also bet every pair of jacks and some busted straight draws. You need about 28%, and you’re ahead far more often.',
+    why: 'Call: you hold a king, so their better kings are rarer. Better kings and full houses beat you, but they also bet every pair of jacks for value and some busted straight draws as bluffs. You need about 28%, and you’re ahead far more often.',
     streets: [
       { street: 'preflop', text: 'You open K♠9♥ from the cutoff; the button and the big blind call.', range: 'The button: pairs, suited aces, broadways and connectors.' },
       { street: 'flop', text: 'You flop top pair on K♥J♣3♦ and check to the field. The button bets, you call, and the big blind folds.', range: 'Kings, jacks, straight draws like Q-T, some floats.' },

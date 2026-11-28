@@ -50,6 +50,8 @@ const RANGE_SHARE = /\d+\s*%\s+of\s+(their|his|her|the)\s+(hands|range|combos)|(
 const MARGIN = 0.03;
 
 /** The numbers each answer has to agree with. */
+/** The first sentence of the why: the verdict (the app's firstSentence in native/src/state/range-view.ts). */
+const firstSentence = (text: string) => (/^.*?[.!?](?=\s|$)/s.exec(text.trim())?.[0] ?? text).trim();
 const lessonText = (s: Scenario) => [s.why, s.takeaway, ...s.streets.flatMap((r) => [r.text, r.range])].join(' | ');
 
 function check(s: Scenario) {
@@ -136,14 +138,20 @@ describe('every scenario', () => {
         expect(streetOfBoard(s.board)).not.toBe('flop');
       });
 
-      it('tells the hand street by street, narrowing their range', () => {
-        // The owner (27 Nov 2026): the lesson goes street by street, tightening their range as the hand plays out.
-        expect(s.why.length, s.id).toBeGreaterThan(150);
+      it('tells the hand street by street, narrowing their range, then decides', () => {
+        // The owner (27–28 Nov 2026): one explanation in hand order, street by street, tightening their range, then the
+        // decision; tight, never padded. The street text says what happened and what it means; the range box lists
+        // their hands, so the text doesn't. The why's first sentence is the verdict; the rest is the decision's
+        // reasoning, shown as the last step of the story.
+        expect(s.why.length, `${s.id}: why`).toBeGreaterThan(150);
+        expect(s.why.length, `${s.id}: why runs long`).toBeLessThanOrEqual(440);
+        expect(s.why.slice(firstSentence(s.why).length).trim().length, `${s.id}: no reasoning after the verdict`).toBeGreaterThan(60);
         expect(s.takeaway.length, s.id).toBeGreaterThan(30);
         const want = ['preflop', 'flop', 'turn', 'river'].slice(0, s.board.length - 1);
         expect(s.streets.map((r) => r.street), `${s.id}: one story line a street, in order`).toEqual(want);
         for (const r of s.streets) {
-          expect(r.text.length, `${s.id} ${r.street}`).toBeGreaterThan(100);
+          expect(r.text.length, `${s.id} ${r.street}`).toBeGreaterThan(60);
+          expect(r.text.length, `${s.id} ${r.street} runs long`).toBeLessThanOrEqual(280);
           expect(r.range.length, `${s.id} ${r.street} range`).toBeGreaterThan(20);
         }
       });

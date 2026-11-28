@@ -12,7 +12,7 @@ export const L9: Record<string, Lesson> = {
     takeaway: 'A blocker to their bluffs makes your bluff catcher worse: hold a card from their value hands instead.',
   },
   'top-pair-call-lag-river-barrel': {
-    why: 'Call: J-T, 7-6 and two pair beat you, but a loose-aggressive player gets here with lots of missed diamond and straight draws and keeps firing them. You need 30%, and those bluffs clear it.',
+    why: 'Call: this player keeps firing their draws. J-T, 7-6 and two pair beat you, but a loose-aggressive player gets here with lots of missed diamond and straight draws and bets them all three streets. You need 30%, and those bluffs clear it.',
     streets: [
       { street: 'preflop', text: 'You open A♦Q♥ from the cutoff and a loose-aggressive player defends the big blind.', range: 'Wide: suited hands, connectors, broadways and pairs.' },
       { street: 'flop', text: 'You flop top pair, top kicker on Q♠5♥3♦, and they check-raise: from this player often a draw or a weaker pair, as well as some strong hands. You call.', range: 'Two pairs, sets, weaker queens, draws like 6-4, A-4 and 4-2.' },

@@ -91,7 +91,7 @@ export const L14: Record<string, Lesson> = {
     takeaway: 'When the price is a quarter of the pot and you’re ahead of their draws, call a short shove.',
   },
   'queen-jack-call-four-flush-lead': {
-    why: 'Call: marginal flushes would rather check, so the lead is a strong flush or a straight, or a hand like J-T or a small pair turned into a bluff, and a good player bluffs more when the scary card comes. You beat all the bluffs and need only about 27%.',
+    why: 'Call: marginal flushes would rather check, so this lead is strong or a bluff. The value is strong flushes and straights; the bluffs are hands like J-T and small pairs, and a good player bluffs more when the scary card comes. You beat all the bluffs and need only about 27%.',
     streets: [
       { street: 'preflop', text: 'You open Q♥J♥ from the cutoff; a good young player in the small blind and a tighter big blind call.', range: 'The small blind: pairs, suited broadways, suited aces, connectors.' },
       { street: 'flop', text: 'K♣T♣4♣ checks round; you have a gutshot and no club. A monotone board slows everyone down, so every range stays wide.', range: 'Clubs, kings, tens, broadway draws, air.' },

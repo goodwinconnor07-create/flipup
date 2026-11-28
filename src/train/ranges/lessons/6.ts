@@ -85,8 +85,8 @@ export const L6: Record<string, Lesson> = {
     why: 'Check-raise all in: their range is overpairs, A-Q and K-Q, and you beat everything but Q-Q. A tight, passive player won’t bet three streets for you, so the money has to go in now while they’re still putting chips in. Their overpairs and top pairs will call the last 15 big blinds; calling and hoping for a river bet risks a check behind.',
     streets: [
       { street: 'preflop', text: 'Three players limp, a tight, passive player raises over them, and six of you call, you with T♠T♣ in the big blind. A tight player raising over limpers has a narrow range: big pairs and big cards.', range: 'Big pairs like J-J to A-A, and big cards like A-K, A-Q and K-Q.' },
-      { street: 'flop', text: 'You flop top set on T♥6♠4♣, a dry board. It checks to the raiser, who bets; only you call. Their overpairs are paying.', range: 'Overpairs, A-K and A-Q (floating or c-betting), and smaller sets.' },
-      { street: 'turn', text: 'The Q♦ gives A-Q and K-Q top pair and Q-Q a set. They bet again. A tight, passive player often checks the river with one pair, so the money has to go in now.', range: 'Overpairs J-J, K-K and A-A, top pairs A-Q and K-Q, Q-Q, and smaller sets.' },
+      { street: 'flop', text: 'You flop top set on T♥6♠4♣, a dry board. It checks to the raiser, who bets; only you call. Their overpairs are paying.', range: 'Overpairs, and A-K and A-Q floating or c-betting.' },
+      { street: 'turn', text: 'The Q♦ gives A-Q and K-Q top pair and Q-Q a set. They bet again. A tight, passive player often checks the river with one pair, so the money has to go in now.', range: 'Overpairs J-J, K-K and A-A, top pairs A-Q and K-Q, and Q-Q.' },
     ],
     takeaway: 'Against a passive player who won’t keep betting, get your value in while they’re still putting chips in.',
   },

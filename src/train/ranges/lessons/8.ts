@@ -54,7 +54,7 @@ export const L8: Record<string, Lesson> = {
   'overpair-check-river-vs-tens': {
     why: 'Check: a bet only gets called by a ten or a flush, and both beat you, while everything you beat folds to any bet. Betting can only lose more, unless they’re an extreme calling station.',
     streets: [
-      { street: 'preflop', text: 'A tight player limps and calls your raise with Q♠Q♥.', range: 'Pairs, suited aces, broadways, suited connectors.' },
+      { street: 'preflop', text: 'A tight player limps and calls your raise with Q♠Q♥. Their biggest pairs would usually raise first.', range: 'Pairs, suited aces, broadways, suited connectors.' },
       { street: 'flop', text: 'On T♠T♣2♣ you bet and they check-raise. From a tight player that’s a ten or a club draw, sometimes a small pair.', range: 'Tens, club draws, a few small pairs.' },
       { street: 'turn', text: 'The 4♣ completes the clubs and they check, maybe without a ten or scared of the flush. You bet small and they call.', range: 'Tens, club flushes, low pairs with a club, one-club draws.' },
       { street: 'river', text: 'The 8♥ and they check again. A ten never folds and beats you; so does a flush. Everything else is a weak pair or busted draw that folds.', range: 'Ahead (call): a ten, club flushes. Behind (fold): low pairs, busted draws.' },

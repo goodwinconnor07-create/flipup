@@ -1,15 +1,6 @@
 import type { Lesson } from '../model';
 
 export const L7: Record<string, Lesson> = {
-  'top-pair-fold-turn-check-raise': {
-    why: 'Fold: most players only check-raise a blank turn with two pair or better. They called the flop, and the 4♣ changed nothing, so the raise isn’t about the card: they had a strong hand on the flop and waited. Straight draws rarely raise here. You need 26%, and top pair with a ten kicker falls short.',
-    streets: [
-      { street: 'preflop', text: 'You open K♠T♥ from the cutoff and the big blind defends with a wide range: suited hands, broadways, pairs and connectors.', range: 'Wide: suited hands, broadways, pairs and connectors.' },
-      { street: 'flop', text: 'You flop top pair on K♦J♥8♠, a connected board. You bet small and they call with kings, jacks, two pairs and straight draws like Q-T, T-9 and Q-9. Check-calling is how a big blind plays most of these, strong and weak alike.', range: 'Kings, jacks and eights, two pairs like K-J, K-8 and J-8, sets, and straight draws.' },
-      { street: 'turn', text: 'The 4♣ is a complete blank. You bet again and they check-raise three times your bet. A check-raise on a card that changes nothing, after calling the flop, is strength: they had it on the flop and waited. A typical player rarely turns a draw into a big turn raise; draws usually call and see the river.', range: 'Value: sets and two pairs like K-J, K-8 and J-8. Bluffs: a few straight draws.' },
-    ],
-    takeaway: 'A check-raise on a blank turn from a typical player is two pair or better: fold one pair.',
-  },
   'kings-full-shove-short-stack': {
     why: 'Raise all in: they bet every ace here, and you beat nearly all of them. Only A-K, the last pair of aces, A-5 and A-3 have you. With under 5 big blinds left behind, any ace will call the rest. Just calling leaves chips they would have paid.',
     streets: [

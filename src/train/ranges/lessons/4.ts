@@ -21,15 +21,6 @@ export const L4: Record<string, Lesson> = {
     ],
     takeaway: 'When a capped range checks to you and you’re ahead of most of it, a small bet gets paid by weaker pairs.',
   },
-  'two-pair-turn-shove': {
-    why: 'Call: you need only 23%, and your hand is near the top of your range. They shove K-J, J-J and A-3 for value, but they also shove worse kings like K-Q and K-T, and every club and straight draw. Against all of that you win more than enough. Betting small and then folding to a shove is the real mistake.',
-    streets: [
-      { street: 'preflop', text: 'You open A♦K♠ under the gun at a live table, 52 big blinds deep; the hijack and both blinds call. Live cold-callers have wide ranges, and the hijack’s best hands would 3-bet.', range: 'Pairs, suited aces, broadways like K-Q, K-J and Q-T, and suited connectors.' },
-      { street: 'flop', text: 'You flop top pair, top kicker on K♣J♥3♣. The blinds check, you bet 10 into 16, and only the hijack calls. A call against a multiway field leaves kings, jacks, two pairs, club draws and straight draws.', range: 'Kings, jacks, K-J and sets, club draws, and straight draws like Q-T.' },
-      { street: 'turn', text: 'The 3♦ pairs the board, giving A-3 trips and J-J a full house. You bet small, 12 into 36, and the hijack shoves for 38. With most of your stack already in, the price is small: you only need to call 26 more.', range: 'Value: K-J, J-J and A-3. Also shoving: worse kings like K-Q and K-T, club draws, and Q-T.' },
-    ],
-    takeaway: 'When your stack is short and the price is good, don’t bet small and fold: a strong hand calls the shove.',
-  },
   'big-draw-multiway-turn': {
     why: 'Call: you’re getting about 8.5 to 1 with around 15 outs, and a raise is unlikely to fold out three players. Some outs aren’t clean: the T♣ and 5♣ also fill club flushes, and a higher heart draw can beat yours. Even counting fewer outs, the price is easily good enough. Calling keeps everyone in, so you get paid when you hit.',
     streets: [

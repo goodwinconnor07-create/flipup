@@ -47,7 +47,7 @@ export const L16: Record<string, Lesson> = {
       { street: 'preflop', text: 'An elite player opens the lojack and you defend K♠8♠ from the big blind, both over 300 big blinds deep. Deep stacks give them room for big bets later.', range: 'Pairs, broadways, suited aces, suited kings, suited connectors.' },
       { street: 'flop', text: 'On a very connected 9♠7♠6♣ you check and call ⅔ pot with a flush draw and a gutshot. A big c-bet here leans to value and strong draws.', range: 'Sets, two pair, T-8, overpairs, top pairs, spade and straight draws.' },
       { street: 'turn', text: 'The K♥ gives you top pair. You check and call an overbet, 18.33 into 16: a set, a straight or two pair building the pot, or a draw betting big.', range: 'Sets 9-9, 7-7, 6-6, K-K; T-8; K-9, 7-6; top pairs with a better kicker; spade draws.' },
-      { street: 'river', text: 'The 3♥ misses your draws. You check and they bet 75 into 53.', range: 'Value: 9-9, 7-7, 6-6, K-K, T-8, K-9, 7-6, some better top pairs. Bluffs: missed spade draws.' },
+      { street: 'river', text: 'The 3♥ misses your draws. You check and they bet 75 into 53, the third bet in a row, each bigger than the last.', range: 'Value: 9-9, 7-7, 6-6, K-K, T-8, K-9, 7-6, some better top pairs. Bluffs: missed spade draws.' },
     ],
     takeaway: 'When a strong player builds to an overbet over three streets, top pair is a bluff catcher against a range with too few bluffs.',
   },

@@ -56,7 +56,7 @@ export const L14: Record<string, Lesson> = {
     streets: [
       { street: 'preflop', text: 'You open A♠A♣ from first position; a strong player in middle position and both blinds call.', range: 'The strong player: pairs, suited broadways, suited aces, connectors.' },
       { street: 'flop', text: 'On K♥8♥2♦ you bet 7.5 into 13 and only the strong player calls. They raise some sets and call with others.', range: 'Kings, eights, sets, heart draws, pairs.' },
-      { street: 'turn', text: 'The 3♠ is a blank. You bet 13 into 28 and they call again.', range: 'Kings, sets, two pairs, heart draws, pairs.' },
+      { street: 'turn', text: 'The 3♠ is a blank. You bet 13 into 28 and they call again, still kings, sets and draws.', range: 'Kings, sets, two pairs, heart draws, pairs.' },
       { street: 'river', text: 'The 6♥ completes the flush. You check and they move all in for more than the pot.', range: 'Value: heart flushes, 8-8, 6-6, 3-3, 2-2. Bluffs: 9-9 and 8-7 suited, sometimes.' },
     ],
     takeaway: 'An overbet shove from a good player on the card that completes the draw is a flush or a set: fold even aces.',

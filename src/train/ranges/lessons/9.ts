@@ -5,7 +5,7 @@ export const L9: Record<string, Lesson> = {
     why: 'Fold: their overbet is trip queens and full houses, or ace-high bluffs like A-2, A-3 and A-4 suited. You beat only the bluffs, and your A♥ removes some of them. You need 38% and you’re short. A five without an ace would be a better bluff catcher here, because it leaves their bluffs alone.',
     streets: [
       { street: 'preflop', text: 'The hijack opens and you 3-bet A♥5♥ from the cutoff; they call.', range: 'Pairs, big aces, suited broadways, suited aces like A-2 to A-4.' },
-      { street: 'flop', text: 'On K♦Q♦5♠ you have bottom pair. You bet small and they call.', range: 'Kings, queens, diamond and straight draws, pairs, suited aces with a draw.' },
+      { street: 'flop', text: 'On K♦Q♦5♠ you have bottom pair. You bet small and they call; a small bet keeps their whole range in.', range: 'Kings, queens, diamond and straight draws, pairs, suited aces with a draw.' },
       { street: 'turn', text: 'The Q♣ pairs the board. They check and you check back: a five gets no value and can’t face a check-raise.', range: 'Kings and queens, full houses, draws, suited aces that missed.' },
       { street: 'river', text: 'The 7♥ and they overbet 1½ times the pot. A world-class player balances this: value from queens and full houses, bluffs from suited aces. Your A♥ takes away some of those bluffs.', range: 'Value: trip queens, K-Q, 7-7, 5-5, some kings full. Bluffs: A-2, A-3 and A-4 suited.' },
     ],

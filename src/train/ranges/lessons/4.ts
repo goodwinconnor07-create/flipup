@@ -30,15 +30,6 @@ export const L4: Record<string, Lesson> = {
     ],
     takeaway: 'When your stack is short and the price is good, don’t bet small and fold: a strong hand calls the shove.',
   },
-  'big-draw-multiway-turn': {
-    why: 'Call: you’re getting about 8.5 to 1 with around 15 outs, and a raise is unlikely to fold out three players. Some outs aren’t clean: the T♣ and 5♣ also fill club flushes, and a higher heart draw can beat yours. Even counting fewer outs, the price is easily good enough. Calling keeps everyone in, so you get paid when you hit.',
-    streets: [
-      { street: 'preflop', text: 'Four players limp, including you with 9♥6♥; the button raises and three of you call. Everyone’s range is wide and full of suited and connected hands.', range: 'Wide everywhere: suited hands, connectors, pairs and broadways.' },
-      { street: 'flop', text: 'The flop is K♥8♣7♣. It checks to the button, who bets, and everyone calls. With four players, calls come from kings, pairs, straight draws and club draws. You have an open-ended draw: a five or a ten.', range: 'Kings, eights and sevens, club draws, straight draws, and pairs.' },
-      { street: 'turn', text: 'The 3♥ gives you a heart flush draw to go with your open-ender. The button bets small, 14.5, and two players call before you. Small bets in multiway pots are perfect for big draws: the price is great, and with four players someone usually has a made hand that won’t fold to a raise.', range: 'Kings, eights and sevens, sets and overpairs, club draws, and some heart draws higher than yours.' },
-    ],
-    takeaway: 'In a multiway pot, call with a big draw at a good price; a raise rarely makes everyone fold.',
-  },
   'top-pair-ace-river': {
     why: 'Fold: the ace hit exactly the hands they were betting with. You lose to their aces, overpairs, sets, two pair and K-Q, and many of their draws now have a pair of aces. Few missed draws are left to bluff. You need 29%, and you win far less often than that.',
     streets: [

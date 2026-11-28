@@ -85,7 +85,7 @@ export const L11: Record<string, Lesson> = {
     why: 'Call: a half-pot bet after the turn checks through leans to missed draws like T-8, Q-T, K-T and spades, and your ace beats all of them. Typical live players bet bigger with trips or top pair. You need to win only a quarter of the time.',
     streets: [
       { street: 'preflop', text: 'You open A♥7♥ on the button in a live game and a typical player defends the big blind. Wide against wide.', range: 'Suited hands, connectors, pairs and broadways.' },
-      { street: 'flop', text: 'On J♠9♠2♣ you c-bet small and they call.', range: 'Jacks, nines, small pairs, straight draws like T-8, Q-T, K-T and 8-7, spade draws.' },
+      { street: 'flop', text: 'On J♠9♠2♣ you c-bet small, 5 into 10.5, and they call with any piece of a board full of draws.', range: 'Jacks, nines, small pairs, straight draws like T-8, Q-T, K-T and 8-7, spade draws.' },
       { street: 'turn', text: 'The 4♦ checks through. Your ace high beats their draws, so you take the free card toward a cheap showdown.', range: 'Jacks, nines, small pairs, every draw.' },
       { street: 'river', text: 'The 2♦ and they bet half the pot. After a checked turn, live players with trips or top pair get greedy and bet bigger; small bets carry more missed draws.', range: 'Value: top pair, trips, full houses, usually bet bigger. Bluffs: missed T-8, Q-T, K-T, 8-7 and spade draws.' },
     ],
@@ -95,7 +95,7 @@ export const L11: Record<string, Lesson> = {
     why: 'Fold: same hand, bigger bet. Above about 60% of the pot, a typical live player’s range is weighted to jacks, trips and full houses, and they bluff less. You need a third now, and you’re ahead far less often.',
     streets: [
       { street: 'preflop', text: 'You open A♥7♥ on the button in a live game and a typical player defends the big blind. Wide against wide.', range: 'Suited hands, connectors, pairs and broadways.' },
-      { street: 'flop', text: 'On J♠9♠2♣ you c-bet small and they call.', range: 'Jacks, nines, small pairs, straight draws like T-8, Q-T, K-T and 8-7, spade draws.' },
+      { street: 'flop', text: 'On J♠9♠2♣ you c-bet small, 5 into 10.5, and they call with any piece of a board full of draws.', range: 'Jacks, nines, small pairs, straight draws like T-8, Q-T, K-T and 8-7, spade draws.' },
       { street: 'turn', text: 'The 4♦ checks through. Your ace high beats their draws, so you take the free card toward a cheap showdown.', range: 'Jacks, nines, small pairs, every draw.' },
       { street: 'river', text: 'The 2♦, and this time they bet the whole pot. Players are meant to bluff more with big bets, but most live players bluff less the bigger they go.', range: 'Value: top pair, trips, full houses. Bluffs: a few missed straight and spade draws.' },
     ],

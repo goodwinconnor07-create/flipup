@@ -67,7 +67,7 @@ export const L18: Record<string, Lesson> = {
       { street: 'preflop', text: 'Late in a major event a strong player opens the hijack with 66 big blinds, you 3-bet Q♥Q♣ on the button, and they call.', range: 'Pairs J-J and below, A-Q, A-J, suited broadways like K-Q, K-J and Q-J, suited aces.' },
       { street: 'flop', text: 'On T♥T♣7♦ they check, you bet 6.125 into 14, and they call. Queens are ahead of most of their range.', range: 'Tens, sevens, J-J, 9-9, 8-8, straight draws like 9-8 and 8-6, some ace high.' },
       { street: 'turn', text: 'The 6♣. They check, you bet 11 into 26, and they call again. A strong player doesn’t call twice with ace high, so what’s left is tens, full houses and better pairs.', range: 'Trip tens, 7-7, 6-6, jacks, 9-8, a few middle pairs.' },
-      { street: 'river', text: 'The 4♥ changes little and they check again.', range: 'Call any bet: trip tens, 7-7, 6-6. Small only: jacks. Fold: middle pairs, ace high.' },
+      { street: 'river', text: 'The 4♥ changes little and they check again. You act last, with the pot already big for one pair.', range: 'Call any bet: trip tens, 7-7, 6-6. Small only: jacks. Fold: middle pairs, ace high.' },
     ],
     takeaway: 'After two calls on a paired board, their range is stronger than it looks: check a one-pair hand on the river.',
   },

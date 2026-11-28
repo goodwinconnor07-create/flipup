@@ -86,7 +86,7 @@ export const L5: Record<string, Lesson> = {
       { street: 'preflop', text: 'A regular opens the cutoff and you call on the button with 8♣8♠; they have 95 big blinds.', range: 'Pairs, broadways and suited aces.' },
       { street: 'flop', text: 'You flop a full house on 8♦3♦3♥. They check, you bet small and they call: a small bet keeps their overpairs and draws in.', range: 'Overpairs, threes, diamond draws, floats.' },
       { street: 'turn', text: 'The T♣. They check, you bet, and they check-raise. Unusual action means an unusual hand, but not necessarily the nuts.', range: 'Overpairs Q-Q to A-A, T-T (now a full house), A-3, floats.' },
-      { street: 'river', text: 'The J♥ gives J-J a full house. They bet the pot.', range: 'Value you beat: Q-Q, K-K, A-A and A-3. Beats you: J-J, T-T, 3-3. Bluffs: floats that check-raised.' },
+      { street: 'river', text: 'The J♥ gives J-J a full house, and they bet the pot. Count what bets: overpairs are 18 combos, J-J, T-T and quads only 7.', range: 'Value you beat: Q-Q, K-K, A-A and A-3. Beats you: J-J, T-T, 3-3. Bluffs: floats that check-raised.' },
     ],
     takeaway: 'Raise for value when the hands that call a raise are mostly worse than yours.',
   },
